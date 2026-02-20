@@ -1,0 +1,48 @@
+# ----------------------------------------------------------------------
+# CodeQL analysis for C++ (security and quality)
+# ----------------------------------------------------------------------
+
+name: CodeQL
+
+on:
+  push:
+    branches: [ "main" ]
+    paths-ignore:
+      - "CHANGELOG.md"
+      - "VERSION"
+      - ".release-please-manifest.json"
+      - ".github/release-please-config.json"
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  analyze:
+    name: Analyze
+    runs-on: ubuntu-latest
+    permissions:
+      security-events: write
+      actions: read
+      contents: read
+
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        submodules: true
+
+    - name: Initialize CodeQL
+      uses: github/codeql-action/init@v3
+      with:
+        languages: cpp
+        queries: security-extended
+
+    - name: Build (for CodeQL)
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y build-essential cmake
+        cmake -B build -S . -DCMAKE_BUILD_TYPE=Release -DVNE_TEMPLATE_CI=ON -DWARNINGS_AS_ERRORS=OFF
+        cmake --build build --config Release --parallel
+
+    - name: Perform CodeQL Analysis
+      uses: github/codeql-action/analyze@v3
+      with:
+        category: "/language:cpp"

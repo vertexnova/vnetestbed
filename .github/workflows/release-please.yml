@@ -1,0 +1,24 @@
+# ----------------------------------------------------------------------
+# Release Please: opens/updates a Release PR from conventional commits.
+# Merge that PR to update CHANGELOG.md and VERSION; optional tagging.
+# Repo Settings → Actions → General: "Read and write" + allow Actions to create PRs.
+# ----------------------------------------------------------------------
+
+name: Release Please
+
+on:
+  push:
+    branches: ["main"]
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  release-please:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Release Please
+        uses: googleapis/release-please-action@v4
+        with:
+          config-file: .github/release-please-config.json
