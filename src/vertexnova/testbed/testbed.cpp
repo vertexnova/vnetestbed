@@ -9,19 +9,19 @@
  * ----------------------------------------------------------------------
  */
 
-#include "vertexnova/template/template.h"
+#include "vertexnova/testbed/testbed.h"
 #include "config.h"
 
 namespace vne {
-namespace template_ns {
+namespace testbed_ns {
 
 const char* get_version() {
     return PROJECT_VERSION;
 }
 
 const char* hello() {
-    return "Hello from VneTemplate";
+    return "Hello from VneTestbed";
 }
 
-}  // namespace template_ns
+}  // namespace testbed_ns
 }  // namespace vne

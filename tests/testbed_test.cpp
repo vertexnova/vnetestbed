@@ -9,16 +9,17 @@
  * ----------------------------------------------------------------------
  */
 
-#include "common/logging_guard.h"
-#include "vertexnova/template/template.h"
+#include <gtest/gtest.h>
+#include "vertexnova/testbed/testbed.h"
 
-int main() {
-    vne::template_ns::examples::LoggingGuard logging_guard;
+TEST(VneTestbed, GetVersion) {
+    const char* ver = vne::testbed_ns::get_version();
+    ASSERT_NE(ver, nullptr);
+    EXPECT_STRNE(ver, "");
+}
 
-    using namespace vne::template_ns;
-
-    VNE_LOG_INFO << hello();
-    VNE_LOG_INFO << "Version: " << get_version();
-
-    return 0;
+TEST(VneTestbed, Hello) {
+    const char* msg = vne::testbed_ns::hello();
+    ASSERT_NE(msg, nullptr);
+    EXPECT_STREQ(msg, "Hello from VneTestbed");
 }

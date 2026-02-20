@@ -21,7 +21,7 @@ What happened? What did you expect?
 - OS and version:
 - Compiler and version:
 - CMake version:
-- VneTemplate commit or version (e.g. `git rev-parse HEAD`):
+- VneTestbed commit or version (e.g. `git rev-parse HEAD`):
 
 ## Build / test steps (if relevant)
 

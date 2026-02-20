@@ -1,4 +1,4 @@
-# Contributing to VneTemplate
+# Contributing to VneTestbed
 
 Thank you for your interest in contributing. This document explains how to build, test, and format the project so your contributions fit the repository standards.
 
@@ -11,10 +11,10 @@ Thank you for your interest in contributing. This document explains how to build
   ```
 - **Configure and build:**
   ```bash
-  cmake -B build -DCMAKE_BUILD_TYPE=Debug -DVNE_TEMPLATE_TESTS=ON
+  cmake -B build -DCMAKE_BUILD_TYPE=Debug -DVNE_TESTBED_TESTS=ON
   cmake --build build
   ```
-- **Tests and examples:** `-DVNE_TEMPLATE_DEV=ON`, or set `-DVNE_TEMPLATE_TESTS=ON` and `-DVNE_TEMPLATE_EXAMPLES=ON` separately.
+- **Tests and examples:** `-DVNE_TESTBED_DEV=ON`, or set `-DVNE_TESTBED_TESTS=ON` and `-DVNE_TESTBED_EXAMPLES=ON` separately.
 - **Platform scripts:** See [scripts/README.md](scripts/README.md) for `build_linux.sh`, `build_macos.sh`, `build_windows.sh`, `build_windows.py`, and `build_windows.ps1`.
 
 ## Testing

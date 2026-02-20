@@ -1,10 +1,10 @@
 #==============================================================================
-# Doxyfile Configuration for VneTemplate
+# Doxyfile Configuration for VneTestbed
 #==============================================================================
 
 PROJECT_NAME           = "@CMAKE_PROJECT_NAME@"
 PROJECT_NUMBER         = @PROJECT_VERSION_MAJOR@.@PROJECT_VERSION_MINOR@.@PROJECT_VERSION_PATCH@
-PROJECT_BRIEF          = "Minimal VertexNova C++ template"
+PROJECT_BRIEF          = "Minimal VertexNova C++ testbed"
 PROJECT_LOGO           =
 
 INPUT                  = @PROJECT_SOURCE_DIR@/include \

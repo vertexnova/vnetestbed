@@ -1,27 +1,27 @@
 <p align="center">
-  <img src="icons/vertexnova_logo_medallion_with_text.svg" alt="VertexNova Template" width="320"/>
+  <img src="icons/vertexnova_logo_medallion_with_text.svg" alt="VertexNova Testbed" width="320"/>
 </p>
 
 <p align="center">
-  <strong>Minimal C++ project template for the VertexNova ecosystem</strong>
+  <strong>Minimal C++ testbed for the VertexNova ecosystem</strong>
 </p>
 
 <p align="center">
-  <a href="https://github.com/vertexnova/vnetemplate/actions/workflows/ci.yml">
-    <img src="https://github.com/vertexnova/vnetemplate/actions/workflows/ci.yml/badge.svg?branch=main" alt="CI"/>
+  <a href="https://github.com/vertexnova/vnetestbed/actions/workflows/ci.yml">
+    <img src="https://github.com/vertexnova/vnetestbed/actions/workflows/ci.yml/badge.svg?branch=main" alt="CI"/>
   </a>
   <img src="https://img.shields.io/badge/C%2B%2B-20-blue.svg" alt="C++ Standard"/>
-  <a href="https://codecov.io/gh/vertexnova/vnetemplate">
-    <img src="https://codecov.io/gh/vertexnova/vnetemplate/branch/main/graph/badge.svg" alt="Coverage"/>
+  <a href="https://codecov.io/gh/vertexnova/vnetestbed">
+    <img src="https://codecov.io/gh/vertexnova/vnetestbed/branch/main/graph/badge.svg" alt="Coverage"/>
   </a>
   <img src="https://img.shields.io/badge/license-Apache%202.0-green.svg" alt="License"/>
 </p>
 
 ---
 
-# VneTemplate
+# VneTestbed
 
-Minimal VertexNova-standard C++ template: CMake, deps (external + internal), tests, examples, and documentation. Use it as a starting point for new libraries or apps in the [VertexNova](https://github.com/vertexnova) stack.
+Minimal VertexNova-standard C++ testbed: CMake, deps (external + internal), tests, examples, and documentation. Use it as a starting point for new libraries or apps in the [VertexNova](https://github.com/vertexnova) stack.
 
 ## Directory layout
 
@@ -31,7 +31,7 @@ Minimal VertexNova-standard C++ template: CMake, deps (external + internal), tes
 | `configs/` | Configured headers (e.g. `config.h.in`) |
 | `deps/external/` | Third-party deps (e.g. googletest) |
 | `deps/internal/` | VertexNova internal libs (vnecommon, vnelogging) |
-| `include/` | Public API headers (`vertexnova/template/`) |
+| `include/` | Public API headers (`vertexnova/testbed/`) |
 | `src/` | Implementation |
 | `tests/` | Unit tests (Google Test) |
 | `docs/` | Doxygen input (`doxyfile.in`) and extra docs |
@@ -46,7 +46,7 @@ Minimal VertexNova-standard C++ template: CMake, deps (external + internal), tes
 ## Dependencies
 
 - **External:** Tests use [Google Test](https://github.com/google/googletest). Either add `deps/external/googletest` as a submodule (recommended tag: `v1.17.0`) or let CMake use FetchContent when the directory is missing.  
-- **Internal:** **vnecmake** (required) is the CMake modules submodule at `cmake/vnecmake`. Optional libraries `vnecommon` and `vnelogging` go under `deps/internal/`. See [deps/README.md](deps/README.md). If they are missing, the template still builds but does not link to `vne::common` or `vne::logging`.
+- **Internal:** **vnecmake** (required) is the CMake modules submodule at `cmake/vnecmake`. Optional libraries `vnecommon` and `vnelogging` go under `deps/internal/`. See [deps/README.md](deps/README.md). If they are missing, the testbed still builds but does not link to `vne::common` or `vne::logging`.
 
 From the project root:
 
@@ -61,7 +61,7 @@ git submodule update --init --recursive
 From the project root:
 
 ```bash
-cmake -B build -DCMAKE_BUILD_TYPE=Debug -DVNE_TEMPLATE_TESTS=ON
+cmake -B build -DCMAKE_BUILD_TYPE=Debug -DVNE_TESTBED_TESTS=ON
 cmake --build build
 ```
 
@@ -95,12 +95,12 @@ Or:
 
 ## Documentation
 
-- **Template overview and diagrams:** [docs/vertexnova/template/template.md](docs/vertexnova/template/template.md) — context and API diagrams (Draw.io sources in `docs/vertexnova/template/diagrams/`).
+- **Testbed overview and diagrams:** [docs/vertexnova/testbed/testbed.md](docs/vertexnova/testbed/testbed.md) — context and API diagrams (Draw.io sources in `docs/vertexnova/testbed/diagrams/`).
 - **API docs:** Configure with Doxygen enabled and build the doc target:
 
   ```bash
   cmake -B build -DENABLE_DOXYGEN=ON
-  cmake --build build --target vnetemplate_doc_doxygen
+  cmake --build build --target vnetestbed_doc_doxygen
   ```
 
   Output: `build/docs/html/index.html`.

@@ -1,4 +1,4 @@
-# VneTemplate Scripts
+# VneTestbed Scripts
 
 Build scripts for macOS, Linux, and Windows.
 
