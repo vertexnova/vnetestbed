@@ -11,7 +11,7 @@
  */
 
 namespace vne {
-namespace template_ns {
+namespace testbed_ns {
 
 /** @brief Returns the project version string. */
 const char* get_version();
@@ -19,5 +19,5 @@ const char* get_version();
 /** @brief Returns a greeting string (minimal API placeholder). */
 const char* hello();
 
-}  // namespace template_ns
+}  // namespace testbed_ns
 }  // namespace vne

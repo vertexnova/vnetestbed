@@ -9,38 +9,38 @@
 #==============================================================================
 
 set(SOURCE_FILES
-    vertexnova/template/template.cpp
+    vertexnova/testbed/testbed.cpp
 )
 
 set(HEADER_FILES
-    ${VNE_INCLUDE_DIR}/vertexnova/template/template.h
+    ${VNE_INCLUDE_DIR}/vertexnova/testbed/testbed.h
 )
 
-add_library(vnetemplate STATIC ${SOURCE_FILES} ${HEADER_FILES})
+add_library(vnetestbed STATIC ${SOURCE_FILES} ${HEADER_FILES})
 
 source_group("Sources" FILES ${SOURCE_FILES})
 source_group(TREE ${VNE_INCLUDE_DIR} PREFIX "Headers" FILES ${HEADER_FILES})
 
-add_library(vne::template ALIAS vnetemplate)
+add_library(vne::testbed ALIAS vnetestbed)
 
-target_include_directories(vnetemplate
+target_include_directories(vnetestbed
     PUBLIC
         $<BUILD_INTERFACE:${VNE_INCLUDE_DIR}>
         $<BUILD_INTERFACE:${VNE_SRC_DIR}>
         $<INSTALL_INTERFACE:include>
 )
 
-target_link_libraries(vnetemplate
+target_link_libraries(vnetestbed
     PUBLIC
-        vne::template::Warnings
-        vne::template::BuildSettings
+        vne::testbed::Warnings
+        vne::testbed::BuildSettings
 )
 
 if(TARGET vne::common)
-    target_link_libraries(vnetemplate PUBLIC vne::common)
+    target_link_libraries(vnetestbed PUBLIC vne::common)
 endif()
 if(TARGET vne::logging)
-    target_link_libraries(vnetemplate PUBLIC vne::logging)
+    target_link_libraries(vnetestbed PUBLIC vne::logging)
 endif()
 
-target_compile_features(vnetemplate PUBLIC cxx_std_20)
+target_compile_features(vnetestbed PUBLIC cxx_std_20)

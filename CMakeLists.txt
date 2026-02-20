@@ -23,7 +23,7 @@ if(NOT DEFINED PROJECT_VERSION_INIT)
     set(PROJECT_VERSION_INIT "1.0.0")
 endif()
 
-project(vnetemplate VERSION ${PROJECT_VERSION_INIT} LANGUAGES CXX)
+project(vnetestbed VERSION ${PROJECT_VERSION_INIT} LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -96,7 +96,7 @@ endif()
 #==============================================================================
 include(VneUseDep)
 
-function(_vnetemplate_configure_vnecommon_dep)
+function(_vnetestbed_configure_vnecommon_dep)
     get_property(_vt_build_examples_ty CACHE BUILD_EXAMPLES PROPERTY TYPE)
     if(NOT _vt_build_examples_ty STREQUAL "NOTFOUND" AND _vt_build_examples_ty)
         set(_vt_build_examples_saved "${BUILD_EXAMPLES}")
@@ -109,9 +109,9 @@ function(_vnetemplate_configure_vnecommon_dep)
         unset(BUILD_EXAMPLES CACHE)
     endif()
 endfunction()
-_vnetemplate_configure_vnecommon_dep()
+_vnetestbed_configure_vnecommon_dep()
 
-function(_vnetemplate_configure_vnelogging_dep)
+function(_vnetestbed_configure_vnelogging_dep)
     get_property(_vt_build_tests_ty CACHE BUILD_TESTS PROPERTY TYPE)
     if(NOT _vt_build_tests_ty STREQUAL "NOTFOUND" AND _vt_build_tests_ty)
         set(_vt_build_tests_saved "${BUILD_TESTS}")
@@ -135,7 +135,7 @@ function(_vnetemplate_configure_vnelogging_dep)
         unset(BUILD_EXAMPLES CACHE)
     endif()
 endfunction()
-_vnetemplate_configure_vnelogging_dep()
+_vnetestbed_configure_vnelogging_dep()
 
 # Include dirs and config
 set(VNE_INCLUDE_DIR ${PROJECT_SOURCE_DIR}/include)
@@ -147,8 +147,8 @@ include_directories(${CMAKE_BINARY_DIR})
 # Build Options
 #==============================================================================
 # Option naming and deps:
-# - Use VNE_TEMPLATE_* for vnetemplate-only options so there is no conflict when
-#   this project is used as a submodule (parent can set VNE_TEMPLATE_TESTS=OFF
+# - Use VNE_TESTBED_* for vnetestbed-only options so there is no conflict when
+#   this project is used as a submodule (parent can set VNE_TESTBED_TESTS=OFF
 #   without affecting BUILD_TESTS used by other deps).
 # - BUILD_TESTS / BUILD_EXAMPLES are global; we force them (via VneUseDep
 #   CACHE_VARS) before add_subdirectory for each dep so deps do not build their
@@ -158,20 +158,20 @@ include_directories(${CMAKE_BINARY_DIR})
 #   default; -D from the command line applies to all. No duplicate option()
 #   definition (CMake uses cache), but behavior is "one value for the whole tree."
 #==============================================================================
-if(CMAKE_PROJECT_NAME STREQUAL "vnetemplate")
-    set(VNE_TEMPLATE_DEV_DEFAULT ON)
+if(CMAKE_PROJECT_NAME STREQUAL "vnetestbed")
+    set(VNE_TESTBED_DEV_DEFAULT ON)
 else()
-    set(VNE_TEMPLATE_DEV_DEFAULT OFF)
+    set(VNE_TESTBED_DEV_DEFAULT OFF)
 endif()
-option(VNE_TEMPLATE_DEV "Dev build: enable tests (local development)" ${VNE_TEMPLATE_DEV_DEFAULT})
-option(VNE_TEMPLATE_CI "CI build: enable tests (e.g. -DVNE_TEMPLATE_CI=ON in pipelines)" OFF)
+option(VNE_TESTBED_DEV "Dev build: enable tests (local development)" ${VNE_TESTBED_DEV_DEFAULT})
+option(VNE_TESTBED_CI "CI build: enable tests (e.g. -DVNE_TESTBED_CI=ON in pipelines)" OFF)
 
-if(VNE_TEMPLATE_CI)
-    set(VNE_TEMPLATE_DEV OFF CACHE BOOL "" FORCE)
+if(VNE_TESTBED_CI)
+    set(VNE_TESTBED_DEV OFF CACHE BOOL "" FORCE)
 endif()
 
-option(VNE_TEMPLATE_TESTS "Build vnetemplate test suite (turn OFF when used as submodule)" ON)
-option(VNE_TEMPLATE_EXAMPLES "Build vnetemplate example programs (turn OFF when used as submodule)" OFF)
+option(VNE_TESTBED_TESTS "Build vnetestbed test suite (turn OFF when used as submodule)" ON)
+option(VNE_TESTBED_EXAMPLES "Build vnetestbed example programs (turn OFF when used as submodule)" OFF)
 option(ENABLE_DOXYGEN "Enable Doxygen documentation builds" OFF)
 option(ENABLE_COVERAGE "Enable code coverage reporting" OFF)
 option(WARNINGS_AS_ERRORS "Treat compiler warnings as errors" OFF)
@@ -183,55 +183,55 @@ if(ENABLE_COVERAGE)
     include(FindCoverage)
 endif()
 
-if(VNE_TEMPLATE_CI)
-    set(VNE_TEMPLATE_TESTS ON CACHE BOOL "" FORCE)
-    set(VNE_TEMPLATE_EXAMPLES OFF CACHE BOOL "" FORCE)
-    message(STATUS "VneTemplate: CI build -> VNE_TEMPLATE_TESTS=ON, VNE_TEMPLATE_EXAMPLES=OFF")
-elseif(VNE_TEMPLATE_DEV)
-    set(VNE_TEMPLATE_TESTS ON CACHE BOOL "" FORCE)
-    set(VNE_TEMPLATE_EXAMPLES ON CACHE BOOL "" FORCE)
-    message(STATUS "VneTemplate: DEV build -> VNE_TEMPLATE_TESTS=ON, VNE_TEMPLATE_EXAMPLES=ON")
+if(VNE_TESTBED_CI)
+    set(VNE_TESTBED_TESTS ON CACHE BOOL "" FORCE)
+    set(VNE_TESTBED_EXAMPLES OFF CACHE BOOL "" FORCE)
+    message(STATUS "VneTestbed: CI build -> VNE_TESTBED_TESTS=ON, VNE_TESTBED_EXAMPLES=OFF")
+elseif(VNE_TESTBED_DEV)
+    set(VNE_TESTBED_TESTS ON CACHE BOOL "" FORCE)
+    set(VNE_TESTBED_EXAMPLES ON CACHE BOOL "" FORCE)
+    message(STATUS "VneTestbed: DEV build -> VNE_TESTBED_TESTS=ON, VNE_TESTBED_EXAMPLES=ON")
 endif()
 
 #==============================================================================
 # Compiler Warnings
 #==============================================================================
-add_library(TemplateWarnings INTERFACE)
+add_library(TestbedWarnings INTERFACE)
 include(ProjectWarnings)
-set_project_warnings(TemplateWarnings)
-add_library(vne::template::Warnings ALIAS TemplateWarnings)
+set_project_warnings(TestbedWarnings)
+add_library(vne::testbed::Warnings ALIAS TestbedWarnings)
 
 #==============================================================================
 # Build Settings Interface Library
 #==============================================================================
-add_library(TemplateBuildSettings INTERFACE)
-target_compile_features(TemplateBuildSettings INTERFACE cxx_std_20)
-add_library(vne::template::BuildSettings ALIAS TemplateBuildSettings)
+add_library(TestbedBuildSettings INTERFACE)
+target_compile_features(TestbedBuildSettings INTERFACE cxx_std_20)
+add_library(vne::testbed::BuildSettings ALIAS TestbedBuildSettings)
 
 if(CMAKE_BUILD_TYPE MATCHES Debug)
-    target_compile_definitions(TemplateBuildSettings INTERFACE VNE_BUILD_TYPE_DEBUG VNE_DEVELOPER_BUILD)
+    target_compile_definitions(TestbedBuildSettings INTERFACE VNE_BUILD_TYPE_DEBUG VNE_DEVELOPER_BUILD)
 elseif(CMAKE_BUILD_TYPE MATCHES Release)
-    target_compile_definitions(TemplateBuildSettings INTERFACE VNE_BUILD_TYPE_RELEASE)
+    target_compile_definitions(TestbedBuildSettings INTERFACE VNE_BUILD_TYPE_RELEASE)
 elseif(CMAKE_BUILD_TYPE MATCHES RelWithDebInfo)
-    target_compile_definitions(TemplateBuildSettings INTERFACE VNE_BUILD_TYPE_RELWITHDEBINFO)
+    target_compile_definitions(TestbedBuildSettings INTERFACE VNE_BUILD_TYPE_RELWITHDEBINFO)
 elseif(CMAKE_BUILD_TYPE MATCHES MinSizeRel)
-    target_compile_definitions(TemplateBuildSettings INTERFACE VNE_BUILD_TYPE_MINSIZEREL)
+    target_compile_definitions(TestbedBuildSettings INTERFACE VNE_BUILD_TYPE_MINSIZEREL)
 endif()
 
 if(VNE_TARGET_PLATFORM STREQUAL "Windows")
-    target_compile_definitions(TemplateBuildSettings INTERFACE VNE_PLATFORM_WIN)
+    target_compile_definitions(TestbedBuildSettings INTERFACE VNE_PLATFORM_WIN)
 elseif(VNE_TARGET_PLATFORM STREQUAL "Linux")
-    target_compile_definitions(TemplateBuildSettings INTERFACE VNE_PLATFORM_LINUX)
+    target_compile_definitions(TestbedBuildSettings INTERFACE VNE_PLATFORM_LINUX)
 elseif(VNE_TARGET_PLATFORM STREQUAL "macOS")
-    target_compile_definitions(TemplateBuildSettings INTERFACE VNE_PLATFORM_MACOS)
+    target_compile_definitions(TestbedBuildSettings INTERFACE VNE_PLATFORM_MACOS)
 elseif(VNE_TARGET_PLATFORM STREQUAL "iOS")
-    target_compile_definitions(TemplateBuildSettings INTERFACE VNE_PLATFORM_IOS)
+    target_compile_definitions(TestbedBuildSettings INTERFACE VNE_PLATFORM_IOS)
 elseif(VNE_TARGET_PLATFORM STREQUAL "visionOS")
-    target_compile_definitions(TemplateBuildSettings INTERFACE VNE_PLATFORM_VISIONOS)
+    target_compile_definitions(TestbedBuildSettings INTERFACE VNE_PLATFORM_VISIONOS)
 elseif(VNE_TARGET_PLATFORM STREQUAL "Android")
-    target_compile_definitions(TemplateBuildSettings INTERFACE VNE_PLATFORM_ANDROID)
+    target_compile_definitions(TestbedBuildSettings INTERFACE VNE_PLATFORM_ANDROID)
 elseif(VNE_TARGET_PLATFORM STREQUAL "Web")
-    target_compile_definitions(TemplateBuildSettings INTERFACE VNE_PLATFORM_WEB)
+    target_compile_definitions(TestbedBuildSettings INTERFACE VNE_PLATFORM_WEB)
 endif()
 
 #==============================================================================
@@ -242,7 +242,7 @@ add_subdirectory(src)
 #==============================================================================
 # Tests
 #==============================================================================
-if(VNE_TEMPLATE_TESTS)
+if(VNE_TESTBED_TESTS)
     enable_testing()
     add_subdirectory(tests)
 endif()
@@ -250,7 +250,7 @@ endif()
 #==============================================================================
 # Examples
 #==============================================================================
-if(VNE_TEMPLATE_EXAMPLES)
+if(VNE_TESTBED_EXAMPLES)
     add_subdirectory(examples)
 endif()
 
@@ -264,13 +264,13 @@ if(ENABLE_DOXYGEN)
         set(DOXYGEN_OUT ${CMAKE_BINARY_DIR}/doxyfile)
         set(DOXYGEN_HAVE_DOT ${DOXYGEN_DOT_FOUND})
         configure_file(${DOXYGEN_IN} ${DOXYGEN_OUT} @ONLY)
-        add_custom_target(vnetemplate_doc_doxygen ALL
+        add_custom_target(vnetestbed_doc_doxygen ALL
             COMMAND ${DOXYGEN_EXECUTABLE} ${DOXYGEN_OUT}
             WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
             COMMENT "Generating API documentation with Doxygen"
             VERBATIM
         )
-        message(STATUS "Doxygen target: vnetemplate_doc_doxygen")
+        message(STATUS "Doxygen target: vnetestbed_doc_doxygen")
     else()
         message(STATUS "Doxygen not found. Install doxygen to build documentation.")
     endif()
@@ -280,7 +280,7 @@ endif()
 # Installation
 #==============================================================================
 include(GNUInstallDirs)
-install(TARGETS vnetemplate TemplateWarnings TemplateBuildSettings
+install(TARGETS vnetestbed TestbedWarnings TestbedBuildSettings
     LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
     ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
     RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
@@ -288,4 +288,4 @@ install(TARGETS vnetemplate TemplateWarnings TemplateBuildSettings
 )
 install(DIRECTORY include/vertexnova/ DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/vertexnova FILES_MATCHING PATTERN "*.h")
 install(DIRECTORY src/vertexnova/ DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/vertexnova FILES_MATCHING PATTERN "*.h")
-install(FILES ${CMAKE_BINARY_DIR}/config.h DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/vertexnova/template)
+install(FILES ${CMAKE_BINARY_DIR}/config.h DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/vertexnova/testbed)

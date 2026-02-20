@@ -1,5 +1,5 @@
 #==============================================================================
-# VneTemplate Windows Build Script (PowerShell)
+# VneTestbed Windows Build Script (PowerShell)
 #==============================================================================
 # Copyright (c) 2026 Ajeet Singh Yadav. All rights reserved.
 # Licensed under the Apache License, Version 2.0 (the "License")
@@ -38,7 +38,7 @@ if (-not $Generator) {
 }
 
 $BuildDir = Join-Path $ProjectRoot "build\$BuildType\build-windows-msvc"
-$ConfigureCmd = "cmake -B `"$BuildDir`" -S `"$ProjectRoot`" -DCMAKE_BUILD_TYPE=$BuildType -DVNE_TEMPLATE_TESTS=ON $Generator"
+$ConfigureCmd = "cmake -B `"$BuildDir`" -S `"$ProjectRoot`" -DCMAKE_BUILD_TYPE=$BuildType -DVNE_TESTBED_TESTS=ON $Generator"
 $BuildCmd = "cmake --build `"$BuildDir`" --config $BuildType --parallel $Jobs"
 $TestCmd = "ctest --test-dir `"$BuildDir`" --output-on-failure -C $BuildType"
 

@@ -1,6 +1,6 @@
 # Dependencies
 
-This directory holds external and internal dependencies for VneTemplate.
+This directory holds external and internal dependencies for VneTestbed.
 
 ## Layout
 
@@ -45,7 +45,7 @@ The library optionally links to VertexNova internal dependencies when present:
 - **deps/internal/vnecommon** – Common utilities.
 - **deps/internal/vnelogging** – Logging (e.g. spdlog-based).
 
-These are not shipped with the template. Add them as git submodules or clone the repositories into the paths above. See the README in each internal dependency directory for instructions and recommended versions.
+These are not shipped with the testbed. Add them as git submodules or clone the repositories into the paths above. See the README in each internal dependency directory for instructions and recommended versions.
 
 After adding internal deps, run:
 

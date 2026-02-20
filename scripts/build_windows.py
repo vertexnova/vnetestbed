@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
 """
-VneTemplate Windows Build Script
+VneTestbed Windows Build Script
 Copyright (c) 2024 Ajeet Singh Yadav. All rights reserved.
 Licensed under the Apache License, Version 2.0 (the "License")
 
-This script builds VneTemplate for Windows with Visual Studio integration.
+This script builds VneTestbed for Windows with Visual Studio integration.
 """
 
 import os
@@ -92,7 +92,7 @@ def check_cmake() -> bool:
 
 
 def interactive_mode(config: BuildConfig):
-    print("=== VneTemplate Interactive Build Configuration ===")
+    print("=== VneTestbed Interactive Build Configuration ===")
     print(f"Detected Platform: {config.platform}\n")
     print("Select Build Type:\n1) Debug (default)\n2) Release\n3) RelWithDebInfo\n4) MinSizeRel")
     build_choice = input("Enter choice (1-4) [1]: ").strip()
@@ -119,7 +119,7 @@ def build_cmake_command(project_root: Path, build_type: str) -> List[str]:
     return [
         "cmake", "-G", "Visual Studio 17 2022", "-A", "x64",
         "-DCMAKE_BUILD_TYPE=" + build_type, "-DCMAKE_C_COMPILER=cl", "-DCMAKE_CXX_COMPILER=cl",
-        "-DVNE_TEMPLATE_TESTS=ON", str(project_root),
+        "-DVNE_TESTBED_TESTS=ON", str(project_root),
     ]
 
 
@@ -164,7 +164,7 @@ def run_tests(build_dir: Path, build_type: str) -> bool:
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Build VneTemplate for Windows")
+    parser = argparse.ArgumentParser(description="Build VneTestbed for Windows")
     parser.add_argument("-t", "--build-type", choices=["Debug", "Release", "RelWithDebInfo", "MinSizeRel"], default="Debug")
     parser.add_argument("-a", "--action", choices=["configure", "build", "configure_and_build", "test"], default="configure_and_build")
     parser.add_argument("-j", "--jobs", type=int, default=10)

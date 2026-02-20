@@ -1,10 +1,10 @@
 # Diagrams
 
-Draw.io source files for the VneTemplate documentation.
+Draw.io source files for the VneTestbed documentation.
 
 ## Export to PNG
 
-The `template.md` document references PNG images. Export the `.drawio` files to PNG using one of these methods:
+The `testbed.md` document references PNG images. Export the `.drawio` files to PNG using one of these methods:
 
 ### Option 1: draw.io Desktop (macOS/Windows/Linux)
 
@@ -31,8 +31,8 @@ drawio -x -f png -o . .
 
 ### Files
 
-| Source | Output | Used in template.md | Contents |
+| Source | Output | Used in testbed.md | Contents |
 |--------|--------|---------------------|----------|
-| context.drawio | context.png | Overview | C4 system context: Application → VneTemplate (get_version, hello) |
+| context.drawio | context.png | Overview | C4 system context: Application → VneTestbed (get_version, hello) |
 | api.drawio | api.png | API usage | API flow: get_version(), hello() |
 | architecture.drawio | architecture.png | Project layout | Folder structure and build flow |

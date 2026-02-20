@@ -1,7 +1,7 @@
 #!/bin/bash
 
 #==============================================================================
-# VneTemplate Documentation Generation Script
+# VneTestbed Documentation Generation Script
 # Drives Doxygen API docs via CMake and optionally validates links.
 #==============================================================================
 # Copyright (c) 2026 Ajeet Singh Yadav. All rights reserved.
@@ -49,7 +49,7 @@ check_prerequisites() {
     log_info "Checking prerequisites..."
 
     if [[ ! -f "$PROJECT_ROOT/CMakeLists.txt" ]]; then
-        log_error "Not in VneTemplate project root. Please run from project root."
+        log_error "Not in VneTestbed project root. Please run from project root."
         exit 1
     fi
 
@@ -88,7 +88,7 @@ generate_api_docs() {
     cd "$BUILD_DIR"
 
     cmake -DENABLE_DOXYGEN=ON ..
-    cmake --build . --target VneTemplate_doc_doxygen
+    cmake --build . --target vnetestbed_doc_doxygen
 
     cd "$PROJECT_ROOT"
 
@@ -177,7 +177,7 @@ generate_coverage_report() {
 
 # Main function
 main() {
-    log_info "Starting VneTemplate documentation generation..."
+    log_info "Starting VneTestbed documentation generation..."
 
     check_prerequisites
     generate_api_docs
@@ -193,7 +193,7 @@ main() {
 
 # Help function
 show_help() {
-    echo "VneTemplate Documentation Generator"
+    echo "VneTestbed Documentation Generator"
     echo ""
     echo "Usage: $0 [OPTIONS]"
     echo ""
