@@ -14,8 +14,8 @@
 	path = deps/external/glfw
 	url = https://github.com/glfw/glfw.git
 	branch = latest
-[submodule "deps/internal/opengl-glad"]
-	path = deps/internal/opengl-glad
+[submodule "deps/internal/glad"]
+	path = deps/internal/glad
 	url = https://github.com/vertexnova/opengl-glad.git
 [submodule "deps/internal/vneevents"]
 	path = deps/internal/vneevents
@@ -26,6 +26,6 @@
 [submodule "deps/internal/vnescene"]
 	path = deps/internal/vnescene
 	url = https://github.com/vertexnova/vnescene.git
-[submodule "deps/internal/vneintract"]
-	path = deps/internal/vneintract
+[submodule "deps/internal/vneintraction"]
+	path = deps/internal/vneintraction
 	url = https://github.com/vertexnova/vneintraction.git

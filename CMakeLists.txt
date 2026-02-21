@@ -156,7 +156,7 @@ endfunction()
 _vnetestbed_configure_glfw_dep()
 
 function(_vnetestbed_configure_glad_dep)
-    vne_use_dep(TARGET glad::glad SUBDIR "${VNE_DEPS_INTERNAL_DIR}/opengl-glad" BINARY_DIR "${CMAKE_BINARY_DIR}/deps/internal/opengl-glad")
+    vne_use_dep(TARGET glad::glad SUBDIR "${VNE_DEPS_INTERNAL_DIR}/glad" BINARY_DIR "${CMAKE_BINARY_DIR}/deps/internal/glad")
 endfunction()
 _vnetestbed_configure_glad_dep()
 
