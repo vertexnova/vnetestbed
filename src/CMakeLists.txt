@@ -10,10 +10,16 @@
 
 set(SOURCE_FILES
     vertexnova/testbed/testbed.cpp
+    vertexnova/testbed/plugin_manager.cpp
 )
 
 set(HEADER_FILES
     ${VNE_INCLUDE_DIR}/vertexnova/testbed/testbed.h
+    ${VNE_INCLUDE_DIR}/vertexnova/testbed/i_plugin.h
+    ${VNE_INCLUDE_DIR}/vertexnova/testbed/i_render_adapter.h
+    ${VNE_INCLUDE_DIR}/vertexnova/testbed/i_debug_draw.h
+    ${VNE_INCLUDE_DIR}/vertexnova/testbed/plugin_manager.h
+    ${VNE_INCLUDE_DIR}/vertexnova/testbed/plugins/scene_inspector_plugin.h
 )
 
 add_library(vnetestbed STATIC ${SOURCE_FILES} ${HEADER_FILES})
