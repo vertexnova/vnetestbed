@@ -232,7 +232,7 @@ function(_vnetestbed_configure_vnescene_dep)
 endfunction()
 _vnetestbed_configure_vnescene_dep()
 
-function(_vnetestbed_configure_vneintract_dep)
+function(_vnetestbed_configure_vneintraction_dep)
     get_property(_vt_build_tests_ty CACHE BUILD_TESTS PROPERTY TYPE)
     if(NOT _vt_build_tests_ty STREQUAL "NOTFOUND" AND _vt_build_tests_ty)
         set(_vt_build_tests_saved "${BUILD_TESTS}")
@@ -241,7 +241,7 @@ function(_vnetestbed_configure_vneintract_dep)
     if(NOT _vt_build_examples_ty STREQUAL "NOTFOUND" AND _vt_build_examples_ty)
         set(_vt_build_examples_saved "${BUILD_EXAMPLES}")
     endif()
-    vne_use_dep(TARGET vne::intract SUBDIR "${VNE_DEPS_INTERNAL_DIR}/vneintract" BINARY_DIR "${CMAKE_BINARY_DIR}/deps/internal/vneintract"
+    vne_use_dep(TARGET vne::intraction SUBDIR "${VNE_DEPS_INTERNAL_DIR}/vneintraction" BINARY_DIR "${CMAKE_BINARY_DIR}/deps/internal/vneintraction"
         CACHE_VARS BUILD_TESTS OFF BUILD_EXAMPLES OFF)
     if(DEFINED _vt_build_tests_saved)
         set(BUILD_TESTS "${_vt_build_tests_saved}" CACHE BOOL "" FORCE)
@@ -254,7 +254,7 @@ function(_vnetestbed_configure_vneintract_dep)
         unset(BUILD_EXAMPLES CACHE)
     endif()
 endfunction()
-_vnetestbed_configure_vneintract_dep()
+_vnetestbed_configure_vneintraction_dep()
 
 # Include dirs and config
 set(VNE_INCLUDE_DIR ${PROJECT_SOURCE_DIR}/include)

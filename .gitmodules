@@ -28,4 +28,4 @@
 	url = https://github.com/vertexnova/vnescene.git
 [submodule "deps/internal/vneintract"]
 	path = deps/internal/vneintract
-	url = https://github.com/vertexnova/vneintract.git
+	url = https://github.com/vertexnova/vneintraction.git
