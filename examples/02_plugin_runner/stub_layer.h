@@ -10,32 +10,16 @@
  * ----------------------------------------------------------------------
  */
 
-/**
- * @file scene_inspector_plugin.h
- * @brief Example layer: scene graph inspector panel.
- *
- * Displays a tree view of the scene graph with transform, camera, and
- * light panels using ImGui.  This layer does **not** depend on any
- * specific rendering backend; it only reads scene data and draws UI.
- *
- * This stub provides empty default implementations so that derived
- * classes (or unit tests) can override only the hooks they care about.
- */
-
 #include "vertexnova/testbed/layer.h"
 #include "vertexnova/testbed/render_context.h"
 
 namespace vne {
 namespace testbed {
 
-/**
- * @class SceneInspectorPlugin
- * @brief Example layer: scene graph inspector panel (stub).
- */
-class SceneInspectorPlugin : public ILayer {
-   public:
-    SceneInspectorPlugin()
-        : ILayer("SceneInspector") {}
+/** Stub layer to validate LayerStack lifecycle. */
+struct StubLayer : ILayer {
+    StubLayer()
+        : ILayer("StubLayer") {}
 
     void onAttach() override {}
     void onDetach() override {}

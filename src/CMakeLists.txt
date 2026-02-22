@@ -10,16 +10,18 @@
 
 set(SOURCE_FILES
     vertexnova/testbed/plugin_registry.cpp
-    vertexnova/testbed/plugin_manager.cpp
+    vertexnova/testbed/layer.cpp
+    vertexnova/testbed/layer_stack.cpp
 )
 
 set(HEADER_FILES
-    ${VNE_INCLUDE_DIR}/vertexnova/testbed/plugin.h
+    ${VNE_INCLUDE_DIR}/vertexnova/testbed/layer.h
+    ${VNE_INCLUDE_DIR}/vertexnova/testbed/layer_stack.h
+    ${VNE_INCLUDE_DIR}/vertexnova/testbed/render_context.h
     ${VNE_INCLUDE_DIR}/vertexnova/testbed/app_context.h
     ${VNE_INCLUDE_DIR}/vertexnova/testbed/plugin_registry.h
     ${VNE_INCLUDE_DIR}/vertexnova/testbed/render_adapter.h
     ${VNE_INCLUDE_DIR}/vertexnova/testbed/debug_draw.h
-    ${VNE_INCLUDE_DIR}/vertexnova/testbed/plugin_manager.h
     ${VNE_INCLUDE_DIR}/vertexnova/testbed/plugins/scene_inspector_plugin.h
 )
 

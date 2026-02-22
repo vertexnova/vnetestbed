@@ -1,5 +1,5 @@
 #==============================================================================
-# 02_plugin_runner Example: GLFW window + plugin lifecycle (PluginManager)
+# 02_plugin_runner Example: GLFW window + layer lifecycle (LayerStack)
 #==============================================================================
 
 if(NOT TARGET glfw OR NOT TARGET glad::glad)

@@ -12,10 +12,12 @@
 
 /**
  * @file plugin_registry.h
- * @brief Singleton registry for testbed plugins and REGISTER_PLUGIN macro.
+ * @brief Singleton registry for testbed layers and REGISTER_PLUGIN macro.
+ *
+ * Optional: for static registration. Prefer LayerStack::pushLayer for explicit registration.
  */
 
-#include "vertexnova/testbed/plugin.h"
+#include "vertexnova/testbed/layer.h"
 
 #include <memory>
 #include <string>
@@ -26,23 +28,23 @@ namespace testbed {
 
 /**
  * @class PluginRegistry
- * @brief Singleton registry of IPlugin instances; runner iterates to call lifecycle.
+ * @brief Singleton registry of ILayer instances; runner can transfer to LayerStack.
  */
 class PluginRegistry {
    public:
     static PluginRegistry& instance();
 
-    void registerPlugin(std::string name, std::unique_ptr<IPlugin> plugin);
+    void registerPlugin(std::string name, std::unique_ptr<ILayer> layer);
 
-    /** @brief Get all registered plugins in registration order. */
-    std::vector<IPlugin*> getPlugins();
+    /** @brief Get all registered layers in registration order. */
+    std::vector<ILayer*> getPlugins();
 
     PluginRegistry(const PluginRegistry&) = delete;
     PluginRegistry& operator=(const PluginRegistry&) = delete;
 
    private:
     PluginRegistry() = default;
-    std::vector<std::pair<std::string, std::unique_ptr<IPlugin>>> plugins_;
+    std::vector<std::pair<std::string, std::unique_ptr<ILayer>>> plugins_;
 };
 
 /**

@@ -10,8 +10,9 @@
  */
 
 #include "vertexnova/testbed/app_context.h"
-#include "vertexnova/testbed/plugin_manager.h"
-#include "stub_plugin.h"
+#include "vertexnova/testbed/layer_stack.h"
+#include "vertexnova/testbed/render_context.h"
+#include "stub_layer.h"
 
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
@@ -21,8 +22,6 @@
 
 namespace vne {
 namespace testbed {
-
-// --- Runner-side implementations of core interfaces (GLFW/OpenGL) ---
 
 class GlfwWindow : public IWindow {
    public:
@@ -67,7 +66,7 @@ int main() {
 #ifdef __APPLE__
     glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GLFW_TRUE);
 #endif
-    GLFWwindow* window = glfwCreateWindow(800, 600, "vnetestbed plugin runner", nullptr, nullptr);
+    GLFWwindow* window = glfwCreateWindow(800, 600, "vnetestbed layer runner", nullptr, nullptr);
     if (!window) {
         glfwTerminate();
         return 1;
@@ -82,34 +81,44 @@ int main() {
     vne::testbed::GlfwWindow glfwWindow(window);
     vne::testbed::StubRendererAdapter stubRenderer;
 
-    vne::testbed::AppContext ctx;
-    ctx.window = &glfwWindow;
-    ctx.renderer = &stubRenderer;
-    ctx.debugDraw = nullptr;
+    vne::testbed::AppContext app_ctx;
+    app_ctx.window = &glfwWindow;
+    app_ctx.renderer = &stubRenderer;
+    app_ctx.debugDraw = nullptr;
 
-    vne::testbed::PluginManager mgr;
-    mgr.addPlugin(std::make_unique<vne::testbed::StubPlugin>());
-    mgr.init();
+    vne::testbed::LayerStack layer_stack;
+    layer_stack.pushLayer(std::make_unique<vne::testbed::StubLayer>());
 
     auto prev = std::chrono::steady_clock::now();
-    while (!ctx.window->shouldClose()) {
+    while (!app_ctx.window->shouldClose()) {
+        app_ctx.window->pollEvents();
+
         auto now = std::chrono::steady_clock::now();
         float dt = static_cast<float>(std::chrono::duration<double>(now - prev).count());
         prev = now;
 
-        mgr.update(dt);
-        if (ctx.renderer)
-            ctx.renderer->beginFrame();
-        mgr.render();
-        mgr.imGui();
-        if (ctx.renderer)
-            ctx.renderer->endFrame();
+        vne::testbed::RenderContext render_ctx{};
+        render_ctx.frame_info.width = app_ctx.window->getWidth();
+        render_ctx.frame_info.height = app_ctx.window->getHeight();
+        render_ctx.frame_info.dt = dt;
+        render_ctx.debug_draw = nullptr;
+
+        layer_stack.onUpdate(dt);
+        layer_stack.onGuiBegin(render_ctx);
+        layer_stack.onGuiRender(render_ctx);
+        layer_stack.onGuiEnd(render_ctx);
+
+        if (app_ctx.renderer)
+            app_ctx.renderer->beginFrame();
+        layer_stack.onBeginRender(render_ctx);
+        layer_stack.onRender(render_ctx);
+        if (app_ctx.renderer)
+            app_ctx.renderer->endFrame();
 
         glfwSwapBuffers(window);
-        ctx.window->pollEvents();
     }
 
-    mgr.shutdown();
+    layer_stack.clear();
 
     glfwDestroyWindow(window);
     glfwTerminate();

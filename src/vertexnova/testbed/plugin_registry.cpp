@@ -19,12 +19,12 @@ PluginRegistry& PluginRegistry::instance() {
     return reg;
 }
 
-void PluginRegistry::registerPlugin(std::string name, std::unique_ptr<IPlugin> plugin) {
-    plugins_.emplace_back(std::move(name), std::move(plugin));
+void PluginRegistry::registerPlugin(std::string name, std::unique_ptr<ILayer> layer) {
+    plugins_.emplace_back(std::move(name), std::move(layer));
 }
 
-std::vector<IPlugin*> PluginRegistry::getPlugins() {
-    std::vector<IPlugin*> out;
+std::vector<ILayer*> PluginRegistry::getPlugins() {
+    std::vector<ILayer*> out;
     out.reserve(plugins_.size());
     for (auto& p : plugins_) {
         out.push_back(p.second.get());

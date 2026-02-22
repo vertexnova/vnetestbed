@@ -10,5 +10,5 @@ endif()
 # 01 - Hello Testbed: minimal usage of vne::testbed (hello, get_version)
 add_subdirectory(01_hello_testbed)
 
-# 02 - Plugin runner: GLFW window + plugin lifecycle (PluginRegistry)
+# 02 - Layer runner: GLFW window + layer lifecycle (LayerStack)
 add_subdirectory(02_plugin_runner)
