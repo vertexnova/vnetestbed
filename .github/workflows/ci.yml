@@ -73,7 +73,8 @@ jobs:
             -DCMAKE_C_COMPILER=${{ matrix.c_compiler }} \
             -DCMAKE_CXX_COMPILER=${{ matrix.cpp_compiler }} \
             -DVNE_TESTBED_CI=ON \
-            -DVNE_WITH_VNEINTRACTION=ON
+            -DVNE_WITH_VNEINTRACTION=ON \
+            -DGLFW_BUILD_WAYLAND=OFF
 
       - name: Build
         run: cmake --build build --config Release --parallel
@@ -100,6 +101,7 @@ jobs:
             -DCMAKE_CXX_COMPILER=g++ \
             -DVNE_TESTBED_CI=ON \
             -DVNE_WITH_VNEINTRACTION=ON \
+            -DGLFW_BUILD_WAYLAND=OFF \
             -DWARNINGS_AS_ERRORS=ON \
             -DENABLE_COVERAGE=ON
 
@@ -203,6 +205,7 @@ jobs:
             -DCMAKE_CXX_COMPILER=clang++ \
             -DVNE_TESTBED_CI=ON \
             -DVNE_WITH_VNEINTRACTION=ON \
+            -DGLFW_BUILD_WAYLAND=OFF \
             -DWARNINGS_AS_ERRORS=ON
 
       - name: Build
