@@ -25,7 +25,7 @@ void PluginRegistry::registerPlugin(std::unique_ptr<IPlugin> plugin) {
     }
 }
 
-void PluginRegistry::createAndPushLayers(LayerStack& stack) {
+void PluginRegistry::createAndPushLayers(LayerStack& stack, AppContext& ctx) {
     for (auto& plugin : plugins_) {
         if (!plugin) {
             continue;
@@ -33,7 +33,7 @@ void PluginRegistry::createAndPushLayers(LayerStack& stack) {
         auto layers = plugin->createLayers();
         for (auto& layer : layers) {
             if (layer) {
-                stack.pushLayer(std::move(layer));
+                stack.pushLayer(std::move(layer), ctx);
             }
         }
     }

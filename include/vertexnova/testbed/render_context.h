@@ -21,7 +21,7 @@
 namespace vne {
 namespace testbed {
 
-class IDebugDraw;
+struct IDebugDraw;
 
 /** @brief Per-frame information passed to layers. */
 struct FrameInfo {

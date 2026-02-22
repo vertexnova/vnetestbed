@@ -18,6 +18,7 @@
  * Layers and overlays are stored separately; overlays render on top.
  */
 
+#include "vertexnova/testbed/app_context.h"
 #include "vertexnova/testbed/layer.h"
 #include "vertexnova/testbed/render_context.h"
 
@@ -48,8 +49,8 @@ class LayerStack {
     LayerStack(LayerStack&&) noexcept = default;
     LayerStack& operator=(LayerStack&&) noexcept = default;
 
-    void pushLayer(std::unique_ptr<ILayer> layer);
-    void pushOverlay(std::unique_ptr<ILayer> overlay);
+    void pushLayer(std::unique_ptr<ILayer> layer, AppContext& ctx);
+    void pushOverlay(std::unique_ptr<ILayer> overlay, AppContext& ctx);
     std::unique_ptr<ILayer> popLayer();
     std::unique_ptr<ILayer> popOverlay();
     void clear();

@@ -11,7 +11,7 @@
 
 #include <gtest/gtest.h>
 
-#include "vertexnova/testbed/debug_draw.h"
+#include "vertexnova/testbed/app_context.h"
 #include "vertexnova/testbed/layer.h"
 #include "vertexnova/testbed/layer_stack.h"
 #include "vertexnova/testbed/plugin_registry.h"
@@ -37,7 +37,7 @@ struct RecordingLayer : public vne::testbed::ILayer {
     RecordingLayer()
         : ILayer("RecordingLayer") {}
 
-    void onAttach() override { ++attach_count; }
+    void onAttach(vne::testbed::AppContext& /*ctx*/) override { ++attach_count; }
     void onDetach() override { ++detach_count; }
     void onUpdate(float dt) override {
         ++update_count;
@@ -62,18 +62,20 @@ TEST(LayerStack, StartsEmpty) {
 
 TEST(LayerStack, PushLayerIncreasesCount) {
     vne::testbed::LayerStack stack;
-    stack.pushLayer(std::make_unique<RecordingLayer>());
+    vne::testbed::AppContext ctx{};
+    stack.pushLayer(std::make_unique<RecordingLayer>(), ctx);
     EXPECT_EQ(stack.getCount(), 1u);
-    stack.pushLayer(std::make_unique<RecordingLayer>());
+    stack.pushLayer(std::make_unique<RecordingLayer>(), ctx);
     EXPECT_EQ(stack.getCount(), 2u);
 }
 
 TEST(LayerStack, PushLayerCallsOnAttach) {
     vne::testbed::LayerStack stack;
+    vne::testbed::AppContext ctx{};
     auto* a = new RecordingLayer;
     auto* b = new RecordingLayer;
-    stack.pushLayer(std::unique_ptr<RecordingLayer>(a));
-    stack.pushLayer(std::unique_ptr<RecordingLayer>(b));
+    stack.pushLayer(std::unique_ptr<RecordingLayer>(a), ctx);
+    stack.pushLayer(std::unique_ptr<RecordingLayer>(b), ctx);
 
     EXPECT_EQ(a->attach_count, 1);
     EXPECT_EQ(b->attach_count, 1);
@@ -81,8 +83,9 @@ TEST(LayerStack, PushLayerCallsOnAttach) {
 
 TEST(LayerStack, UpdatePassesDeltaTime) {
     vne::testbed::LayerStack stack;
+    vne::testbed::AppContext ctx{};
     auto* p = new RecordingLayer;
-    stack.pushLayer(std::unique_ptr<RecordingLayer>(p));
+    stack.pushLayer(std::unique_ptr<RecordingLayer>(p), ctx);
 
     stack.onUpdate(0.016F);
 
@@ -92,10 +95,11 @@ TEST(LayerStack, UpdatePassesDeltaTime) {
 
 TEST(LayerStack, OnRenderCallsOnRenderOnAllLayers) {
     vne::testbed::LayerStack stack;
+    vne::testbed::AppContext app_ctx{};
     auto* a = new RecordingLayer;
     auto* b = new RecordingLayer;
-    stack.pushLayer(std::unique_ptr<RecordingLayer>(a));
-    stack.pushLayer(std::unique_ptr<RecordingLayer>(b));
+    stack.pushLayer(std::unique_ptr<RecordingLayer>(a), app_ctx);
+    stack.pushLayer(std::unique_ptr<RecordingLayer>(b), app_ctx);
 
     vne::testbed::RenderContext ctx{};
     stack.onRender(ctx);
@@ -106,8 +110,9 @@ TEST(LayerStack, OnRenderCallsOnRenderOnAllLayers) {
 
 TEST(LayerStack, OnGuiRenderCallsOnGuiRenderOnAllLayers) {
     vne::testbed::LayerStack stack;
+    vne::testbed::AppContext app_ctx{};
     auto* p = new RecordingLayer;
-    stack.pushLayer(std::unique_ptr<RecordingLayer>(p));
+    stack.pushLayer(std::unique_ptr<RecordingLayer>(p), app_ctx);
 
     vne::testbed::RenderContext ctx{};
     stack.onGuiRender(ctx);
@@ -117,8 +122,9 @@ TEST(LayerStack, OnGuiRenderCallsOnGuiRenderOnAllLayers) {
 
 TEST(LayerStack, ClearCallsOnDetach) {
     vne::testbed::LayerStack stack;
-    stack.pushLayer(std::make_unique<RecordingLayer>());
-    stack.pushLayer(std::make_unique<RecordingLayer>());
+    vne::testbed::AppContext ctx{};
+    stack.pushLayer(std::make_unique<RecordingLayer>(), ctx);
+    stack.pushLayer(std::make_unique<RecordingLayer>(), ctx);
 
     auto ptr1 = stack.popLayer();
     auto ptr2 = stack.popLayer();
@@ -133,7 +139,8 @@ TEST(LayerStack, ClearCallsOnDetach) {
 
 TEST(LayerStack, ClearClearsLayers) {
     vne::testbed::LayerStack stack;
-    stack.pushLayer(std::make_unique<RecordingLayer>());
+    vne::testbed::AppContext ctx{};
+    stack.pushLayer(std::make_unique<RecordingLayer>(), ctx);
     EXPECT_EQ(stack.getCount(), 1u);
 
     stack.clear();
@@ -143,7 +150,8 @@ TEST(LayerStack, ClearClearsLayers) {
 
 TEST(LayerStack, FindLayerByName) {
     vne::testbed::LayerStack stack;
-    stack.pushLayer(std::make_unique<RecordingLayer>());
+    vne::testbed::AppContext ctx{};
+    stack.pushLayer(std::make_unique<RecordingLayer>(), ctx);
     auto* found = stack.findLayerByName("RecordingLayer");
     ASSERT_NE(found, nullptr);
     EXPECT_EQ(found->getName(), "RecordingLayer");
@@ -156,16 +164,17 @@ TEST(LayerStack, FindLayerByName) {
 
 TEST(SceneInspectorLayer, CanBeInstantiatedAndPushed) {
     vne::testbed::LayerStack stack;
-    stack.pushLayer(std::make_unique<vne::testbed::SceneInspectorLayer>());
+    vne::testbed::AppContext app_ctx{};
+    stack.pushLayer(std::make_unique<vne::testbed::SceneInspectorLayer>(), app_ctx);
     EXPECT_EQ(stack.getCount(), 1u);
 
-    vne::testbed::RenderContext ctx{};
+    vne::testbed::RenderContext render_ctx{};
     stack.onUpdate(0.016F);
-    stack.onBeginRender(ctx);
-    stack.onRender(ctx);
-    stack.onGuiBegin(ctx);
-    stack.onGuiRender(ctx);
-    stack.onGuiEnd(ctx);
+    stack.onBeginRender(render_ctx);
+    stack.onRender(render_ctx);
+    stack.onGuiBegin(render_ctx);
+    stack.onGuiRender(render_ctx);
+    stack.onGuiEnd(render_ctx);
     stack.clear();
     EXPECT_EQ(stack.getCount(), 0u);
 }
@@ -188,18 +197,19 @@ TEST(SceneInspectorPlugin, CreateLayersReturnsValidLayer) {
 
 TEST(PluginRegistry, CreateAndPushLayersPopulatesStack) {
     vne::testbed::LayerStack stack;
+    vne::testbed::AppContext app_ctx{};
     EXPECT_GE(vne::testbed::PluginRegistry::instance().getPluginCount(), 1u);
 
-    vne::testbed::PluginRegistry::instance().createAndPushLayers(stack);
+    vne::testbed::PluginRegistry::instance().createAndPushLayers(stack, app_ctx);
     EXPECT_GE(stack.getCount(), 1u);
 
     auto* found = stack.findLayerByName("SceneInspector");
     ASSERT_NE(found, nullptr);
     EXPECT_EQ(found->getName(), "SceneInspector");
 
-    vne::testbed::RenderContext ctx{};
+    vne::testbed::RenderContext render_ctx{};
     stack.onUpdate(0.016F);
-    stack.onGuiRender(ctx);
+    stack.onGuiRender(render_ctx);
     stack.clear();
 }
 

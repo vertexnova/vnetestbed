@@ -20,22 +20,22 @@ LayerStack::~LayerStack() {
     clear();
 }
 
-void LayerStack::pushLayer(std::unique_ptr<ILayer> layer) {
+void LayerStack::pushLayer(std::unique_ptr<ILayer> layer, AppContext& ctx) {
     if (!layer) {
         return;
     }
-    layer->onAttach();
+    layer->onAttach(ctx);
     if (layer->isEnabled()) {
         layer->onEnable();
     }
     layers_.push_back(std::move(layer));
 }
 
-void LayerStack::pushOverlay(std::unique_ptr<ILayer> overlay) {
+void LayerStack::pushOverlay(std::unique_ptr<ILayer> overlay, AppContext& ctx) {
     if (!overlay) {
         return;
     }
-    overlay->onAttach();
+    overlay->onAttach(ctx);
     if (overlay->isEnabled()) {
         overlay->onEnable();
     }

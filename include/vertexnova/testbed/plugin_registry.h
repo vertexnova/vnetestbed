@@ -18,6 +18,7 @@
  * use createAndPushLayers(stack) to populate a LayerStack.
  */
 
+#include "vertexnova/testbed/app_context.h"
 #include "vertexnova/testbed/layer_stack.h"
 #include "vertexnova/testbed/plugin.h"
 
@@ -38,7 +39,7 @@ class PluginRegistry {
     void registerPlugin(std::unique_ptr<IPlugin> plugin);
 
     /** @brief Create layers from all plugins and push them to the stack. */
-    void createAndPushLayers(LayerStack& stack);
+    void createAndPushLayers(LayerStack& stack, AppContext& ctx);
 
     /** @brief Number of registered plugins (for tests). */
     [[nodiscard]] std::size_t getPluginCount() const { return plugins_.size(); }

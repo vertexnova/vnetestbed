@@ -14,11 +14,13 @@
  * @file layer.h
  * @brief Layer interface aligned with samples/core Layer_I.
  *
- * LayerStack invokes: onAttach once, then each frame onUpdate -> onBeginRender ->
+ * LayerStack invokes: onAttach(ctx) once with AppContext so layers can cache
+ * window/renderer/debugDraw; then each frame onUpdate -> onBeginRender ->
  * onRender -> onGuiBegin -> onGuiRender -> onGuiEnd; onDetach on exit.
  * onEvent when events occur.
  */
 
+#include "vertexnova/testbed/app_context.h"
 #include "vertexnova/testbed/render_context.h"
 
 #include <string>
@@ -50,7 +52,7 @@ class ILayer {
     ILayer& operator=(ILayer&&) = delete;
 
     // Lifecycle
-    virtual void onAttach() {}
+    virtual void onAttach(AppContext& ctx) { (void)ctx; }
     virtual void onDetach() {}
     virtual void onEnable() {}
     virtual void onDisable() {}

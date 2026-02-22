@@ -37,7 +37,7 @@ class SceneInspectorLayer : public ILayer {
     SceneInspectorLayer()
         : ILayer("SceneInspector") {}
 
-    void onAttach() override {}
+    void onAttach(AppContext& /*ctx*/) override {}
     void onDetach() override {}
     void onUpdate(float /*dt*/) override {}
     void onBeginRender(const RenderContext& /*ctx*/) override {}
