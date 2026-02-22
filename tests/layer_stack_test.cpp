@@ -301,7 +301,7 @@ TEST_F(LayerStackTest, SetEnabledTrueCallsOnEnable) {
 
 TEST_F(LayerStackTest, SetEnabledNoOpWhenAlreadySame) {
     RecordingLayer layer("Test");
-    layer.setEnabled(true);   // already true -> no callback
+    layer.setEnabled(true);  // already true -> no callback
     EXPECT_EQ(layer.enable_count, 0);
     EXPECT_EQ(layer.disable_count, 0);
 
@@ -396,7 +396,8 @@ struct MockPlugin : public vne::testbed::IPlugin {
     int layer_count_{0};
 
     MockPlugin(std::string name, int layer_count)
-        : name_(std::move(name)), layer_count_(layer_count) {}
+        : name_(std::move(name))
+        , layer_count_(layer_count) {}
 
     std::string getName() const override { return name_; }
 
