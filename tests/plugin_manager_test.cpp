@@ -109,7 +109,9 @@ TEST(PluginManager, ShutdownCallsOnShutdownInReverseOrder) {
     struct OrderedPlugin : vne::testbed::IPlugin {
         int id;
         std::vector<int>* order;
-        OrderedPlugin(int id_, std::vector<int>* order_) : id(id_), order(order_) {}
+        OrderedPlugin(int id_, std::vector<int>* order_)
+            : id(id_)
+            , order(order_) {}
         void onInit() override {}
         void onUpdate(float) override {}
         void onRender() override {}
