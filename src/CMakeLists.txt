@@ -8,57 +8,45 @@
 # Autodoc:   yes
 #==============================================================================
 
-set(SOURCE_FILES
-    vertexnova/testbed/testbed.cpp
-)
-
-set(HEADER_FILES
-    ${VNE_INCLUDE_DIR}/vertexnova/testbed/testbed.h
-)
-
-add_library(vnetestbed STATIC ${SOURCE_FILES} ${HEADER_FILES})
-
-source_group("Sources" FILES ${SOURCE_FILES})
-source_group(TREE ${VNE_INCLUDE_DIR} PREFIX "Headers" FILES ${HEADER_FILES})
-
+add_library(vnetestbed INTERFACE)
 add_library(vne::testbed ALIAS vnetestbed)
 
 target_include_directories(vnetestbed
-    PUBLIC
+    INTERFACE
         $<BUILD_INTERFACE:${VNE_INCLUDE_DIR}>
         $<BUILD_INTERFACE:${VNE_SRC_DIR}>
         $<INSTALL_INTERFACE:include>
 )
 
 target_link_libraries(vnetestbed
-    PUBLIC
+    INTERFACE
         vne::testbed::Warnings
         vne::testbed::BuildSettings
 )
 
 if(TARGET vne::common)
-    target_link_libraries(vnetestbed PUBLIC vne::common)
+    target_link_libraries(vnetestbed INTERFACE vne::common)
 endif()
 if(TARGET vne::logging)
-    target_link_libraries(vnetestbed PUBLIC vne::logging)
+    target_link_libraries(vnetestbed INTERFACE vne::logging)
 endif()
 if(TARGET glfw)
-    target_link_libraries(vnetestbed PUBLIC glfw)
+    target_link_libraries(vnetestbed INTERFACE glfw)
 endif()
 if(TARGET glad::glad)
-    target_link_libraries(vnetestbed PUBLIC glad::glad)
+    target_link_libraries(vnetestbed INTERFACE glad::glad)
 endif()
 if(TARGET vne::events)
-    target_link_libraries(vnetestbed PUBLIC vne::events)
+    target_link_libraries(vnetestbed INTERFACE vne::events)
 endif()
 if(TARGET vne::math)
-    target_link_libraries(vnetestbed PUBLIC vne::math)
+    target_link_libraries(vnetestbed INTERFACE vne::math)
 endif()
 if(TARGET vne::scene)
-    target_link_libraries(vnetestbed PUBLIC vne::scene)
+    target_link_libraries(vnetestbed INTERFACE vne::scene)
 endif()
 if(TARGET vne::interaction)
-    target_link_libraries(vnetestbed PUBLIC vne::interaction)
+    target_link_libraries(vnetestbed INTERFACE vne::interaction)
 endif()
 
-target_compile_features(vnetestbed PUBLIC cxx_std_20)
+target_compile_features(vnetestbed INTERFACE cxx_std_20)

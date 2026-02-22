@@ -7,5 +7,5 @@ if(NOT TARGET vnetestbed)
     return()
 endif()
 
-# 01 - Hello Testbed: minimal usage of vne::testbed_ns (hello, get_version)
+# 01 - Hello Testbed: minimal usage of vne::testbed (hello, get_version)
 add_subdirectory(01_hello_testbed)

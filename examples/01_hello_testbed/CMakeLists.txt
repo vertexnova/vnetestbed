@@ -1,5 +1,5 @@
 #==============================================================================
-# 01_hello_testbed Example: minimal vnetestbed usage (hello, get_version)
+# 01_hello_testbed Example: minimal vnetestbed (logging only)
 #==============================================================================
 
 add_executable(example_01_hello_testbed main.cpp)

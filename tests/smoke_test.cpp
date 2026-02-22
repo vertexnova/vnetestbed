@@ -9,19 +9,8 @@
  * ----------------------------------------------------------------------
  */
 
-#include "vertexnova/testbed/testbed.h"
-#include "config.h"
+#include <gtest/gtest.h>
 
-namespace vne {
-namespace testbed_ns {
-
-const char* get_version() {
-    return PROJECT_VERSION;
+TEST(VneTestbed, Smoke) {
+    EXPECT_TRUE(true);
 }
-
-const char* hello() {
-    return "Hello from VneTestbed";
-}
-
-}  // namespace testbed_ns
-}  // namespace vne

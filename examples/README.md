@@ -19,7 +19,7 @@ Executables are placed in `build/bin/examples/`.
 
 ### 01_hello_testbed — Getting Started
 
-Minimal usage: call `vne::testbed_ns::hello()` and `get_version()`.
+Minimal usage: call `vne::testbed::hello()` and `get_version()`.
 
 **Run:** `./build/bin/examples/example_01_hello_testbed`
 

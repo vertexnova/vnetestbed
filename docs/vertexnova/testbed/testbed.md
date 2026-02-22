@@ -35,7 +35,7 @@ See the root [README.md](../../../README.md) for prerequisites, dependencies, an
 
 ## API usage
 
-The public API lives in namespace `vne::testbed_ns` and exposes two functions:
+The public API lives in namespace `vne::testbed` and exposes two functions:
 
 ![API flow](diagrams/api.png)
 
@@ -51,8 +51,8 @@ Example:
 ```cpp
 #include <vertexnova/testbed/testbed.h>
 
-const char* ver = vne::testbed_ns::get_version();  // e.g. "1.0.0"
-const char* msg = vne::testbed_ns::hello();        // e.g. "Hello from VneTestbed"
+const char* ver = vne::testbed::get_version();  // e.g. "1.0.0"
+const char* msg = vne::testbed::hello();        // e.g. "Hello from VneTestbed"
 ```
 
 ## CMake options

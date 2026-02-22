@@ -13,7 +13,7 @@
                 <mxCell id="r1" style="endArrow=blockThin;endFill=1;html=1;strokeWidth=2;strokeColor=#1565c0;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" parent="1" source="app" target="vne" edge="1">
                     <mxGeometry relative="1" as="geometry"/>
                 </mxCell>
-                <mxCell id="r1label" value="uses&#10;vne::testbed_ns::get_version(), hello()" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];fontSize=10;fontColor=#1a1a1a;backgroundColor=#ffffff;" parent="r1" connectable="0" vertex="1">
+                <mxCell id="r1label" value="uses&#10;vne::testbed::get_version(), hello()" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];fontSize=10;fontColor=#1a1a1a;backgroundColor=#ffffff;" parent="r1" connectable="0" vertex="1">
                     <mxGeometry x="-0.2" y="1" relative="1" as="geometry">
                         <mxPoint as="offset"/>
                     </mxGeometry>

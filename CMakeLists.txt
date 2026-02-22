@@ -159,6 +159,7 @@ option(VNE_TESTBED_EXAMPLES "Build vnetestbed example programs (turn OFF when us
 option(ENABLE_DOXYGEN "Enable Doxygen documentation builds" OFF)
 option(ENABLE_COVERAGE "Enable code coverage reporting" OFF)
 option(WARNINGS_AS_ERRORS "Treat compiler warnings as errors" OFF)
+option(VNE_DEV_TESTBED "Build vnedevtestbed core and optional runner" OFF)
 
 #==============================================================================
 # Coverage Support (match vnelogging: include FindCoverage only when enabled)
@@ -236,6 +237,13 @@ endif()
 #==============================================================================
 if(VNE_TESTBED_EXAMPLES)
     add_subdirectory(examples)
+endif()
+
+#==============================================================================
+# Dev testbed (plugin system, app context; optional runner)
+#==============================================================================
+if(VNE_DEV_TESTBED)
+    add_subdirectory(vnedevtestbed)
 endif()
 
 #==============================================================================

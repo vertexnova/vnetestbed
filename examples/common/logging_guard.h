@@ -12,7 +12,7 @@
 // Create a logger category for examples
 CREATE_VNE_LOGGER_CATEGORY("vnetestbed.examples")
 
-namespace vne::testbed_ns::examples {
+namespace vne::testbed::examples {
 
 /**
  * @class LoggingGuard
@@ -49,4 +49,4 @@ class LoggingGuard {
     LoggingGuard& operator=(const LoggingGuard&) = delete;
 };
 
-}  // namespace vne::testbed_ns::examples
+}  // namespace vne::testbed::examples
