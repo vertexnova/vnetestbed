@@ -59,8 +59,9 @@ jobs:
             git submodule update --init --recursive
           else
             echo "PR build or no deploy key: init public submodules only; skip private vneinteraction."
-            git submodule sync --recursive
-            git submodule update --init --recursive -- ":(exclude)deps/internal/vneinteraction" || true
+            git submodule update --init --recursive cmake/vnecmake deps/external/googletest \
+              deps/internal/vnecommon deps/internal/vnelogging deps/external/glfw deps/internal/glad \
+              deps/internal/vneevents deps/internal/vnemath deps/internal/vnescene
           fi
 
       - name: Install clang-format
@@ -107,8 +108,9 @@ jobs:
             git submodule sync --recursive
             git submodule update --init --recursive
           else
-            git submodule sync --recursive
-            git submodule update --init --recursive -- ":(exclude)deps/internal/vneinteraction" || true
+            git submodule update --init --recursive cmake/vnecmake deps/external/googletest \
+              deps/internal/vnecommon deps/internal/vnelogging deps/external/glfw deps/internal/glad \
+              deps/internal/vneevents deps/internal/vnemath deps/internal/vnescene
           fi
 
       - name: Cache CMake build
@@ -172,8 +174,9 @@ jobs:
             git submodule sync --recursive
             git submodule update --init --recursive
           else
-            git submodule sync --recursive
-            git submodule update --init --recursive -- ":(exclude)deps/internal/vneinteraction" || true
+            git submodule update --init --recursive cmake/vnecmake deps/external/googletest \
+              deps/internal/vnecommon deps/internal/vnelogging deps/external/glfw deps/internal/glad \
+              deps/internal/vneevents deps/internal/vnemath deps/internal/vnescene
           fi
 
       - name: Install dependencies
@@ -252,8 +255,9 @@ jobs:
             git submodule sync --recursive
             git submodule update --init --recursive
           else
-            git submodule sync --recursive
-            git submodule update --init --recursive -- ":(exclude)deps/internal/vneinteraction" || true
+            git submodule update --init --recursive cmake/vnecmake deps/external/googletest \
+              deps/internal/vnecommon deps/internal/vnelogging deps/external/glfw deps/internal/glad \
+              deps/internal/vneevents deps/internal/vnemath deps/internal/vnescene
           fi
 
       - name: Cache CMake build
@@ -312,8 +316,7 @@ ${{ secrets.VNEINTERACTION_DEPLOY_KEY }}
             git submodule update --init --recursive
           }
           else {
-            git submodule sync --recursive
-            git submodule update --init --recursive -- ":(exclude)deps/internal/vneinteraction"
+            git submodule update --init --recursive cmake/vnecmake deps/external/googletest deps/internal/vnecommon deps/internal/vnelogging deps/external/glfw deps/internal/glad deps/internal/vneevents deps/internal/vnemath deps/internal/vnescene
           }
 
       - name: Cache CMake build
@@ -368,8 +371,9 @@ ${{ secrets.VNEINTERACTION_DEPLOY_KEY }}
             git submodule sync --recursive
             git submodule update --init --recursive
           else
-            git submodule sync --recursive
-            git submodule update --init --recursive -- ":(exclude)deps/internal/vneinteraction" || true
+            git submodule update --init --recursive cmake/vnecmake deps/external/googletest \
+              deps/internal/vnecommon deps/internal/vnelogging deps/external/glfw deps/internal/glad \
+              deps/internal/vneevents deps/internal/vnemath deps/internal/vnescene
           fi
 
       - name: Install dependencies
