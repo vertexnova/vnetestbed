@@ -29,7 +29,7 @@ namespace vne {
 namespace events {
 class Event;
 }
-}
+}  // namespace vne
 
 namespace vne {
 namespace testbed {

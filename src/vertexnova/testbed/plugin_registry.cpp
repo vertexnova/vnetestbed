@@ -19,17 +19,24 @@ PluginRegistry& PluginRegistry::instance() {
     return reg;
 }
 
-void PluginRegistry::registerPlugin(std::string name, std::unique_ptr<ILayer> layer) {
-    plugins_.emplace_back(std::move(name), std::move(layer));
+void PluginRegistry::registerPlugin(std::unique_ptr<IPlugin> plugin) {
+    if (plugin) {
+        plugins_.push_back(std::move(plugin));
+    }
 }
 
-std::vector<ILayer*> PluginRegistry::getPlugins() {
-    std::vector<ILayer*> out;
-    out.reserve(plugins_.size());
-    for (auto& p : plugins_) {
-        out.push_back(p.second.get());
+void PluginRegistry::createAndPushLayers(LayerStack& stack) {
+    for (auto& plugin : plugins_) {
+        if (!plugin) {
+            continue;
+        }
+        auto layers = plugin->createLayers();
+        for (auto& layer : layers) {
+            if (layer) {
+                stack.pushLayer(std::move(layer));
+            }
+        }
     }
-    return out;
 }
 
 }  // namespace testbed

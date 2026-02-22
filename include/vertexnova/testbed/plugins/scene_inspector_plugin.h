@@ -12,39 +12,29 @@
 
 /**
  * @file scene_inspector_plugin.h
- * @brief Example layer: scene graph inspector panel.
+ * @brief Plugin that provides the scene graph inspector layer.
  *
- * Displays a tree view of the scene graph with transform, camera, and
- * light panels using ImGui.  This layer does **not** depend on any
- * specific rendering backend; it only reads scene data and draws UI.
- *
- * This stub provides empty default implementations so that derived
- * classes (or unit tests) can override only the hooks they care about.
+ * Implements IPlugin; creates SceneInspectorLayer on demand.
+ * Register with REGISTER_PLUGIN(SceneInspectorPlugin) in a .cpp.
  */
 
-#include "vertexnova/testbed/layer.h"
-#include "vertexnova/testbed/render_context.h"
+#include "vertexnova/testbed/plugin.h"
+
+#include <memory>
+#include <string>
+#include <vector>
 
 namespace vne {
 namespace testbed {
 
 /**
  * @class SceneInspectorPlugin
- * @brief Example layer: scene graph inspector panel (stub).
+ * @brief Plugin that creates SceneInspectorLayer.
  */
-class SceneInspectorPlugin : public ILayer {
+class SceneInspectorPlugin : public IPlugin {
    public:
-    SceneInspectorPlugin()
-        : ILayer("SceneInspector") {}
-
-    void onAttach() override {}
-    void onDetach() override {}
-    void onUpdate(float /*dt*/) override {}
-    void onBeginRender(const RenderContext& /*ctx*/) override {}
-    void onRender(const RenderContext& /*ctx*/) override {}
-    void onGuiBegin(const RenderContext& /*ctx*/) override {}
-    void onGuiRender(const RenderContext& /*ctx*/) override {}
-    void onGuiEnd(const RenderContext& /*ctx*/) override {}
+    std::string getName() const override;
+    std::vector<std::unique_ptr<ILayer>> createLayers() override;
 };
 
 }  // namespace testbed

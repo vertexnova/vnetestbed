@@ -12,15 +12,16 @@
 
 /**
  * @file plugin_registry.h
- * @brief Singleton registry for testbed layers and REGISTER_PLUGIN macro.
+ * @brief Singleton registry for testbed plugins and REGISTER_PLUGIN macro.
  *
- * Optional: for static registration. Prefer LayerStack::pushLayer for explicit registration.
+ * Optional: for static registration. Plugins create layers on demand;
+ * use createAndPushLayers(stack) to populate a LayerStack.
  */
 
-#include "vertexnova/testbed/layer.h"
+#include "vertexnova/testbed/layer_stack.h"
+#include "vertexnova/testbed/plugin.h"
 
 #include <memory>
-#include <string>
 #include <vector>
 
 namespace vne {
@@ -28,33 +29,36 @@ namespace testbed {
 
 /**
  * @class PluginRegistry
- * @brief Singleton registry of ILayer instances; runner can transfer to LayerStack.
+ * @brief Singleton registry of IPlugin instances; creates layers for LayerStack.
  */
 class PluginRegistry {
    public:
     static PluginRegistry& instance();
 
-    void registerPlugin(std::string name, std::unique_ptr<ILayer> layer);
+    void registerPlugin(std::unique_ptr<IPlugin> plugin);
 
-    /** @brief Get all registered layers in registration order. */
-    std::vector<ILayer*> getPlugins();
+    /** @brief Create layers from all plugins and push them to the stack. */
+    void createAndPushLayers(LayerStack& stack);
+
+    /** @brief Number of registered plugins (for tests). */
+    [[nodiscard]] std::size_t getPluginCount() const { return plugins_.size(); }
 
     PluginRegistry(const PluginRegistry&) = delete;
     PluginRegistry& operator=(const PluginRegistry&) = delete;
 
    private:
     PluginRegistry() = default;
-    std::vector<std::pair<std::string, std::unique_ptr<ILayer>>> plugins_;
+    std::vector<std::unique_ptr<IPlugin>> plugins_;
 };
 
 /**
  * @def REGISTER_PLUGIN(PluginClass)
  * @brief Register a default-constructed PluginClass at static init time. Use in one .cpp per plugin.
  */
-#define REGISTER_PLUGIN(PluginClass)                                                                              \
-    static bool VNETESTBED_REG_##PluginClass = []() {                                                             \
-        ::vne::testbed::PluginRegistry::instance().registerPlugin(#PluginClass, std::make_unique<PluginClass>()); \
-        return true;                                                                                              \
+#define REGISTER_PLUGIN(PluginClass)                                                                \
+    static bool VNETESTBED_REG_##PluginClass = []() {                                               \
+        ::vne::testbed::PluginRegistry::instance().registerPlugin(std::make_unique<PluginClass>()); \
+        return true;                                                                                \
     }()
 
 }  // namespace testbed

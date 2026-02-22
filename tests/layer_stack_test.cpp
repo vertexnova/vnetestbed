@@ -14,8 +14,10 @@
 #include "vertexnova/testbed/debug_draw.h"
 #include "vertexnova/testbed/layer.h"
 #include "vertexnova/testbed/layer_stack.h"
+#include "vertexnova/testbed/plugin_registry.h"
 #include "vertexnova/testbed/render_context.h"
 #include "vertexnova/testbed/render_adapter.h"
+#include "vertexnova/testbed/plugins/scene_inspector_layer.h"
 #include "vertexnova/testbed/plugins/scene_inspector_plugin.h"
 
 // ---------------------------------------------------------------------------
@@ -149,12 +151,12 @@ TEST(LayerStack, FindLayerByName) {
 }
 
 // ---------------------------------------------------------------------------
-// SceneInspectorPlugin: compile and instantiate
+// SceneInspectorLayer: compile and instantiate (runtime layer)
 // ---------------------------------------------------------------------------
 
-TEST(SceneInspectorPlugin, CanBeInstantiatedAndRegistered) {
+TEST(SceneInspectorLayer, CanBeInstantiatedAndPushed) {
     vne::testbed::LayerStack stack;
-    stack.pushLayer(std::make_unique<vne::testbed::SceneInspectorPlugin>());
+    stack.pushLayer(std::make_unique<vne::testbed::SceneInspectorLayer>());
     EXPECT_EQ(stack.getCount(), 1u);
 
     vne::testbed::RenderContext ctx{};
@@ -166,6 +168,39 @@ TEST(SceneInspectorPlugin, CanBeInstantiatedAndRegistered) {
     stack.onGuiEnd(ctx);
     stack.clear();
     EXPECT_EQ(stack.getCount(), 0u);
+}
+
+// ---------------------------------------------------------------------------
+// SceneInspectorPlugin: creates SceneInspectorLayer (discovery)
+// ---------------------------------------------------------------------------
+
+TEST(SceneInspectorPlugin, CreateLayersReturnsValidLayer) {
+    vne::testbed::SceneInspectorPlugin plugin;
+    auto layers = plugin.createLayers();
+    ASSERT_EQ(layers.size(), 1u);
+    ASSERT_NE(layers[0], nullptr);
+    EXPECT_EQ(layers[0]->getName(), "SceneInspector");
+}
+
+// ---------------------------------------------------------------------------
+// PluginRegistry: createAndPushLayers populates from registered plugins
+// ---------------------------------------------------------------------------
+
+TEST(PluginRegistry, CreateAndPushLayersPopulatesStack) {
+    vne::testbed::LayerStack stack;
+    EXPECT_GE(vne::testbed::PluginRegistry::instance().getPluginCount(), 1u);
+
+    vne::testbed::PluginRegistry::instance().createAndPushLayers(stack);
+    EXPECT_GE(stack.getCount(), 1u);
+
+    auto* found = stack.findLayerByName("SceneInspector");
+    ASSERT_NE(found, nullptr);
+    EXPECT_EQ(found->getName(), "SceneInspector");
+
+    vne::testbed::RenderContext ctx{};
+    stack.onUpdate(0.016F);
+    stack.onGuiRender(ctx);
+    stack.clear();
 }
 
 // ---------------------------------------------------------------------------
