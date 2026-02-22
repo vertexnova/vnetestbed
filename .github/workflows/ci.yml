@@ -64,7 +64,11 @@ jobs:
           restore-keys: linux-${{ matrix.compiler }}-
 
       - name: Install dependencies
-        run: sudo apt-get update && sudo apt-get install -y build-essential cmake
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential cmake \
+            libx11-dev libxrandr-dev libxinerama-dev libxcursor-dev libxi-dev \
+            libgl1-mesa-dev libxkbcommon-dev
 
       - name: Configure CMake
         run: |
@@ -91,7 +95,11 @@ jobs:
           submodules: recursive
 
       - name: Install dependencies
-        run: sudo apt-get update && sudo apt-get install -y build-essential cmake lcov
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential cmake lcov \
+            libx11-dev libxrandr-dev libxinerama-dev libxcursor-dev libxi-dev \
+            libgl1-mesa-dev libxkbcommon-dev
 
       - name: Configure CMake
         run: |
@@ -195,7 +203,11 @@ jobs:
           submodules: recursive
 
       - name: Install dependencies
-        run: sudo apt-get update && sudo apt-get install -y build-essential cmake clang clang-tidy
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential cmake clang clang-tidy \
+            libx11-dev libxrandr-dev libxinerama-dev libxcursor-dev libxi-dev \
+            libgl1-mesa-dev libxkbcommon-dev
 
       - name: Configure CMake
         run: |
