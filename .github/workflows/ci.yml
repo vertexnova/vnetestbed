@@ -21,21 +21,55 @@ on:
   pull_request:
     branches: [ "main" ]
 
+# Helper idea:
+# - Always checkout without submodules first.
+# - PR: init public submodules only (exclude private vneinteraction).
+# - Push: if deploy key present, use it to fetch private vneinteraction and init everything.
+
 jobs:
   clang-format:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v4
-      with:
-        submodules: recursive
+      - name: Checkout (no submodules yet)
+        uses: actions/checkout@v4
+        with:
+          submodules: false
+          fetch-depth: 0
 
-    - name: Install clang-format
-      run: sudo apt-get update && sudo apt-get install -y clang-format
+      - name: Init submodules (PR: public only, Push: full if possible)
+        shell: bash
+        run: |
+          set -euo pipefail
 
-    - name: Check formatting (uses project .clang-format, no file modifications)
-      run: |
-        find src include examples tests -type f \( -name '*.h' -o -name '*.cpp' -o -name '*.hpp' -o -name '*.c' \) \
-          -print0 | xargs -0 -r clang-format --dry-run --Werror --style=file --fallback-style=Google
+          # Prefer HTTPS for public repos (no SSH keys on runner)
+          git config --global url."https://github.com/".insteadOf "git@github.com:"
+
+          if [ "${{ github.event_name }}" = "push" ] && [ -n "${{ secrets.VNEINTERACTION_DEPLOY_KEY }}" ]; then
+            echo "Push + deploy key present: enabling private vneinteraction via SSH."
+
+            mkdir -p ~/.ssh
+            echo "${{ secrets.VNEINTERACTION_DEPLOY_KEY }}" > ~/.ssh/id_ed25519
+            chmod 600 ~/.ssh/id_ed25519
+            ssh-keyscan github.com >> ~/.ssh/known_hosts
+
+            # Force ONLY the private submodule to use SSH so the deploy key is used
+            git config submodule.deps/internal/vneinteraction.url git@github.com:vertexnova/vneinteraction.git
+
+            git submodule sync --recursive
+            git submodule update --init --recursive
+          else
+            echo "PR build or no deploy key: init public submodules only; skip private vneinteraction."
+            git submodule sync --recursive
+            git submodule update --init --recursive -- ":(exclude)deps/internal/vneinteraction" || true
+          fi
+
+      - name: Install clang-format
+        run: sudo apt-get update && sudo apt-get install -y clang-format
+
+      - name: Check formatting (uses project .clang-format, no file modifications)
+        run: |
+          find src include examples tests -type f \( -name '*.h' -o -name '*.cpp' -o -name '*.hpp' -o -name '*.c' \) \
+            -print0 | xargs -0 -r clang-format --dry-run --Werror --style=file --fallback-style=Google
 
   linux:
     runs-on: ubuntu-latest
@@ -52,224 +86,318 @@ jobs:
             cpp_compiler: clang++
 
     steps:
-    - uses: actions/checkout@v4
-      with:
-        submodules: true
+      - name: Checkout (no submodules yet)
+        uses: actions/checkout@v4
+        with:
+          submodules: false
+          fetch-depth: 0
 
-    - name: Cache CMake build
-      uses: actions/cache@v4
-      with:
-        path: build
-        key: linux-${{ matrix.compiler }}-${{ hashFiles('CMakeLists.txt', '**/CMakeLists.txt') }}
-        restore-keys: linux-${{ matrix.compiler }}-
+      - name: Init submodules (PR: public only, Push: full if possible)
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config --global url."https://github.com/".insteadOf "git@github.com:"
 
-    - name: Use HTTPS for GitHub (no SSH keys on runner)
-      run: git config --global url."https://github.com/".insteadOf "git@github.com:"
+          if [ "${{ github.event_name }}" = "push" ] && [ -n "${{ secrets.VNEINTERACTION_DEPLOY_KEY }}" ]; then
+            mkdir -p ~/.ssh
+            echo "${{ secrets.VNEINTERACTION_DEPLOY_KEY }}" > ~/.ssh/id_ed25519
+            chmod 600 ~/.ssh/id_ed25519
+            ssh-keyscan github.com >> ~/.ssh/known_hosts
+            git config submodule.deps/internal/vneinteraction.url git@github.com:vertexnova/vneinteraction.git
+            git submodule sync --recursive
+            git submodule update --init --recursive
+          else
+            git submodule sync --recursive
+            git submodule update --init --recursive -- ":(exclude)deps/internal/vneinteraction" || true
+          fi
 
-    - name: Init vnemath submodules (HTTPS for CI)
-      run: |
-        if [ -d deps/internal/vnemath/.git ]; then
-          cd deps/internal/vnemath
-          git config submodule.cmake/vnecmake.url https://github.com/vertexnova/vnecmake.git
-          git config submodule.deps/internal/vnecommon.url https://github.com/vertexnova/vnecommon.git
-          git config submodule.deps/internal/vnelogging.url https://github.com/vertexnova/vnelogging.git
-          git submodule update --init --recursive
-        fi
+      - name: Cache CMake build
+        uses: actions/cache@v4
+        with:
+          path: build
+          key: linux-${{ matrix.compiler }}-${{ hashFiles('CMakeLists.txt', '**/CMakeLists.txt') }}
+          restore-keys: linux-${{ matrix.compiler }}-
 
-    - name: Install dependencies
-      run: |
-        sudo apt-get update
-        sudo apt-get install -y build-essential cmake
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential cmake
 
-    - name: Configure CMake
-      run: |
-        cmake -B build -S . \
-          -DCMAKE_BUILD_TYPE=Release \
-          -DCMAKE_C_COMPILER=${{ matrix.c_compiler }} \
-          -DCMAKE_CXX_COMPILER=${{ matrix.cpp_compiler }} \
-          -DVNE_TESTBED_CI=ON
+      - name: Configure CMake
+        shell: bash
+        run: |
+          set -euo pipefail
 
-    - name: Build
-      run: cmake --build build --config Release --parallel
+          # Enable only if the submodule is actually present
+          VNEINTERACTION_FLAG="-DVNE_WITH_VNEINTRACTION=OFF"
+          if [ -f "deps/internal/vneinteraction/CMakeLists.txt" ]; then
+            VNEINTERACTION_FLAG="-DVNE_WITH_VNEINTRACTION=ON"
+          fi
 
-    - name: Test
-      working-directory: build
-      run: ctest --output-on-failure
+          cmake -B build -S . \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DCMAKE_C_COMPILER=${{ matrix.c_compiler }} \
+            -DCMAKE_CXX_COMPILER=${{ matrix.cpp_compiler }} \
+            -DVNE_TESTBED_CI=ON \
+            ${VNEINTERACTION_FLAG}
+
+      - name: Build
+        run: cmake --build build --config Release --parallel
+
+      - name: Test
+        working-directory: build
+        run: ctest --output-on-failure
 
   coverage:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v4
-      with:
-        submodules: recursive
+      - name: Checkout (no submodules yet)
+        uses: actions/checkout@v4
+        with:
+          submodules: false
+          fetch-depth: 0
 
-    - name: Install dependencies
-      run: |
-        sudo apt-get update
-        sudo apt-get install -y build-essential cmake lcov
+      - name: Init submodules (PR: public only, Push: full if possible)
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config --global url."https://github.com/".insteadOf "git@github.com:"
 
-    - name: Configure CMake with Coverage
-      run: |
-        cmake -B build -S . \
-          -DCMAKE_BUILD_TYPE=Debug \
-          -DCMAKE_C_COMPILER=gcc \
-          -DCMAKE_CXX_COMPILER=g++ \
-          -DVNE_TESTBED_CI=ON \
-          -DWARNINGS_AS_ERRORS=ON \
-          -DENABLE_COVERAGE=ON
+          if [ "${{ github.event_name }}" = "push" ] && [ -n "${{ secrets.VNEINTERACTION_DEPLOY_KEY }}" ]; then
+            mkdir -p ~/.ssh
+            echo "${{ secrets.VNEINTERACTION_DEPLOY_KEY }}" > ~/.ssh/id_ed25519
+            chmod 600 ~/.ssh/id_ed25519
+            ssh-keyscan github.com >> ~/.ssh/known_hosts
+            git config submodule.deps/internal/vneinteraction.url git@github.com:vertexnova/vneinteraction.git
+            git submodule sync --recursive
+            git submodule update --init --recursive
+          else
+            git submodule sync --recursive
+            git submodule update --init --recursive -- ":(exclude)deps/internal/vneinteraction" || true
+          fi
 
-    - name: Build
-      run: cmake --build build --config Debug --parallel
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential cmake lcov
 
-    - name: Test
-      working-directory: build
-      run: ctest --output-on-failure
+      - name: Configure CMake with Coverage
+        shell: bash
+        run: |
+          set -euo pipefail
+          VNEINTERACTION_FLAG="-DVNE_WITH_VNEINTRACTION=OFF"
+          if [ -f "deps/internal/vneinteraction/CMakeLists.txt" ]; then
+            VNEINTERACTION_FLAG="-DVNE_WITH_VNEINTRACTION=ON"
+          fi
 
-    - name: Generate Coverage Report
-      run: |
-        lcov --capture --directory build --output-file coverage.info --ignore-errors mismatch,unused
-        lcov --remove coverage.info \
-          '/usr/*' \
-          '*/tests/*' \
-          '*/deps/external/*' \
-          '*/deps/internal/*' \
-          '*/_deps/*' \
-          '*/googletest/*' \
-          '*/googlemock/*' \
-          --output-file coverage.info --ignore-errors mismatch,unused
-        lcov --list coverage.info --ignore-errors mismatch,unused
+          cmake -B build -S . \
+            -DCMAKE_BUILD_TYPE=Debug \
+            -DCMAKE_C_COMPILER=gcc \
+            -DCMAKE_CXX_COMPILER=g++ \
+            -DVNE_TESTBED_CI=ON \
+            -DWARNINGS_AS_ERRORS=ON \
+            -DENABLE_COVERAGE=ON \
+            ${VNEINTERACTION_FLAG}
 
-    - name: Upload coverage reports to Codecov
-      uses: codecov/codecov-action@v5
-      with:
-        token: ${{ secrets.CODECOV_TOKEN_VNETEMPLATE }}
-        files: ./coverage.info
-        fail_ci_if_error: false
-        verbose: true
+      - name: Build
+        run: cmake --build build --config Debug --parallel
+
+      - name: Test
+        working-directory: build
+        run: ctest --output-on-failure
+
+      - name: Generate Coverage Report
+        run: |
+          lcov --capture --directory build --output-file coverage.info --ignore-errors mismatch,unused
+          lcov --remove coverage.info \
+            '/usr/*' \
+            '*/tests/*' \
+            '*/deps/external/*' \
+            '*/deps/internal/*' \
+            '*/_deps/*' \
+            '*/googletest/*' \
+            '*/googlemock/*' \
+            --output-file coverage.info --ignore-errors mismatch,unused
+          lcov --list coverage.info --ignore-errors mismatch,unused
+
+      - name: Upload coverage reports to Codecov
+        uses: codecov/codecov-action@v5
+        with:
+          token: ${{ secrets.CODECOV_TOKEN_VNETEMPLATE }}
+          files: ./coverage.info
+          fail_ci_if_error: false
+          verbose: true
 
   macos:
     runs-on: macos-latest
-
     steps:
-    - uses: actions/checkout@v4
-      with:
-        submodules: recursive
+      - name: Checkout (no submodules yet)
+        uses: actions/checkout@v4
+        with:
+          submodules: false
+          fetch-depth: 0
 
-    - name: Cache CMake build
-      uses: actions/cache@v4
-      with:
-        path: build
-        key: macos-${{ hashFiles('CMakeLists.txt', '**/CMakeLists.txt') }}
-        restore-keys: macos-
+      - name: Init submodules (PR: public only, Push: full if possible)
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config --global url."https://github.com/".insteadOf "git@github.com:"
 
-    - name: Use HTTPS for GitHub (no SSH keys on runner)
-      run: git config --global url."https://github.com/".insteadOf "git@github.com:"
+          if [ "${{ github.event_name }}" = "push" ] && [ -n "${{ secrets.VNEINTERACTION_DEPLOY_KEY }}" ]; then
+            mkdir -p ~/.ssh
+            echo "${{ secrets.VNEINTERACTION_DEPLOY_KEY }}" > ~/.ssh/id_ed25519
+            chmod 600 ~/.ssh/id_ed25519
+            ssh-keyscan github.com >> ~/.ssh/known_hosts
+            git config submodule.deps/internal/vneinteraction.url git@github.com:vertexnova/vneinteraction.git
+            git submodule sync --recursive
+            git submodule update --init --recursive
+          else
+            git submodule sync --recursive
+            git submodule update --init --recursive -- ":(exclude)deps/internal/vneinteraction" || true
+          fi
 
-    - name: Init vnemath submodules (HTTPS for CI)
-      run: |
-        if [ -d deps/internal/vnemath/.git ]; then
-          cd deps/internal/vnemath
-          git config submodule.cmake/vnecmake.url https://github.com/vertexnova/vnecmake.git
-          git config submodule.deps/internal/vnecommon.url https://github.com/vertexnova/vnecommon.git
-          git config submodule.deps/internal/vnelogging.url https://github.com/vertexnova/vnelogging.git
-          git submodule update --init --recursive
-        fi
+      - name: Cache CMake build
+        uses: actions/cache@v4
+        with:
+          path: build
+          key: macos-${{ hashFiles('CMakeLists.txt', '**/CMakeLists.txt') }}
+          restore-keys: macos-
 
-    - name: Configure CMake
-      run: |
-        cmake -B build -S . \
-          -DCMAKE_BUILD_TYPE=Release \
-          -DVNE_TESTBED_CI=ON \
-          -DWARNINGS_AS_ERRORS=ON
+      - name: Configure CMake
+        shell: bash
+        run: |
+          set -euo pipefail
+          VNEINTERACTION_FLAG="-DVNE_WITH_VNEINTRACTION=OFF"
+          if [ -f "deps/internal/vneinteraction/CMakeLists.txt" ]; then
+            VNEINTERACTION_FLAG="-DVNE_WITH_VNEINTRACTION=ON"
+          fi
 
-    - name: Build
-      run: cmake --build build --config Release --parallel
+          cmake -B build -S . \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DVNE_TESTBED_CI=ON \
+            -DWARNINGS_AS_ERRORS=ON \
+            ${VNEINTERACTION_FLAG}
 
-    - name: Test
-      working-directory: build
-      run: ctest --output-on-failure
+      - name: Build
+        run: cmake --build build --config Release --parallel
+
+      - name: Test
+        working-directory: build
+        run: ctest --output-on-failure
 
   windows:
     runs-on: windows-latest
-
     steps:
-    - uses: actions/checkout@v4
-      with:
-        submodules: recursive
+      - name: Checkout (no submodules yet)
+        uses: actions/checkout@v4
+        with:
+          submodules: false
+          fetch-depth: 0
 
-    - name: Cache CMake build
-      uses: actions/cache@v4
-      with:
-        path: build
-        key: windows-${{ hashFiles('CMakeLists.txt', '**/CMakeLists.txt') }}
-        restore-keys: windows-
+      - name: Init submodules (PR: public only, Push: full if possible)
+        shell: pwsh
+        run: |
+          git config --global url."https://github.com/".insteadOf "git@github.com:"
 
-    - name: Use HTTPS for GitHub (no SSH keys on runner)
-      run: git config --global url."https://github.com/".insteadOf "git@github.com:"
+          if ("${{ github.event_name }}" -eq "push" -and "${{ secrets.VNEINTERACTION_DEPLOY_KEY }}" -ne "") {
+            New-Item -ItemType Directory -Force -Path "$env:USERPROFILE\.ssh" | Out-Null
+            Set-Content -Path "$env:USERPROFILE\.ssh\id_ed25519" -Value @"
+${{ secrets.VNEINTERACTION_DEPLOY_KEY }}
+"@
+            icacls "$env:USERPROFILE\.ssh\id_ed25519" /inheritance:r /grant:r "$env:USERNAME:(R)" | Out-Null
+            ssh-keyscan github.com >> "$env:USERPROFILE\.ssh\known_hosts"
 
-    - name: Init vnemath submodules (HTTPS for CI)
-      run: |
-        if (Test-Path deps/internal/vnemath/.git) {
-          Push-Location deps/internal/vnemath
-          git config submodule.cmake/vnecmake.url https://github.com/vertexnova/vnecmake.git
-          git config submodule.deps/internal/vnecommon.url https://github.com/vertexnova/vnecommon.git
-          git config submodule.deps/internal/vnelogging.url https://github.com/vertexnova/vnelogging.git
-          git submodule update --init --recursive
-          Pop-Location
-        }
+            git config submodule.deps/internal/vneinteraction.url git@github.com:vertexnova/vneinteraction.git
+            git submodule sync --recursive
+            git submodule update --init --recursive
+          }
+          else {
+            git submodule sync --recursive
+            git submodule update --init --recursive -- ":(exclude)deps/internal/vneinteraction"
+          }
 
-    - name: Configure CMake
-      run: |
-        cmake -B build -S . `
-          -DCMAKE_BUILD_TYPE=Release `
-          -DVNE_TESTBED_CI=ON `
-          -DWARNINGS_AS_ERRORS=ON
+      - name: Cache CMake build
+        uses: actions/cache@v4
+        with:
+          path: build
+          key: windows-${{ hashFiles('CMakeLists.txt', '**/CMakeLists.txt') }}
+          restore-keys: windows-
 
-    - name: Build
-      run: cmake --build build --config Release --parallel
+      - name: Configure CMake
+        shell: pwsh
+        run: |
+          $flag = "-DVNE_WITH_VNEINTRACTION=OFF"
+          if (Test-Path "deps/internal/vneinteraction/CMakeLists.txt") {
+            $flag = "-DVNE_WITH_VNEINTRACTION=ON"
+          }
 
-    - name: Test
-      working-directory: build
-      run: ctest --output-on-failure -C Release
+          cmake -B build -S . `
+            -DCMAKE_BUILD_TYPE=Release `
+            -DVNE_TESTBED_CI=ON `
+            -DWARNINGS_AS_ERRORS=ON `
+            $flag
+
+      - name: Build
+        run: cmake --build build --config Release --parallel
+
+      - name: Test
+        working-directory: build
+        run: ctest --output-on-failure -C Release
 
   clang-tidy:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v4
-      with:
-        submodules: recursive
+      - name: Checkout (no submodules yet)
+        uses: actions/checkout@v4
+        with:
+          submodules: false
+          fetch-depth: 0
 
-    - name: Use HTTPS for GitHub (no SSH keys on runner)
-      run: git config --global url."https://github.com/".insteadOf "git@github.com:"
+      - name: Init submodules (PR: public only, Push: full if possible)
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config --global url."https://github.com/".insteadOf "git@github.com:"
 
-    - name: Init vnemath submodules (HTTPS for CI)
-      run: |
-        if [ -d deps/internal/vnemath/.git ]; then
-          cd deps/internal/vnemath
-          git config submodule.cmake/vnecmake.url https://github.com/vertexnova/vnecmake.git
-          git config submodule.deps/internal/vnecommon.url https://github.com/vertexnova/vnecommon.git
-          git config submodule.deps/internal/vnelogging.url https://github.com/vertexnova/vnelogging.git
-          git submodule update --init --recursive
-        fi
+          if [ "${{ github.event_name }}" = "push" ] && [ -n "${{ secrets.VNEINTERACTION_DEPLOY_KEY }}" ]; then
+            mkdir -p ~/.ssh
+            echo "${{ secrets.VNEINTERACTION_DEPLOY_KEY }}" > ~/.ssh/id_ed25519
+            chmod 600 ~/.ssh/id_ed25519
+            ssh-keyscan github.com >> ~/.ssh/known_hosts
+            git config submodule.deps/internal/vneinteraction.url git@github.com:vertexnova/vneinteraction.git
+            git submodule sync --recursive
+            git submodule update --init --recursive
+          else
+            git submodule sync --recursive
+            git submodule update --init --recursive -- ":(exclude)deps/internal/vneinteraction" || true
+          fi
 
-    - name: Install dependencies
-      run: |
-        sudo apt-get update
-        sudo apt-get install -y build-essential cmake clang clang-tidy
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential cmake clang clang-tidy
 
-    - name: Configure CMake
-      run: |
-        cmake -B build -S . \
-          -DCMAKE_BUILD_TYPE=Release \
-          -DCMAKE_C_COMPILER=clang \
-          -DCMAKE_CXX_COMPILER=clang++ \
-          -DVNE_TESTBED_CI=ON \
-          -DWARNINGS_AS_ERRORS=ON
+      - name: Configure CMake
+        shell: bash
+        run: |
+          set -euo pipefail
+          VNEINTERACTION_FLAG="-DVNE_WITH_VNEINTRACTION=OFF"
+          if [ -f "deps/internal/vneinteraction/CMakeLists.txt" ]; then
+            VNEINTERACTION_FLAG="-DVNE_WITH_VNEINTRACTION=ON"
+          fi
 
-    - name: Build
-      run: cmake --build build --config Release --parallel
+          cmake -B build -S . \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DCMAKE_C_COMPILER=clang \
+            -DCMAKE_CXX_COMPILER=clang++ \
+            -DVNE_TESTBED_CI=ON \
+            -DWARNINGS_AS_ERRORS=ON \
+            ${VNEINTERACTION_FLAG}
 
-    - name: Run clang-tidy (project .clang-tidy)
-      run: |
-        find src -type f \( -name '*.cpp' -o -name '*.h' \) -print0 \
-          | xargs -0 -r clang-tidy -p build
+      - name: Build
+        run: cmake --build build --config Release --parallel
+
+      - name: Run clang-tidy (project .clang-tidy)
+        run: |
+          find src -type f \( -name '*.cpp' -o -name '*.h' \) -print0 \
+            | xargs -0 -r clang-tidy -p build
