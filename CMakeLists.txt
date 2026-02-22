@@ -95,6 +95,7 @@ endif()
 #==============================================================================
 # Internal Libraries (deps/internal) - use if already in build, else add
 #==============================================================================
+# vneinteraction is optional; only added when VNE_WITH_VNEINTRACTION=ON (see VNEPrivateDeps.cmake).
 option(VNE_WITH_VNEINTRACTION "Enable private dependency vneinteraction" OFF)
 include(VneUseDep)
 include(VneTestbedDeps)

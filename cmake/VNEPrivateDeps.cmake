@@ -2,8 +2,8 @@
 # VNEPrivateDeps.cmake - Optional private dependency vneinteraction
 #
 # Prerequisites: VneTestbedDeps included; VNE_DEPS_INTERNAL_DIR set.
-# When VNE_WITH_VNEINTRACTION=ON and the submodule is present, adds vne::interaction.
-# No compile definitions or variables are passed to source code.
+# Only when VNE_WITH_VNEINTRACTION=ON do we add vne::interaction; when OFF we
+# never add_subdirectory or require the dir. No compile definitions for source.
 #==============================================================================
 
 if(VNE_WITH_VNEINTRACTION)
