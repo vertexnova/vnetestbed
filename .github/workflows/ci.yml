@@ -26,8 +26,6 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v4
-      with:
-        submodules: recursive
 
     - name: Install clang-format
       run: sudo apt-get update && sudo apt-get install -y clang-format
@@ -53,8 +51,12 @@ jobs:
 
     steps:
     - uses: actions/checkout@v4
-      with:
-        submodules: true  # Only direct submodules, not recursive (avoids nested deps conflict)
+
+    - name: Init public submodules (excludes private vneinteraction)
+      run: |
+        git submodule update --init cmake/vnecmake deps/external/googletest deps/internal/vnecommon \
+          deps/internal/vnelogging deps/external/glfw deps/internal/glad deps/internal/vneevents \
+          deps/internal/vnemath deps/internal/vnescene
 
     - name: Cache CMake build
       uses: actions/cache@v4
@@ -87,7 +89,8 @@ jobs:
           -DCMAKE_BUILD_TYPE=Release \
           -DCMAKE_C_COMPILER=${{ matrix.c_compiler }} \
           -DCMAKE_CXX_COMPILER=${{ matrix.cpp_compiler }} \
-          -DVNE_TESTBED_CI=ON
+          -DVNE_TESTBED_CI=ON \
+          -DVNE_WITH_VNEINTRACTION=OFF
 
     - name: Build
       run: cmake --build build --config Release --parallel
@@ -100,8 +103,12 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v4
-      with:
-        submodules: recursive
+
+    - name: Init public submodules (excludes private vneinteraction)
+      run: |
+        git submodule update --init cmake/vnecmake deps/external/googletest deps/internal/vnecommon \
+          deps/internal/vnelogging deps/external/glfw deps/internal/glad deps/internal/vneevents \
+          deps/internal/vnemath deps/internal/vnescene
 
     - name: Install dependencies
       run: |
@@ -115,6 +122,7 @@ jobs:
           -DCMAKE_C_COMPILER=gcc \
           -DCMAKE_CXX_COMPILER=g++ \
           -DVNE_TESTBED_CI=ON \
+          -DVNE_WITH_VNEINTRACTION=OFF \
           -DWARNINGS_AS_ERRORS=ON \
           -DENABLE_COVERAGE=ON
 
@@ -152,8 +160,12 @@ jobs:
 
     steps:
     - uses: actions/checkout@v4
-      with:
-        submodules: true  # Only direct submodules, not recursive (avoids nested deps conflict)
+
+    - name: Init public submodules (excludes private vneinteraction)
+      run: |
+        git submodule update --init cmake/vnecmake deps/external/googletest deps/internal/vnecommon \
+          deps/internal/vnelogging deps/external/glfw deps/internal/glad deps/internal/vneevents \
+          deps/internal/vnemath deps/internal/vnescene
 
     - name: Cache CMake build
       uses: actions/cache@v4
@@ -180,6 +192,7 @@ jobs:
         cmake -B build -S . \
           -DCMAKE_BUILD_TYPE=Release \
           -DVNE_TESTBED_CI=ON \
+          -DVNE_WITH_VNEINTRACTION=OFF \
           -DWARNINGS_AS_ERRORS=ON
 
     - name: Build
@@ -194,8 +207,10 @@ jobs:
 
     steps:
     - uses: actions/checkout@v4
-      with:
-        submodules: true  # Only direct submodules, not recursive (avoids nested deps conflict)
+
+    - name: Init public submodules (excludes private vneinteraction)
+      run: |
+        git submodule update --init cmake/vnecmake deps/external/googletest deps/internal/vnecommon deps/internal/vnelogging deps/external/glfw deps/internal/glad deps/internal/vneevents deps/internal/vnemath deps/internal/vnescene
 
     - name: Cache CMake build
       uses: actions/cache@v4
@@ -223,6 +238,7 @@ jobs:
         cmake -B build -S . `
           -DCMAKE_BUILD_TYPE=Release `
           -DVNE_TESTBED_CI=ON `
+          -DVNE_WITH_VNEINTRACTION=OFF `
           -DWARNINGS_AS_ERRORS=ON
 
     - name: Build
@@ -236,8 +252,12 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v4
-      with:
-        submodules: true  # Only direct submodules, not recursive (avoids nested deps conflict)
+
+    - name: Init public submodules (excludes private vneinteraction)
+      run: |
+        git submodule update --init cmake/vnecmake deps/external/googletest deps/internal/vnecommon \
+          deps/internal/vnelogging deps/external/glfw deps/internal/glad deps/internal/vneevents \
+          deps/internal/vnemath deps/internal/vnescene
 
     - name: Use HTTPS for GitHub (no SSH keys on runner)
       run: git config --global url."https://github.com/".insteadOf "git@github.com:"
@@ -264,6 +284,7 @@ jobs:
           -DCMAKE_C_COMPILER=clang \
           -DCMAKE_CXX_COMPILER=clang++ \
           -DVNE_TESTBED_CI=ON \
+          -DVNE_WITH_VNEINTRACTION=OFF \
           -DWARNINGS_AS_ERRORS=ON
 
     - name: Build

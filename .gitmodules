@@ -26,9 +26,6 @@
 [submodule "deps/internal/vnescene"]
 	path = deps/internal/vnescene
 	url = https://github.com/vertexnova/vnescene.git
-[submodule "deps/internal/vneintraction"]
-	path = deps/internal/vneintraction
-	url = https://github.com/vertexnova/vneintraction.git
 [submodule "deps/internal/vneinteraction"]
 	path = deps/internal/vneinteraction
 	url = https://github.com/vertexnova/vneinteraction.git

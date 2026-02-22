@@ -95,6 +95,7 @@ endif()
 #==============================================================================
 # Internal Libraries (deps/internal) - use if already in build, else add
 #==============================================================================
+option(VNE_WITH_VNEINTRACTION "Enable private dependency vneinteraction" OFF)
 include(VneUseDep)
 include(VneTestbedDeps)
 
@@ -117,8 +118,7 @@ vnetestbed_use_dep(TARGET vne::math SUBDIR vnemath DEPS_DIR INTERNAL
 vnetestbed_use_dep(TARGET vne::scene SUBDIR vnescene DEPS_DIR INTERNAL
   CACHE_VARS VNE_SCENE_TESTS OFF BUILD_TESTS OFF BUILD_EXAMPLES OFF
   SAVE_RESTORE BUILD_TESTS BUILD_EXAMPLES)
-vnetestbed_use_dep(TARGET vne::intraction SUBDIR vneintraction DEPS_DIR INTERNAL
-  CACHE_VARS BUILD_TESTS OFF BUILD_EXAMPLES OFF SAVE_RESTORE BUILD_TESTS BUILD_EXAMPLES)
+include(VNEPrivateDeps)
 
 # Include dirs and config
 set(VNE_INCLUDE_DIR ${PROJECT_SOURCE_DIR}/include)
