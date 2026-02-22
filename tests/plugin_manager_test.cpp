@@ -20,7 +20,7 @@
 // ---------------------------------------------------------------------------
 // Helper: a minimal plugin that records every lifecycle call.
 // ---------------------------------------------------------------------------
-struct RecordingPlugin : public vne::testbed_ns::IPlugin {
+struct RecordingPlugin : public vne::testbed::IPlugin {
     int init_count{0};
     int update_count{0};
     int render_count{0};
@@ -43,12 +43,12 @@ struct RecordingPlugin : public vne::testbed_ns::IPlugin {
 // ---------------------------------------------------------------------------
 
 TEST(PluginManager, StartsEmpty) {
-    vne::testbed_ns::PluginManager mgr;
+    vne::testbed::PluginManager mgr;
     EXPECT_EQ(mgr.pluginCount(), 0u);
 }
 
 TEST(PluginManager, AddPluginIncreasesCount) {
-    vne::testbed_ns::PluginManager mgr;
+    vne::testbed::PluginManager mgr;
     mgr.addPlugin(std::make_unique<RecordingPlugin>());
     EXPECT_EQ(mgr.pluginCount(), 1u);
     mgr.addPlugin(std::make_unique<RecordingPlugin>());
@@ -56,7 +56,7 @@ TEST(PluginManager, AddPluginIncreasesCount) {
 }
 
 TEST(PluginManager, InitCallsOnInitOnAllPlugins) {
-    vne::testbed_ns::PluginManager mgr;
+    vne::testbed::PluginManager mgr;
     auto* a = new RecordingPlugin;
     auto* b = new RecordingPlugin;
     mgr.addPlugin(std::unique_ptr<RecordingPlugin>(a));
@@ -69,7 +69,7 @@ TEST(PluginManager, InitCallsOnInitOnAllPlugins) {
 }
 
 TEST(PluginManager, UpdatePassesDeltaTime) {
-    vne::testbed_ns::PluginManager mgr;
+    vne::testbed::PluginManager mgr;
     auto* p = new RecordingPlugin;
     mgr.addPlugin(std::unique_ptr<RecordingPlugin>(p));
 
@@ -80,7 +80,7 @@ TEST(PluginManager, UpdatePassesDeltaTime) {
 }
 
 TEST(PluginManager, RenderCallsOnRenderOnAllPlugins) {
-    vne::testbed_ns::PluginManager mgr;
+    vne::testbed::PluginManager mgr;
     auto* a = new RecordingPlugin;
     auto* b = new RecordingPlugin;
     mgr.addPlugin(std::unique_ptr<RecordingPlugin>(a));
@@ -93,7 +93,7 @@ TEST(PluginManager, RenderCallsOnRenderOnAllPlugins) {
 }
 
 TEST(PluginManager, ImGuiCallsOnImGuiOnAllPlugins) {
-    vne::testbed_ns::PluginManager mgr;
+    vne::testbed::PluginManager mgr;
     auto* p = new RecordingPlugin;
     mgr.addPlugin(std::unique_ptr<RecordingPlugin>(p));
 
@@ -103,10 +103,10 @@ TEST(PluginManager, ImGuiCallsOnImGuiOnAllPlugins) {
 }
 
 TEST(PluginManager, ShutdownCallsOnShutdownInReverseOrder) {
-    vne::testbed_ns::PluginManager mgr;
+    vne::testbed::PluginManager mgr;
 
     std::vector<int> shutdown_order;
-    struct OrderedPlugin : vne::testbed_ns::IPlugin {
+    struct OrderedPlugin : vne::testbed::IPlugin {
         int id;
         std::vector<int>* order;
         OrderedPlugin(int id_, std::vector<int>* order_) : id(id_), order(order_) {}
@@ -130,7 +130,7 @@ TEST(PluginManager, ShutdownCallsOnShutdownInReverseOrder) {
 }
 
 TEST(PluginManager, ShutdownClearsPlugins) {
-    vne::testbed_ns::PluginManager mgr;
+    vne::testbed::PluginManager mgr;
     mgr.addPlugin(std::make_unique<RecordingPlugin>());
     EXPECT_EQ(mgr.pluginCount(), 1u);
 
@@ -144,8 +144,8 @@ TEST(PluginManager, ShutdownClearsPlugins) {
 // ---------------------------------------------------------------------------
 
 TEST(SceneInspectorPlugin, CanBeInstantiatedAndRegistered) {
-    vne::testbed_ns::PluginManager mgr;
-    mgr.addPlugin(std::make_unique<vne::testbed_ns::SceneInspectorPlugin>());
+    vne::testbed::PluginManager mgr;
+    mgr.addPlugin(std::make_unique<vne::testbed::SceneInspectorPlugin>());
     EXPECT_EQ(mgr.pluginCount(), 1u);
 
     // Exercise full lifecycle without crashing
@@ -163,9 +163,9 @@ TEST(SceneInspectorPlugin, CanBeInstantiatedAndRegistered) {
 
 TEST(IPlugin, AbstractBaseCannotBeInstantiatedDirectly) {
     // Compile-time check: RecordingPlugin is a valid concrete IPlugin.
-    static_assert(std::is_base_of_v<vne::testbed_ns::IPlugin, RecordingPlugin>);
+    static_assert(std::is_base_of_v<vne::testbed::IPlugin, RecordingPlugin>);
     static_assert(!std::is_abstract_v<RecordingPlugin>);
-    static_assert(std::is_abstract_v<vne::testbed_ns::IPlugin>);
+    static_assert(std::is_abstract_v<vne::testbed::IPlugin>);
 }
 
 // ---------------------------------------------------------------------------
@@ -173,9 +173,9 @@ TEST(IPlugin, AbstractBaseCannotBeInstantiatedDirectly) {
 // ---------------------------------------------------------------------------
 
 TEST(IRenderAdapter, IsAbstract) {
-    static_assert(std::is_abstract_v<vne::testbed_ns::IRenderAdapter>);
+    static_assert(std::is_abstract_v<vne::testbed::IRenderAdapter>);
 }
 
 TEST(IDebugDraw, IsAbstract) {
-    static_assert(std::is_abstract_v<vne::testbed_ns::IDebugDraw>);
+    static_assert(std::is_abstract_v<vne::testbed::IDebugDraw>);
 }

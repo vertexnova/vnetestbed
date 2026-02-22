@@ -39,7 +39,7 @@
 #include <vector>
 
 namespace vne {
-namespace testbed_ns {
+namespace testbed {
 
 /**
  * @class PluginManager
@@ -91,5 +91,5 @@ private:
     std::vector<std::unique_ptr<IPlugin>> plugins_;
 };
 
-}  // namespace testbed_ns
+}  // namespace testbed
 }  // namespace vne

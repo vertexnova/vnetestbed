@@ -14,7 +14,7 @@
 #include <cassert>
 
 namespace vne {
-namespace testbed_ns {
+namespace testbed {
 
 void PluginManager::addPlugin(std::unique_ptr<IPlugin> plugin) {
     assert(plugin != nullptr && "PluginManager::addPlugin: plugin must not be null");
@@ -56,5 +56,5 @@ std::size_t PluginManager::pluginCount() const noexcept {
     return plugins_.size();
 }
 
-}  // namespace testbed_ns
+}  // namespace testbed
 }  // namespace vne

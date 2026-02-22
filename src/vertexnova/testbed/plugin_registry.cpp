@@ -12,7 +12,7 @@
 #include "vertexnova/testbed/plugin_registry.h"
 
 namespace vne {
-namespace testbed_ns {
+namespace testbed {
 
 PluginRegistry& PluginRegistry::instance() {
     static PluginRegistry reg;
@@ -32,5 +32,5 @@ std::vector<IPlugin*> PluginRegistry::getPlugins() {
     return out;
 }
 
-}  // namespace testbed_ns
+}  // namespace testbed
 }  // namespace vne

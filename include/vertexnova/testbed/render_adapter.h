@@ -24,7 +24,7 @@
  */
 
 namespace vne {
-namespace testbed_ns {
+namespace testbed {
 
 /**
  * @class IRenderAdapter
@@ -51,5 +51,5 @@ public:
     virtual void shutdown() = 0;
 };
 
-}  // namespace testbed_ns
+}  // namespace testbed
 }  // namespace vne

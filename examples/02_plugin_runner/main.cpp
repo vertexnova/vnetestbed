@@ -20,7 +20,7 @@
 #include <memory>
 
 namespace vne {
-namespace testbed_ns {
+namespace testbed {
 
 // --- Runner-side implementations of core interfaces (GLFW/OpenGL) ---
 
@@ -53,7 +53,7 @@ public:
     void endFrame() override { /* swap done by runner */ }
 };
 
-}  // namespace testbed_ns
+}  // namespace testbed
 }  // namespace vne
 
 int main() {
@@ -78,16 +78,16 @@ int main() {
         return 1;
     }
 
-    vne::testbed_ns::GlfwWindow glfwWindow(window);
-    vne::testbed_ns::StubRendererAdapter stubRenderer;
+    vne::testbed::GlfwWindow glfwWindow(window);
+    vne::testbed::StubRendererAdapter stubRenderer;
 
-    vne::testbed_ns::AppContext ctx;
+    vne::testbed::AppContext ctx;
     ctx.window = &glfwWindow;
     ctx.renderer = &stubRenderer;
     ctx.debugDraw = nullptr;
 
-    vne::testbed_ns::PluginManager mgr;
-    mgr.addPlugin(std::make_unique<vne::testbed_ns::StubPlugin>());
+    vne::testbed::PluginManager mgr;
+    mgr.addPlugin(std::make_unique<vne::testbed::StubPlugin>());
     mgr.init();
 
     auto prev = std::chrono::steady_clock::now();

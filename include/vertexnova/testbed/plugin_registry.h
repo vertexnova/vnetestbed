@@ -22,7 +22,7 @@
 #include <vector>
 
 namespace vne {
-namespace testbed_ns {
+namespace testbed {
 
 /**
  * @class PluginRegistry
@@ -51,10 +51,10 @@ private:
  */
 #define REGISTER_PLUGIN(PluginClass)                                                       \
     static bool VNETESTBED_REG_##PluginClass = []() {                                      \
-        ::vne::testbed_ns::PluginRegistry::instance().registerPlugin(                      \
+        ::vne::testbed::PluginRegistry::instance().registerPlugin(                      \
             #PluginClass, std::make_unique<PluginClass>());                                \
         return true;                                                                       \
     }()
 
-}  // namespace testbed_ns
+}  // namespace testbed
 }  // namespace vne

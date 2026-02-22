@@ -29,7 +29,7 @@
 #include <string_view>
 
 namespace vne {
-namespace testbed_ns {
+namespace testbed {
 
 /** @brief Axis-aligned bounding box used by IDebugDraw. */
 struct DebugAabb {
@@ -70,5 +70,5 @@ public:
     virtual void flush() = 0;
 };
 
-}  // namespace testbed_ns
+}  // namespace testbed
 }  // namespace vne

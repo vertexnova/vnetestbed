@@ -25,7 +25,7 @@
 #include "vertexnova/testbed/plugin.h"
 
 namespace vne {
-namespace testbed_ns {
+namespace testbed {
 
 /**
  * @class SceneInspectorPlugin
@@ -54,5 +54,5 @@ public:
     void onShutdown() override {}
 };
 
-}  // namespace testbed_ns
+}  // namespace testbed
 }  // namespace vne

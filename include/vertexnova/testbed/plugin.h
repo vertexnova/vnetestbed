@@ -17,7 +17,7 @@
  */
 
 namespace vne {
-namespace testbed_ns {
+namespace testbed {
 
 /**
  * @class IPlugin
@@ -51,5 +51,5 @@ public:
     virtual void onShutdown() = 0;
 };
 
-}  // namespace testbed_ns
+}  // namespace testbed
 }  // namespace vne

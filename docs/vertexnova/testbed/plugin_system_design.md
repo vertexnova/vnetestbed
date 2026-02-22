@@ -27,7 +27,7 @@ This document merges the **existing implementation** (vnedevtestbed: AppContext,
 - **PluginManager as the driver**: The runner uses a `PluginManager` that owns plugins and drives `init(ctx)`, `update(dt)`, `render()`, `imGui()`, `shutdown()` in the documented order. Shutdown runs in reverse registration order.
 - **Optional static registration**: Keep `PluginRegistry` + `REGISTER_PLUGIN(PluginClass)` as an optional convenience. The runner can either (a) add plugins explicitly to a `PluginManager` or (b) pull from `PluginRegistry::instance().getPlugins()` and then add them to the manager (or the manager can accept a registry in a future overload). So: PluginManager is the single driver; Registry is optional for discovery.
 - **AppContext and backend interfaces**: Keep `AppContext` with `IWindow*`, `IRenderAdapter*`, `IDebugDraw*`. Rename `IRendererAdapter` → `IRenderAdapter` and extend with `init(void* window_handle)` and `shutdown()` so the render adapter owns its lifecycle. Keep `IWindow` as-is. Upgrade `IDebugDraw` to the rich API with `vne::math::Vec3f`.
-- **Naming and layout**: Follow CODING_GUIDELINES.md: file names snake_case, no `i_` prefix; interface classes use `I` + PascalCase. Headers: `plugin.h`, `app_context.h`, `window.h`, `render_adapter.h`, `debug_draw.h`, `plugin_manager.h`, `plugin_registry.h`, and `plugins/scene_inspector_plugin.h`. Namespace: `vne::testbed_ns`. All under `include/vertexnova/testbed/` and `src/vertexnova/testbed/`.
+- **Naming and layout**: Follow CODING_GUIDELINES.md: file names snake_case, no `i_` prefix; interface classes use `I` + PascalCase. Headers: `plugin.h`, `app_context.h`, `window.h`, `render_adapter.h`, `debug_draw.h`, `plugin_manager.h`, `plugin_registry.h`, and `plugins/scene_inspector_plugin.h`. Namespace: `vne::testbed`. All under `include/vertexnova/testbed/` and `src/vertexnova/testbed/`.
 
 ---
 
@@ -36,7 +36,7 @@ This document merges the **existing implementation** (vnedevtestbed: AppContext,
 ### 3.1 Plugin lifecycle (`plugin.h`)
 
 ```cpp
-namespace vne::testbed_ns {
+namespace vne::testbed {
 
 struct AppContext;  // forward
 
@@ -137,7 +137,7 @@ Use Google Test; optionally VNE_LOG_* in one test to confirm logging; follow COD
 
 ## 7. Migration from current vnedevtestbed
 
-- Move headers/sources into `include/vertexnova/testbed/` and `src/vertexnova/testbed/`; namespace `vne::devtestbed` → `vne::testbed_ns`; includes `vertexnova/devtestbed/` → `vertexnova/testbed/`.
+- Move headers/sources into `include/vertexnova/testbed/` and `src/vertexnova/testbed/`; namespace `vne::devtestbed` → `vne::testbed`; includes `vertexnova/devtestbed/` → `vertexnova/testbed/`.
 - Change IPlugin to the combined signature: onInit(AppContext&) once; onUpdate(float), onRender(), onImGui(), onShutdown() with no context.
 - Rename IRendererAdapter → IRenderAdapter; add init(void*), shutdown() in the interface (implementations in runner).
 - Replace IDebugDraw::draw() with line/aabb/text/flush and Vec3f/DebugAabb in debug_draw.h.

@@ -17,7 +17,7 @@
  */
 
 namespace vne {
-namespace testbed_ns {
+namespace testbed {
 
 /** @brief Minimal window interface (size, poll); implemented by runner with GLFW etc. */
 struct IWindow {
@@ -51,5 +51,5 @@ struct AppContext {
     IDebugDraw* debugDraw = nullptr;
 };
 
-}  // namespace testbed_ns
+}  // namespace testbed
 }  // namespace vne

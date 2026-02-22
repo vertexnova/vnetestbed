@@ -13,7 +13,7 @@
 #include "vertexnova/testbed/plugin.h"
 
 namespace vne {
-namespace testbed_ns {
+namespace testbed {
 
 /** Stub plugin to validate PluginManager lifecycle (onInit -> update/render/imGui -> onShutdown). */
 struct StubPlugin : IPlugin {
@@ -24,5 +24,5 @@ struct StubPlugin : IPlugin {
     void onShutdown() override {}
 };
 
-}  // namespace testbed_ns
+}  // namespace testbed
 }  // namespace vne
