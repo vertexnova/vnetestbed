@@ -46,7 +46,7 @@ namespace testbed {
  * @brief Owns and drives the lifecycle of all registered plugins.
  */
 class PluginManager {
-public:
+   public:
     PluginManager() = default;
     ~PluginManager() = default;
 
@@ -87,7 +87,7 @@ public:
     /** @brief Number of currently registered plugins. */
     [[nodiscard]] std::size_t pluginCount() const noexcept;
 
-private:
+   private:
     std::vector<std::unique_ptr<IPlugin>> plugins_;
 };
 

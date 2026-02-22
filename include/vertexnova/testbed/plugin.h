@@ -29,7 +29,7 @@ namespace testbed {
  * and cleanup in onShutdown().
  */
 class IPlugin {
-public:
+   public:
     virtual ~IPlugin() = default;
 
     /** @brief Called once after all plugins are registered, before the main loop. */

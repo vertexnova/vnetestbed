@@ -29,7 +29,7 @@ namespace testbed {
  * @brief Singleton registry of IPlugin instances; runner iterates to call lifecycle.
  */
 class PluginRegistry {
-public:
+   public:
     static PluginRegistry& instance();
 
     void registerPlugin(std::string name, std::unique_ptr<IPlugin> plugin);
@@ -40,7 +40,7 @@ public:
     PluginRegistry(const PluginRegistry&) = delete;
     PluginRegistry& operator=(const PluginRegistry&) = delete;
 
-private:
+   private:
     PluginRegistry() = default;
     std::vector<std::pair<std::string, std::unique_ptr<IPlugin>>> plugins_;
 };
@@ -49,11 +49,10 @@ private:
  * @def REGISTER_PLUGIN(PluginClass)
  * @brief Register a default-constructed PluginClass at static init time. Use in one .cpp per plugin.
  */
-#define REGISTER_PLUGIN(PluginClass)                                                       \
-    static bool VNETESTBED_REG_##PluginClass = []() {                                      \
-        ::vne::testbed::PluginRegistry::instance().registerPlugin(                      \
-            #PluginClass, std::make_unique<PluginClass>());                                \
-        return true;                                                                       \
+#define REGISTER_PLUGIN(PluginClass)                                                                              \
+    static bool VNETESTBED_REG_##PluginClass = []() {                                                             \
+        ::vne::testbed::PluginRegistry::instance().registerPlugin(#PluginClass, std::make_unique<PluginClass>()); \
+        return true;                                                                                              \
     }()
 
 }  // namespace testbed

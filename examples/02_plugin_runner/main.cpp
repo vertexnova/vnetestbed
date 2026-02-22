@@ -25,8 +25,9 @@ namespace testbed {
 // --- Runner-side implementations of core interfaces (GLFW/OpenGL) ---
 
 class GlfwWindow : public IWindow {
-public:
-    explicit GlfwWindow(GLFWwindow* w) : window_(w) {}
+   public:
+    explicit GlfwWindow(GLFWwindow* w)
+        : window_(w) {}
     int getWidth() const override {
         int w = 0;
         glfwGetWindowSize(window_, &w, nullptr);
@@ -40,12 +41,12 @@ public:
     void pollEvents() override { glfwPollEvents(); }
     bool shouldClose() const override { return glfwWindowShouldClose(window_) != 0; }
 
-private:
+   private:
     GLFWwindow* window_;
 };
 
 class StubRendererAdapter : public IRendererAdapter {
-public:
+   public:
     void beginFrame() override {
         glClearColor(0.2f, 0.2f, 0.25f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT);

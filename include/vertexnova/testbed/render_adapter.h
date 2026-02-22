@@ -31,7 +31,7 @@ namespace testbed {
  * @brief Pluggable rendering backend interface for the testbed.
  */
 class IRenderAdapter {
-public:
+   public:
     virtual ~IRenderAdapter() = default;
 
     /**

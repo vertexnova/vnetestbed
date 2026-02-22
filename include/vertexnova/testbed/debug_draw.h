@@ -41,7 +41,7 @@ struct DebugAabb {
  * @brief Immediate-mode debug draw interface.
  */
 class IDebugDraw {
-public:
+   public:
     virtual ~IDebugDraw() = default;
 
     /**

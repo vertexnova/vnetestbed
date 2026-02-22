@@ -32,7 +32,7 @@ namespace testbed {
  * @brief Example plugin: scene graph inspector panel (stub).
  */
 class SceneInspectorPlugin : public IPlugin {
-public:
+   public:
     /** @brief Called once on startup; cache any scene references here. */
     void onInit() override {}
 
