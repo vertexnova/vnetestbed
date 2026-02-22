@@ -8,45 +8,63 @@
 # Autodoc:   yes
 #==============================================================================
 
-add_library(vnetestbed INTERFACE)
+set(SOURCE_FILES
+    vertexnova/testbed/plugin_registry.cpp
+    vertexnova/testbed/plugin_manager.cpp
+)
+
+set(HEADER_FILES
+    ${VNE_INCLUDE_DIR}/vertexnova/testbed/plugin.h
+    ${VNE_INCLUDE_DIR}/vertexnova/testbed/app_context.h
+    ${VNE_INCLUDE_DIR}/vertexnova/testbed/plugin_registry.h
+    ${VNE_INCLUDE_DIR}/vertexnova/testbed/render_adapter.h
+    ${VNE_INCLUDE_DIR}/vertexnova/testbed/debug_draw.h
+    ${VNE_INCLUDE_DIR}/vertexnova/testbed/plugin_manager.h
+    ${VNE_INCLUDE_DIR}/vertexnova/testbed/plugins/scene_inspector_plugin.h
+)
+
+add_library(vnetestbed STATIC ${SOURCE_FILES} ${HEADER_FILES})
 add_library(vne::testbed ALIAS vnetestbed)
 
+source_group("Sources" FILES ${SOURCE_FILES})
+source_group(TREE ${VNE_INCLUDE_DIR} PREFIX "Headers" FILES ${HEADER_FILES})
+
 target_include_directories(vnetestbed
-    INTERFACE
+    PUBLIC
         $<BUILD_INTERFACE:${VNE_INCLUDE_DIR}>
         $<BUILD_INTERFACE:${VNE_SRC_DIR}>
         $<INSTALL_INTERFACE:include>
 )
 
 target_link_libraries(vnetestbed
-    INTERFACE
+    PUBLIC
         vne::testbed::Warnings
         vne::testbed::BuildSettings
 )
 
 if(TARGET vne::common)
-    target_link_libraries(vnetestbed INTERFACE vne::common)
+    target_link_libraries(vnetestbed PUBLIC vne::common)
 endif()
 if(TARGET vne::logging)
-    target_link_libraries(vnetestbed INTERFACE vne::logging)
+    target_link_libraries(vnetestbed PUBLIC vne::logging)
 endif()
 if(TARGET glfw)
-    target_link_libraries(vnetestbed INTERFACE glfw)
+    target_link_libraries(vnetestbed PUBLIC glfw)
 endif()
 if(TARGET glad::glad)
-    target_link_libraries(vnetestbed INTERFACE glad::glad)
+    target_link_libraries(vnetestbed PUBLIC glad::glad)
 endif()
 if(TARGET vne::events)
-    target_link_libraries(vnetestbed INTERFACE vne::events)
+    target_link_libraries(vnetestbed PUBLIC vne::events)
 endif()
 if(TARGET vne::math)
-    target_link_libraries(vnetestbed INTERFACE vne::math)
+    target_link_libraries(vnetestbed PUBLIC vne::math)
 endif()
 if(TARGET vne::scene)
-    target_link_libraries(vnetestbed INTERFACE vne::scene)
+    target_link_libraries(vnetestbed PUBLIC vne::scene)
 endif()
 if(TARGET vne::interaction)
-    target_link_libraries(vnetestbed INTERFACE vne::interaction)
+    target_link_libraries(vnetestbed PUBLIC vne::interaction)
 endif()
 
-target_compile_features(vnetestbed INTERFACE cxx_std_20)
+target_compile_features(vnetestbed PUBLIC cxx_std_20)

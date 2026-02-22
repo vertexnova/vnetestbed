@@ -12,16 +12,17 @@
 
 /**
  * @file plugin_registry.h
- * @brief Singleton registry for dev-testbed plugins and REGISTER_PLUGIN macro.
+ * @brief Singleton registry for testbed plugins and REGISTER_PLUGIN macro.
  */
 
-#include "vertexnova/devtestbed/plugin.h"
+#include "vertexnova/testbed/plugin.h"
+
 #include <memory>
 #include <string>
 #include <vector>
 
 namespace vne {
-namespace devtestbed {
+namespace testbed_ns {
 
 /**
  * @class PluginRegistry
@@ -49,11 +50,11 @@ private:
  * @brief Register a default-constructed PluginClass at static init time. Use in one .cpp per plugin.
  */
 #define REGISTER_PLUGIN(PluginClass)                                                       \
-    static bool VNEDEVTESTBED_REG_##PluginClass = []() {                                   \
-        ::vne::devtestbed::PluginRegistry::instance().registerPlugin(                      \
+    static bool VNETESTBED_REG_##PluginClass = []() {                                      \
+        ::vne::testbed_ns::PluginRegistry::instance().registerPlugin(                      \
             #PluginClass, std::make_unique<PluginClass>());                                \
-        return true;                                                                      \
+        return true;                                                                       \
     }()
 
-}  // namespace devtestbed
+}  // namespace testbed_ns
 }  // namespace vne

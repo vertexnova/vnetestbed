@@ -9,17 +9,18 @@
  * ----------------------------------------------------------------------
  */
 
-#include "vertexnova/devtestbed/app_context.h"
-#include "vertexnova/devtestbed/plugin_registry.h"
+#include "vertexnova/testbed/app_context.h"
+#include "vertexnova/testbed/plugin_manager.h"
+#include "stub_plugin.h"
 
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
 
 #include <chrono>
-#include <vector>
+#include <memory>
 
 namespace vne {
-namespace devtestbed {
+namespace testbed_ns {
 
 // --- Runner-side implementations of core interfaces (GLFW/OpenGL) ---
 
@@ -52,7 +53,7 @@ public:
     void endFrame() override { /* swap done by runner */ }
 };
 
-}  // namespace devtestbed
+}  // namespace testbed_ns
 }  // namespace vne
 
 int main() {
@@ -65,7 +66,7 @@ int main() {
 #ifdef __APPLE__
     glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GLFW_TRUE);
 #endif
-    GLFWwindow* window = glfwCreateWindow(800, 600, "vnedevtestbed runner", nullptr, nullptr);
+    GLFWwindow* window = glfwCreateWindow(800, 600, "vnetestbed plugin runner", nullptr, nullptr);
     if (!window) {
         glfwTerminate();
         return 1;
@@ -77,32 +78,29 @@ int main() {
         return 1;
     }
 
-    vne::devtestbed::GlfwWindow glfwWindow(window);
-    vne::devtestbed::StubRendererAdapter stubRenderer;
+    vne::testbed_ns::GlfwWindow glfwWindow(window);
+    vne::testbed_ns::StubRendererAdapter stubRenderer;
 
-    vne::devtestbed::AppContext ctx;
+    vne::testbed_ns::AppContext ctx;
     ctx.window = &glfwWindow;
     ctx.renderer = &stubRenderer;
     ctx.debugDraw = nullptr;
 
-    std::vector<vne::devtestbed::IPlugin*> plugins = vne::devtestbed::PluginRegistry::instance().getPlugins();
-    for (vne::devtestbed::IPlugin* p : plugins)
-        p->onInit(ctx);
+    vne::testbed_ns::PluginManager mgr;
+    mgr.addPlugin(std::make_unique<vne::testbed_ns::StubPlugin>());
+    mgr.init();
 
     auto prev = std::chrono::steady_clock::now();
     while (!ctx.window->shouldClose()) {
         auto now = std::chrono::steady_clock::now();
-        double dt = std::chrono::duration<double>(now - prev).count();
+        float dt = static_cast<float>(std::chrono::duration<double>(now - prev).count());
         prev = now;
 
-        for (vne::devtestbed::IPlugin* p : plugins)
-            p->onUpdate(ctx, dt);
+        mgr.update(dt);
         if (ctx.renderer)
             ctx.renderer->beginFrame();
-        for (vne::devtestbed::IPlugin* p : plugins)
-            p->onRender(ctx);
-        for (vne::devtestbed::IPlugin* p : plugins)
-            p->onGui(ctx);
+        mgr.render();
+        mgr.imGui();
         if (ctx.renderer)
             ctx.renderer->endFrame();
 
@@ -110,8 +108,7 @@ int main() {
         ctx.window->pollEvents();
     }
 
-    for (auto it = plugins.rbegin(); it != plugins.rend(); ++it)
-        (*it)->onShutdown(ctx);
+    mgr.shutdown();
 
     glfwDestroyWindow(window);
     glfwTerminate();
