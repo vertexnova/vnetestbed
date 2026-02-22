@@ -279,6 +279,38 @@ TEST_F(LayerStackTest, ClearDetachesOverlays) {
 }
 
 // ---------------------------------------------------------------------------
+// ILayer: setEnabled calls onEnable/onDisable
+// ---------------------------------------------------------------------------
+
+TEST_F(LayerStackTest, SetEnabledFalseCallsOnDisable) {
+    auto* p = pushRecordingLayer();
+    ASSERT_TRUE(p->isEnabled());
+    p->setEnabled(false);
+    EXPECT_FALSE(p->isEnabled());
+    EXPECT_EQ(p->disable_count, 1);
+}
+
+TEST_F(LayerStackTest, SetEnabledTrueCallsOnEnable) {
+    RecordingLayer layer("Test");
+    layer.setEnabled(false);
+    ASSERT_FALSE(layer.isEnabled());
+    layer.setEnabled(true);
+    EXPECT_TRUE(layer.isEnabled());
+    EXPECT_EQ(layer.enable_count, 1);
+}
+
+TEST_F(LayerStackTest, SetEnabledNoOpWhenAlreadySame) {
+    RecordingLayer layer("Test");
+    layer.setEnabled(true);   // already true -> no callback
+    EXPECT_EQ(layer.enable_count, 0);
+    EXPECT_EQ(layer.disable_count, 0);
+
+    layer.setEnabled(false);
+    layer.setEnabled(false);  // already false -> no callback
+    EXPECT_EQ(layer.disable_count, 1);
+}
+
+// ---------------------------------------------------------------------------
 // LayerStack: disabled and invisible layers
 // ---------------------------------------------------------------------------
 
@@ -353,6 +385,71 @@ TEST(SceneInspectorPlugin, CreateLayersReturnsValidLayer) {
     ASSERT_EQ(layers.size(), 1u);
     ASSERT_NE(layers[0], nullptr);
     EXPECT_EQ(layers[0]->getName(), "SceneInspector");
+}
+
+// ---------------------------------------------------------------------------
+// PluginRegistry: registerPlugin and createAndPushLayers
+// ---------------------------------------------------------------------------
+
+struct MockPlugin : public vne::testbed::IPlugin {
+    std::string name_;
+    int layer_count_{0};
+
+    MockPlugin(std::string name, int layer_count)
+        : name_(std::move(name)), layer_count_(layer_count) {}
+
+    std::string getName() const override { return name_; }
+
+    std::vector<std::unique_ptr<vne::testbed::ILayer>> createLayers() override {
+        std::vector<std::unique_ptr<vne::testbed::ILayer>> out;
+        for (int i = 0; i < layer_count_; ++i) {
+            out.push_back(std::make_unique<RecordingLayer>("MockLayer" + std::to_string(i)));
+        }
+        return out;
+    }
+};
+
+TEST(PluginRegistry, RegisterPluginWithNullDoesNotIncreaseCount) {
+    auto& reg = vne::testbed::PluginRegistry::instance();
+    const auto before = reg.getPluginCount();
+    reg.registerPlugin(nullptr);
+    EXPECT_EQ(reg.getPluginCount(), before);
+}
+
+TEST(PluginRegistry, RegisterPluginAddsPlugin) {
+    auto& reg = vne::testbed::PluginRegistry::instance();
+    const auto before = reg.getPluginCount();
+    reg.registerPlugin(std::make_unique<MockPlugin>("TestPlugin", 0));
+    EXPECT_EQ(reg.getPluginCount(), before + 1);
+}
+
+TEST_F(LayerStackTest, CreateAndPushLayersFromPluginWithMultipleLayers) {
+    auto& reg = vne::testbed::PluginRegistry::instance();
+    reg.registerPlugin(std::make_unique<MockPlugin>("MultiLayerPlugin", 3));
+
+    vne::testbed::LayerStack fresh_stack;
+    vne::testbed::AppContext ctx{};
+    reg.createAndPushLayers(fresh_stack, ctx);
+
+    EXPECT_GE(fresh_stack.getCount(), 3u);
+    EXPECT_NE(fresh_stack.findLayerByName("MockLayer0"), nullptr);
+    EXPECT_NE(fresh_stack.findLayerByName("MockLayer1"), nullptr);
+    EXPECT_NE(fresh_stack.findLayerByName("MockLayer2"), nullptr);
+
+    fresh_stack.clear();
+}
+
+TEST_F(LayerStackTest, CreateAndPushLayersFromPluginWithEmptyLayers) {
+    auto& reg = vne::testbed::PluginRegistry::instance();
+    reg.registerPlugin(std::make_unique<MockPlugin>("EmptyPlugin", 0));
+
+    vne::testbed::LayerStack fresh_stack;
+    vne::testbed::AppContext ctx{};
+    reg.createAndPushLayers(fresh_stack, ctx);
+
+    // Plugin with 0 layers adds nothing; createAndPushLayers does not crash
+    EXPECT_GE(fresh_stack.getCount(), 1u);  // at least SceneInspector from REGISTER_PLUGIN
+    fresh_stack.clear();
 }
 
 // ---------------------------------------------------------------------------
