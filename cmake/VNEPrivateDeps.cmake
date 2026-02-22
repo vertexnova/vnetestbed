@@ -1,0 +1,23 @@
+#==============================================================================
+# VNEPrivateDeps.cmake - Optional private dependency vneinteraction
+#
+# Prerequisites: VneTestbedDeps included; VNE_DEPS_INTERNAL_DIR set.
+# Only when VNE_WITH_VNEINTRACTION=ON do we add vne::interaction; when OFF we
+# never add_subdirectory or require the dir. No compile definitions for source.
+#==============================================================================
+
+if(VNE_WITH_VNEINTRACTION)
+  set(VNEINTRACTION_DIR "${VNE_DEPS_INTERNAL_DIR}/vneinteraction")
+  if(EXISTS "${VNEINTRACTION_DIR}/CMakeLists.txt")
+    vnetestbed_use_dep(TARGET vne::interaction SUBDIR vneinteraction DEPS_DIR INTERNAL
+      CACHE_VARS BUILD_TESTS OFF BUILD_EXAMPLES OFF SAVE_RESTORE BUILD_TESTS BUILD_EXAMPLES)
+    message(STATUS "vneinteraction enabled (from submodule).")
+  else()
+    message(FATAL_ERROR
+      "VNE_WITH_VNEINTRACTION=ON but submodule 'deps/internal/vneinteraction' is missing.\n"
+      "Run: git submodule update --init deps/internal/vneinteraction\n"
+      "Or disable: -DVNE_WITH_VNEINTRACTION=OFF")
+  endif()
+else()
+  message(STATUS "vneinteraction disabled. Building without private dependency.")
+endif()

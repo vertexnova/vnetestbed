@@ -37,6 +37,7 @@ if(NOT EXISTS "${VNECMAKE_MODULES}/VneUseDep.cmake")
     message(FATAL_ERROR "vnecmake not found at cmake/vnecmake. Run: git submodule update --init --recursive")
 endif()
 list(APPEND CMAKE_MODULE_PATH "${VNECMAKE_MODULES}")
+list(INSERT CMAKE_MODULE_PATH 0 "${CMAKE_CURRENT_LIST_DIR}/cmake")
 
 include(ProjectSetup)
 
@@ -94,48 +95,31 @@ endif()
 #==============================================================================
 # Internal Libraries (deps/internal) - use if already in build, else add
 #==============================================================================
+# vneinteraction is optional; only added when VNE_WITH_VNEINTRACTION=ON (see VNEPrivateDeps.cmake).
+option(VNE_WITH_VNEINTRACTION "Enable private dependency vneinteraction" OFF)
 include(VneUseDep)
+include(VneTestbedDeps)
 
-function(_vnetestbed_configure_vnecommon_dep)
-    get_property(_vt_build_examples_ty CACHE BUILD_EXAMPLES PROPERTY TYPE)
-    if(NOT _vt_build_examples_ty STREQUAL "NOTFOUND" AND _vt_build_examples_ty)
-        set(_vt_build_examples_saved "${BUILD_EXAMPLES}")
-    endif()
-    vne_use_dep(TARGET vne::common SUBDIR "${VNE_DEPS_INTERNAL_DIR}/vnecommon" BINARY_DIR "${CMAKE_BINARY_DIR}/deps/internal/vnecommon"
-        CACHE_VARS BUILD_EXAMPLES OFF)
-    if(DEFINED _vt_build_examples_saved)
-        set(BUILD_EXAMPLES "${_vt_build_examples_saved}" CACHE BOOL "" FORCE)
-    else()
-        unset(BUILD_EXAMPLES CACHE)
-    endif()
-endfunction()
-_vnetestbed_configure_vnecommon_dep()
+vnetestbed_use_dep(TARGET vne::common SUBDIR vnecommon DEPS_DIR INTERNAL
+  CACHE_VARS BUILD_EXAMPLES OFF SAVE_RESTORE BUILD_EXAMPLES)
+vnetestbed_use_dep(TARGET vne::logging SUBDIR vnelogging DEPS_DIR INTERNAL
+  CACHE_VARS BUILD_TESTS OFF BUILD_EXAMPLES OFF SAVE_RESTORE BUILD_TESTS BUILD_EXAMPLES)
 
-function(_vnetestbed_configure_vnelogging_dep)
-    get_property(_vt_build_tests_ty CACHE BUILD_TESTS PROPERTY TYPE)
-    if(NOT _vt_build_tests_ty STREQUAL "NOTFOUND" AND _vt_build_tests_ty)
-        set(_vt_build_tests_saved "${BUILD_TESTS}")
-    endif()
-    get_property(_vt_build_examples_ty CACHE BUILD_EXAMPLES PROPERTY TYPE)
-    if(NOT _vt_build_examples_ty STREQUAL "NOTFOUND" AND _vt_build_examples_ty)
-        set(_vt_build_examples_saved "${BUILD_EXAMPLES}")
-    endif()
-    set(BUILD_TESTS OFF CACHE BOOL "" FORCE)
-    set(BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
-    vne_use_dep(TARGET vne::logging SUBDIR "${VNE_DEPS_INTERNAL_DIR}/vnelogging" BINARY_DIR "${CMAKE_BINARY_DIR}/deps/internal/vnelogging"
-        CACHE_VARS BUILD_TESTS OFF BUILD_EXAMPLES OFF)
-    if(DEFINED _vt_build_tests_saved)
-        set(BUILD_TESTS "${_vt_build_tests_saved}" CACHE BOOL "" FORCE)
-    else()
-        unset(BUILD_TESTS CACHE)
-    endif()
-    if(DEFINED _vt_build_examples_saved)
-        set(BUILD_EXAMPLES "${_vt_build_examples_saved}" CACHE BOOL "" FORCE)
-    else()
-        unset(BUILD_EXAMPLES CACHE)
-    endif()
-endfunction()
-_vnetestbed_configure_vnelogging_dep()
+# External Libraries (deps/external)
+vnetestbed_use_dep(TARGET glfw SUBDIR glfw DEPS_DIR EXTERNAL
+  CACHE_VARS GLFW_BUILD_TESTS OFF GLFW_BUILD_EXAMPLES OFF GLFW_BUILD_DOCS OFF
+  SAVE_RESTORE GLFW_BUILD_DOCS)
+vnetestbed_use_dep(TARGET glad::glad SUBDIR glad DEPS_DIR INTERNAL)
+
+vnetestbed_use_dep(TARGET vne::events SUBDIR vneevents DEPS_DIR INTERNAL
+  CACHE_VARS BUILD_TESTS OFF BUILD_EXAMPLES OFF SAVE_RESTORE BUILD_TESTS BUILD_EXAMPLES)
+vnetestbed_use_dep(TARGET vne::math SUBDIR vnemath DEPS_DIR INTERNAL
+  CACHE_VARS VNE_MATH_TESTS OFF BUILD_TESTS OFF BUILD_EXAMPLES OFF
+  SAVE_RESTORE BUILD_TESTS BUILD_EXAMPLES)
+vnetestbed_use_dep(TARGET vne::scene SUBDIR vnescene DEPS_DIR INTERNAL
+  CACHE_VARS VNE_SCENE_TESTS OFF BUILD_TESTS OFF BUILD_EXAMPLES OFF
+  SAVE_RESTORE BUILD_TESTS BUILD_EXAMPLES)
+include(VNEPrivateDeps)
 
 # Include dirs and config
 set(VNE_INCLUDE_DIR ${PROJECT_SOURCE_DIR}/include)
