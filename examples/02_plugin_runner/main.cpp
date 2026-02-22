@@ -45,13 +45,15 @@ class GlfwWindow : public IWindow {
     GLFWwindow* window_;
 };
 
-class StubRendererAdapter : public IRendererAdapter {
+class StubRendererAdapter : public IRenderAdapter {
    public:
+    bool init(void* /*window_handle*/) override { return true; }
     void beginFrame() override {
         glClearColor(0.2f, 0.2f, 0.25f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT);
     }
     void endFrame() override { /* swap done by runner */ }
+    void shutdown() override {}
 };
 
 }  // namespace testbed

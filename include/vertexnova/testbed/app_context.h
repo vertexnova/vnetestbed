@@ -16,6 +16,8 @@
  * Core does not depend on GLFW/OpenGL; the runner supplies concrete implementations.
  */
 
+#include "vertexnova/testbed/render_adapter.h"
+
 namespace vne {
 namespace testbed {
 
@@ -26,13 +28,6 @@ struct IWindow {
     virtual int getHeight() const = 0;
     virtual void pollEvents() = 0;
     virtual bool shouldClose() const = 0;
-};
-
-/** @brief Minimal renderer adapter (begin/end frame); implemented by runner. */
-struct IRendererAdapter {
-    virtual ~IRendererAdapter() = default;
-    virtual void beginFrame() = 0;
-    virtual void endFrame() = 0;
 };
 
 /** @brief Optional debug draw; can be nullptr. */
@@ -47,7 +42,7 @@ struct IDebugDraw {
  */
 struct AppContext {
     IWindow* window = nullptr;
-    IRendererAdapter* renderer = nullptr;
+    IRenderAdapter* renderer = nullptr;
     IDebugDraw* debugDraw = nullptr;
 };
 
