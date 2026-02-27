@@ -2,6 +2,18 @@
 
 This document merges the **existing implementation** (vnedevtestbed: AppContext, PluginRegistry, REGISTER_PLUGIN, runner) with the **new ideas** (PluginManager, lifecycle-only hooks, richer IDebugDraw, IRenderAdapter with init/shutdown) into a single, implementable design for `vertexnova/testbed` in the main vnetestbed library.
 
+## Implementation status (current codebase)
+
+The **current vnetestbed implementation** follows a **layer-based** design that differs from the “PluginManager + IPlugin lifecycle” described below:
+
+- **No PluginManager.** The driver is **LayerStack**. The runner creates a LayerStack and calls `onUpdate(dt)`, `onBeginRender(ctx)`, `onRender(ctx)`, `onGuiBegin` / `onGuiRender` / `onGuiEnd(ctx)`, and `onEvent(event)` on it each frame.
+- **IPlugin** does not receive per-frame hooks. It has **getName()** and **createLayers()** only. Plugins are registered with **PluginRegistry::registerPlugin** (or **REGISTER_PLUGIN(PluginClass)**) and **PluginRegistry::instance().createAndPushLayers(stack, ctx)** pushes layers from all plugins onto the stack.
+- **ILayer** is the runtime unit: **onAttach(AppContext&)** once (so layers can store window/renderer/debugDraw), then **onUpdate**, **onBeginRender**, **onRender**, **onGuiBegin** / **onGuiRender** / **onGuiEnd**, **onDetach**. Render context is **RenderContext** (FrameInfo + debug_draw), not passed to IPlugin.
+- **AppContext** holds IWindow*, IRenderAdapter*, IDebugDraw* (minimal `draw()` in app_context.h; rich API in debug_draw.h with line/aabb/text/flush).
+- **IRenderAdapter**: init(void*), beginFrame(), endFrame(), shutdown() — as in this design.
+
+See **testbed.md** for the actual API and usage.
+
 ---
 
 ## 1. Existing vs new (summary)
