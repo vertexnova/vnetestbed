@@ -45,11 +45,22 @@ else()
 endif()
 
 #==============================================================================
-# Test sources
+# Test sources — one file per logical unit
+#   recording_layer.h   shared header-only test helper (no .cpp)
+#   smoke_test.cpp      basic sanity check
+#   layer_test.cpp      ILayer state machine (standalone, no LayerStack)
+#   layer_stack_test.cpp    LayerStack lifecycle, dispatch, ordering
+#   plugin_registry_test.cpp    PluginRegistry registration and layer creation
+#   scene_inspector_test.cpp    SceneInspectorLayer and SceneInspectorPlugin
+#   context_test.cpp    AppContext, RenderContext, FrameInfo, interface traits
 #==============================================================================
 set(TEST_SOURCES
     smoke_test.cpp
+    layer_test.cpp
     layer_stack_test.cpp
+    plugin_registry_test.cpp
+    scene_inspector_test.cpp
+    context_test.cpp
 )
 
 #==============================================================================
@@ -62,6 +73,7 @@ target_include_directories(vnetestbed_tests
         ${GTEST_INCLUDE_DIRS}
         ${VNE_INCLUDE_DIR}
         ${VNE_SRC_DIR}
+        ${CMAKE_CURRENT_SOURCE_DIR}   # exposes recording_layer.h to all test TUs and IDE
 )
 
 target_link_libraries(vnetestbed_tests

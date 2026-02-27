@@ -25,6 +25,10 @@ void PluginRegistry::registerPlugin(std::unique_ptr<IPlugin> plugin) {
     }
 }
 
+void PluginRegistry::reset() {
+    plugins_.clear();
+}
+
 void PluginRegistry::createAndPushLayers(LayerStack& stack, AppContext& ctx) {
     for (auto& plugin : plugins_) {
         if (!plugin) {

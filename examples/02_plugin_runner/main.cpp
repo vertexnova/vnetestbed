@@ -35,7 +35,7 @@ class GlfwWindow : public IWindow {
     }
     int getHeight() const override {
         int h = 0;
-        glfwGetWindowSize(window_, &h, nullptr);
+        glfwGetWindowSize(window_, nullptr, &h);
         return h;
     }
     void pollEvents() override { glfwPollEvents(); }

@@ -9,61 +9,21 @@
  * ----------------------------------------------------------------------
  */
 
+/**
+ * @file layer_stack_test.cpp
+ * @brief Unit tests for LayerStack: lifecycle dispatch, overlay management,
+ *        visibility/enable gating, pop/clear ordering, and event propagation.
+ */
+
 #include <gtest/gtest.h>
 
-#include "vertexnova/testbed/app_context.h"
-#include "vertexnova/testbed/layer.h"
+#include "recording_layer.h"
+
 #include "vertexnova/testbed/layer_stack.h"
-#include "vertexnova/testbed/plugin_registry.h"
-#include "vertexnova/testbed/render_context.h"
-#include "vertexnova/testbed/render_adapter.h"
-#include "vertexnova/testbed/plugins/scene_inspector_layer.h"
-#include "vertexnova/testbed/plugins/scene_inspector_plugin.h"
 
 // ---------------------------------------------------------------------------
-// Helper: a minimal layer that records every lifecycle call.
+// Fixture
 // ---------------------------------------------------------------------------
-struct RecordingLayer : public vne::testbed::ILayer {
-    int attach_count{0};
-    int detach_count{0};
-    int enable_count{0};
-    int disable_count{0};
-    static int total_detach_count;  // for tests that clear() and cannot keep pointers
-    int update_count{0};
-    int begin_render_count{0};
-    int render_count{0};
-    int gui_begin_count{0};
-    int gui_render_count{0};
-    int gui_end_count{0};
-    float last_dt{0.0F};
-
-    explicit RecordingLayer(const std::string& name = "RecordingLayer")
-        : ILayer(name) {}
-
-    void onAttach(vne::testbed::AppContext& /*ctx*/) override { ++attach_count; }
-    void onDetach() override {
-        ++detach_count;
-        ++total_detach_count;
-    }
-    void onEnable() override { ++enable_count; }
-    void onDisable() override { ++disable_count; }
-    void onUpdate(float dt) override {
-        ++update_count;
-        last_dt = dt;
-    }
-    void onBeginRender(const vne::testbed::RenderContext& /*ctx*/) override { ++begin_render_count; }
-    void onRender(const vne::testbed::RenderContext& /*ctx*/) override { ++render_count; }
-    void onGuiBegin(const vne::testbed::RenderContext& /*ctx*/) override { ++gui_begin_count; }
-    void onGuiRender(const vne::testbed::RenderContext& /*ctx*/) override { ++gui_render_count; }
-    void onGuiEnd(const vne::testbed::RenderContext& /*ctx*/) override { ++gui_end_count; }
-};
-
-int RecordingLayer::total_detach_count = 0;
-
-// ---------------------------------------------------------------------------
-// LayerStack tests
-// ---------------------------------------------------------------------------
-
 class LayerStackTest : public ::testing::Test {
    protected:
     void SetUp() override { RecordingLayer::total_detach_count = 0; }
@@ -86,7 +46,7 @@ class LayerStackTest : public ::testing::Test {
 };
 
 // ---------------------------------------------------------------------------
-// LayerStack: basic lifecycle (using fixture)
+// Basic lifecycle
 // ---------------------------------------------------------------------------
 
 TEST_F(LayerStackTest, StartsEmpty) {
@@ -101,55 +61,25 @@ TEST_F(LayerStackTest, PushLayerIncreasesCount) {
     EXPECT_EQ(stack.getCount(), 2u);
 }
 
-TEST_F(LayerStackTest, PushLayerCallsOnAttach) {
+TEST_F(LayerStackTest, PushLayerCallsOnAttachAndOnEnable) {
     auto* a = pushRecordingLayer("A");
     auto* b = pushRecordingLayer("B");
     EXPECT_EQ(a->attach_count, 1);
+    EXPECT_EQ(a->enable_count, 1);
     EXPECT_EQ(b->attach_count, 1);
+    EXPECT_EQ(b->enable_count, 1);
 }
 
-TEST_F(LayerStackTest, UpdatePassesDeltaTime) {
-    auto* p = pushRecordingLayer();
-    stack.onUpdate(0.016F);
-    EXPECT_EQ(p->update_count, 1);
-    EXPECT_FLOAT_EQ(p->last_dt, 0.016F);
+TEST_F(LayerStackTest, PushLayerWithNullDoesNothing) {
+    stack.pushLayer(nullptr, app_ctx);
+    EXPECT_EQ(stack.getCount(), 0u);
 }
 
-TEST_F(LayerStackTest, OnBeginRenderCallsOnBeginRenderOnAllLayers) {
-    auto* a = pushRecordingLayer();
-    auto* b = pushRecordingLayer();
-    stack.onBeginRender(render_ctx);
-    EXPECT_EQ(a->begin_render_count, 1);
-    EXPECT_EQ(b->begin_render_count, 1);
+TEST_F(LayerStackTest, PopLayerWhenEmptyReturnsNull) {
+    EXPECT_EQ(stack.popLayer(), nullptr);
 }
 
-TEST_F(LayerStackTest, OnRenderCallsOnRenderOnAllLayers) {
-    auto* a = pushRecordingLayer();
-    auto* b = pushRecordingLayer();
-    stack.onRender(render_ctx);
-    EXPECT_EQ(a->render_count, 1);
-    EXPECT_EQ(b->render_count, 1);
-}
-
-TEST_F(LayerStackTest, OnGuiBeginCallsOnGuiBeginOnAllLayers) {
-    auto* p = pushRecordingLayer();
-    stack.onGuiBegin(render_ctx);
-    EXPECT_EQ(p->gui_begin_count, 1);
-}
-
-TEST_F(LayerStackTest, OnGuiRenderCallsOnGuiRenderOnAllLayers) {
-    auto* p = pushRecordingLayer();
-    stack.onGuiRender(render_ctx);
-    EXPECT_EQ(p->gui_render_count, 1);
-}
-
-TEST_F(LayerStackTest, OnGuiEndCallsOnGuiEndOnAllLayers) {
-    auto* p = pushRecordingLayer();
-    stack.onGuiEnd(render_ctx);
-    EXPECT_EQ(p->gui_end_count, 1);
-}
-
-TEST_F(LayerStackTest, PopLayerCallsOnDetach) {
+TEST_F(LayerStackTest, PopLayerCallsOnDisableAndOnDetach) {
     pushRecordingLayer();
     pushRecordingLayer();
     auto ptr2 = stack.popLayer();
@@ -158,16 +88,30 @@ TEST_F(LayerStackTest, PopLayerCallsOnDetach) {
     auto* r2 = dynamic_cast<RecordingLayer*>(ptr2.get());
     ASSERT_NE(r1, nullptr);
     ASSERT_NE(r2, nullptr);
+    EXPECT_EQ(r1->disable_count, 1);
     EXPECT_EQ(r1->detach_count, 1);
+    EXPECT_EQ(r2->disable_count, 1);
     EXPECT_EQ(r2->detach_count, 1);
     EXPECT_EQ(stack.getCount(), 0u);
 }
 
-TEST_F(LayerStackTest, ClearClearsLayers) {
-    pushRecordingLayer();
-    EXPECT_EQ(stack.getCount(), 1u);
-    stack.clear();
-    EXPECT_EQ(stack.getCount(), 0u);
+TEST_F(LayerStackTest, PopLayerSetsEnabledFalse) {
+    pushRecordingLayer("Pop");
+    auto ptr = stack.popLayer();
+    auto* r = dynamic_cast<RecordingLayer*>(ptr.get());
+    ASSERT_NE(r, nullptr);
+    // is_enabled_ must be updated — not just the callback fired
+    EXPECT_FALSE(r->isEnabled());
+    EXPECT_EQ(r->disable_count, 1);
+}
+
+TEST_F(LayerStackTest, PopAlreadyDisabledLayerDoesNotCallOnDisableAgain) {
+    auto* p = pushRecordingLayer();
+    p->setEnabled(false);  // disable_count = 1
+    auto ptr = stack.popLayer();
+    auto* r = dynamic_cast<RecordingLayer*>(ptr.get());
+    ASSERT_NE(r, nullptr);
+    EXPECT_EQ(r->disable_count, 1);  // no second onDisable on pop
 }
 
 TEST_F(LayerStackTest, ClearCallsOnDetach) {
@@ -175,13 +119,34 @@ TEST_F(LayerStackTest, ClearCallsOnDetach) {
     pushRecordingLayer();
     stack.clear();
     EXPECT_EQ(RecordingLayer::total_detach_count, 2);
+    EXPECT_EQ(stack.getCount(), 0u);
 }
 
+TEST_F(LayerStackTest, ClearDetachesLayersInReverseOrder) {
+    std::vector<std::string> log;
+    auto* a = pushRecordingLayer("A");
+    auto* b = pushRecordingLayer("B");
+    auto* c = pushRecordingLayer("C");
+    a->call_log = &log;
+    b->call_log = &log;
+    c->call_log = &log;
+
+    stack.clear();  // clears stack, so log is safe after this
+
+    // Last pushed must be first detached (LIFO)
+    ASSERT_EQ(log.size(), 3u);
+    EXPECT_EQ(log[0], "C::onDetach");
+    EXPECT_EQ(log[1], "B::onDetach");
+    EXPECT_EQ(log[2], "A::onDetach");
+}
+
+// ---------------------------------------------------------------------------
+// Query methods
+// ---------------------------------------------------------------------------
+
 TEST_F(LayerStackTest, FindLayerByName) {
-    pushRecordingLayer("RecordingLayer");
-    auto* found = stack.findLayerByName("RecordingLayer");
-    ASSERT_NE(found, nullptr);
-    EXPECT_EQ(found->getName(), "RecordingLayer");
+    pushRecordingLayer("Target");
+    ASSERT_NE(stack.findLayerByName("Target"), nullptr);
     EXPECT_EQ(stack.findLayerByName("NonExistent"), nullptr);
 }
 
@@ -194,18 +159,129 @@ TEST_F(LayerStackTest, GetAllReturnsAllLayers) {
     EXPECT_EQ(all[1]->getName(), "B");
 }
 
-TEST_F(LayerStackTest, PopLayerWhenEmptyReturnsNull) {
-    auto ptr = stack.popLayer();
-    EXPECT_EQ(ptr, nullptr);
+// ---------------------------------------------------------------------------
+// Per-frame dispatch
+// ---------------------------------------------------------------------------
+
+TEST_F(LayerStackTest, UpdatePassesDeltaTime) {
+    auto* p = pushRecordingLayer();
+    stack.onUpdate(0.016F);
+    EXPECT_EQ(p->update_count, 1);
+    EXPECT_FLOAT_EQ(p->last_dt, 0.016F);
 }
 
-TEST_F(LayerStackTest, PushLayerWithNullDoesNothing) {
-    stack.pushLayer(nullptr, app_ctx);
-    EXPECT_EQ(stack.getCount(), 0u);
+TEST_F(LayerStackTest, OnBeginRenderCallsAllLayers) {
+    auto* a = pushRecordingLayer();
+    auto* b = pushRecordingLayer();
+    stack.onBeginRender(render_ctx);
+    EXPECT_EQ(a->begin_render_count, 1);
+    EXPECT_EQ(b->begin_render_count, 1);
+}
+
+TEST_F(LayerStackTest, OnRenderCallsAllLayers) {
+    auto* a = pushRecordingLayer();
+    auto* b = pushRecordingLayer();
+    stack.onRender(render_ctx);
+    EXPECT_EQ(a->render_count, 1);
+    EXPECT_EQ(b->render_count, 1);
+}
+
+TEST_F(LayerStackTest, OnGuiBeginCallsAllLayers) {
+    auto* p = pushRecordingLayer();
+    stack.onGuiBegin(render_ctx);
+    EXPECT_EQ(p->gui_begin_count, 1);
+}
+
+TEST_F(LayerStackTest, OnGuiRenderCallsAllLayers) {
+    auto* p = pushRecordingLayer();
+    stack.onGuiRender(render_ctx);
+    EXPECT_EQ(p->gui_render_count, 1);
+}
+
+TEST_F(LayerStackTest, OnGuiEndCallsAllLayers) {
+    auto* p = pushRecordingLayer();
+    stack.onGuiEnd(render_ctx);
+    EXPECT_EQ(p->gui_end_count, 1);
 }
 
 // ---------------------------------------------------------------------------
-// LayerStack: overlays
+// onGuiEnd: full reverse of onGuiBegin
+// ---------------------------------------------------------------------------
+
+TEST_F(LayerStackTest, OnGuiEndFiresInFullReverseOrder) {
+    std::vector<std::string> log;
+    auto* l0 = pushRecordingLayer("L0");
+    auto* l1 = pushRecordingLayer("L1");
+    auto* o0 = pushRecordingOverlay("O0");
+    auto* o1 = pushRecordingOverlay("O1");
+    l0->call_log = &log;
+    l1->call_log = &log;
+    o0->call_log = &log;
+    o1->call_log = &log;
+
+    stack.onGuiEnd(render_ctx);
+
+    // Null before assertions: fixture teardown calls clear() → onDetach() which
+    // would access the local `log` via call_log after it goes out of scope.
+    l0->call_log = nullptr;
+    l1->call_log = nullptr;
+    o0->call_log = nullptr;
+    o1->call_log = nullptr;
+
+    // onGuiBegin order: L0, L1, O0, O1
+    // onGuiEnd full reverse: overlays reversed (O1, O0), then layers reversed (L1, L0)
+    ASSERT_EQ(log.size(), 4u);
+    EXPECT_EQ(log[0], "O1::onGuiEnd");
+    EXPECT_EQ(log[1], "O0::onGuiEnd");
+    EXPECT_EQ(log[2], "L1::onGuiEnd");
+    EXPECT_EQ(log[3], "L0::onGuiEnd");
+}
+
+// ---------------------------------------------------------------------------
+// Disabled and invisible layer gating
+// ---------------------------------------------------------------------------
+
+TEST_F(LayerStackTest, DisabledLayerDoesNotReceiveUpdate) {
+    auto* p = pushRecordingLayer();
+    p->setEnabled(false);
+    stack.onUpdate(0.016F);
+    EXPECT_EQ(p->update_count, 0);
+}
+
+TEST_F(LayerStackTest, DisabledLayerDoesNotReceiveRender) {
+    auto* p = pushRecordingLayer();
+    p->setEnabled(false);
+    stack.onRender(render_ctx);
+    EXPECT_EQ(p->render_count, 0);
+}
+
+TEST_F(LayerStackTest, SetEnabledFalseStopsAllFrameCallbacks) {
+    auto* p = pushRecordingLayer();
+    p->setEnabled(false);
+    stack.onUpdate(0.016F);
+    stack.onRender(render_ctx);
+    stack.onGuiRender(render_ctx);
+    EXPECT_EQ(p->update_count, 0);
+    EXPECT_EQ(p->render_count, 0);
+    EXPECT_EQ(p->gui_render_count, 0);
+}
+
+TEST_F(LayerStackTest, InvisibleLayerDoesNotReceiveOnRender) {
+    auto* p = pushRecordingLayer();
+    p->setVisible(false);
+    stack.onRender(render_ctx);
+    EXPECT_EQ(p->render_count, 0);
+}
+
+TEST_F(LayerStackTest, InvisibleLayerStillReceivesOnGuiRender) {
+    auto* p = pushRecordingLayer();
+    p->setVisible(false);
+    stack.onGuiRender(render_ctx);
+    EXPECT_EQ(p->gui_render_count, 1);
+}
+
+// ---------------------------------------------------------------------------
+// Overlays
 // ---------------------------------------------------------------------------
 
 TEST_F(LayerStackTest, PushOverlayIncreasesOverlayCount) {
@@ -215,23 +291,10 @@ TEST_F(LayerStackTest, PushOverlayIncreasesOverlayCount) {
     EXPECT_EQ(stack.getOverlayCount(), 2u);
 }
 
-TEST_F(LayerStackTest, PushOverlayCallsOnAttach) {
+TEST_F(LayerStackTest, PushOverlayCallsOnAttachAndOnEnable) {
     auto* o = pushRecordingOverlay("Overlay");
     EXPECT_EQ(o->attach_count, 1);
-}
-
-TEST_F(LayerStackTest, PopOverlayCallsOnDetach) {
-    pushRecordingOverlay();
-    auto ptr = stack.popOverlay();
-    auto* r = dynamic_cast<RecordingLayer*>(ptr.get());
-    ASSERT_NE(r, nullptr);
-    EXPECT_EQ(r->detach_count, 1);
-    EXPECT_EQ(stack.getOverlayCount(), 0u);
-}
-
-TEST_F(LayerStackTest, PopOverlayWhenEmptyReturnsNull) {
-    auto ptr = stack.popOverlay();
-    EXPECT_EQ(ptr, nullptr);
+    EXPECT_EQ(o->enable_count, 1);
 }
 
 TEST_F(LayerStackTest, PushOverlayWithNullDoesNothing) {
@@ -239,26 +302,26 @@ TEST_F(LayerStackTest, PushOverlayWithNullDoesNothing) {
     EXPECT_EQ(stack.getOverlayCount(), 0u);
 }
 
-TEST_F(LayerStackTest, FindLayerByNameSearchesOverlays) {
-    pushRecordingLayer("Layer");
-    pushRecordingOverlay("Overlay");
-    auto* found_layer = stack.findLayerByName("Layer");
-    auto* found_overlay = stack.findLayerByName("Overlay");
-    ASSERT_NE(found_layer, nullptr);
-    ASSERT_NE(found_overlay, nullptr);
-    EXPECT_EQ(found_layer->getName(), "Layer");
-    EXPECT_EQ(found_overlay->getName(), "Overlay");
+TEST_F(LayerStackTest, PopOverlayWhenEmptyReturnsNull) {
+    EXPECT_EQ(stack.popOverlay(), nullptr);
 }
 
-TEST_F(LayerStackTest, GetAllReturnsLayersThenOverlays) {
-    pushRecordingLayer("L1");
-    pushRecordingLayer("L2");
-    pushRecordingOverlay("O1");
-    auto all = stack.getAll();
-    ASSERT_EQ(all.size(), 3u);
-    EXPECT_EQ(all[0]->getName(), "L1");
-    EXPECT_EQ(all[1]->getName(), "L2");
-    EXPECT_EQ(all[2]->getName(), "O1");
+TEST_F(LayerStackTest, PopOverlayCallsOnDisableAndOnDetach) {
+    pushRecordingOverlay();
+    auto ptr = stack.popOverlay();
+    auto* r = dynamic_cast<RecordingLayer*>(ptr.get());
+    ASSERT_NE(r, nullptr);
+    EXPECT_EQ(r->disable_count, 1);
+    EXPECT_EQ(r->detach_count, 1);
+    EXPECT_EQ(stack.getOverlayCount(), 0u);
+}
+
+TEST_F(LayerStackTest, PopOverlaySetsEnabledFalse) {
+    pushRecordingOverlay("PopOv");
+    auto ptr = stack.popOverlay();
+    auto* r = dynamic_cast<RecordingLayer*>(ptr.get());
+    ASSERT_NE(r, nullptr);
+    EXPECT_FALSE(r->isEnabled());
 }
 
 TEST_F(LayerStackTest, OverlaysReceiveUpdateAndRender) {
@@ -278,218 +341,20 @@ TEST_F(LayerStackTest, ClearDetachesOverlays) {
     EXPECT_EQ(stack.getOverlayCount(), 0u);
 }
 
-// ---------------------------------------------------------------------------
-// ILayer: setEnabled calls onEnable/onDisable
-// ---------------------------------------------------------------------------
-
-TEST_F(LayerStackTest, SetEnabledFalseCallsOnDisable) {
-    auto* p = pushRecordingLayer();
-    ASSERT_TRUE(p->isEnabled());
-    p->setEnabled(false);
-    EXPECT_FALSE(p->isEnabled());
-    EXPECT_EQ(p->disable_count, 1);
+TEST_F(LayerStackTest, FindLayerByNameSearchesOverlays) {
+    pushRecordingLayer("Layer");
+    pushRecordingOverlay("Overlay");
+    ASSERT_NE(stack.findLayerByName("Layer"), nullptr);
+    ASSERT_NE(stack.findLayerByName("Overlay"), nullptr);
 }
 
-TEST_F(LayerStackTest, SetEnabledTrueCallsOnEnable) {
-    RecordingLayer layer("Test");
-    layer.setEnabled(false);
-    ASSERT_FALSE(layer.isEnabled());
-    layer.setEnabled(true);
-    EXPECT_TRUE(layer.isEnabled());
-    EXPECT_EQ(layer.enable_count, 1);
-}
-
-TEST_F(LayerStackTest, SetEnabledNoOpWhenAlreadySame) {
-    RecordingLayer layer("Test");
-    layer.setEnabled(true);  // already true -> no callback
-    EXPECT_EQ(layer.enable_count, 0);
-    EXPECT_EQ(layer.disable_count, 0);
-
-    layer.setEnabled(false);
-    layer.setEnabled(false);  // already false -> no callback
-    EXPECT_EQ(layer.disable_count, 1);
-}
-
-// ---------------------------------------------------------------------------
-// LayerStack: disabled and invisible layers
-// ---------------------------------------------------------------------------
-
-TEST_F(LayerStackTest, DisabledLayerDoesNotReceiveUpdate) {
-    auto* p = pushRecordingLayer();
-    p->setEnabled(false);
-    stack.onUpdate(0.016F);
-    EXPECT_EQ(p->update_count, 0);
-}
-
-TEST_F(LayerStackTest, DisabledLayerDoesNotReceiveRender) {
-    auto* p = pushRecordingLayer();
-    p->setEnabled(false);
-    stack.onRender(render_ctx);
-    EXPECT_EQ(p->render_count, 0);
-}
-
-TEST_F(LayerStackTest, InvisibleLayerDoesNotReceiveOnRender) {
-    auto* p = pushRecordingLayer();
-    p->setVisible(false);
-    stack.onRender(render_ctx);
-    EXPECT_EQ(p->render_count, 0);
-}
-
-TEST_F(LayerStackTest, InvisibleLayerStillReceivesOnGuiRender) {
-    auto* p = pushRecordingLayer();
-    p->setVisible(false);
-    stack.onGuiRender(render_ctx);
-    EXPECT_EQ(p->gui_render_count, 1);
-}
-
-TEST_F(LayerStackTest, PopLayerCallsOnDisableBeforeOnDetach) {
-    auto* p = pushRecordingLayer();
-    p->setEnabled(true);
-    auto ptr = stack.popLayer();
-    auto* r = dynamic_cast<RecordingLayer*>(ptr.get());
-    ASSERT_NE(r, nullptr);
-    EXPECT_EQ(r->disable_count, 1);
-    EXPECT_EQ(r->detach_count, 1);
-}
-
-// ---------------------------------------------------------------------------
-// SceneInspectorLayer: compile and instantiate (runtime layer)
-// ---------------------------------------------------------------------------
-
-TEST_F(LayerStackTest, SceneInspectorLayerCanBeInstantiatedAndPushed) {
-    stack.pushLayer(std::make_unique<vne::testbed::SceneInspectorLayer>(), app_ctx);
-    EXPECT_EQ(stack.getCount(), 1u);
-
-    stack.onUpdate(0.016F);
-    stack.onBeginRender(render_ctx);
-    stack.onRender(render_ctx);
-    stack.onGuiBegin(render_ctx);
-    stack.onGuiRender(render_ctx);
-    stack.onGuiEnd(render_ctx);
-    stack.clear();
-    EXPECT_EQ(stack.getCount(), 0u);
-}
-
-// ---------------------------------------------------------------------------
-// SceneInspectorPlugin: creates SceneInspectorLayer (discovery)
-// ---------------------------------------------------------------------------
-
-TEST(SceneInspectorPlugin, GetName) {
-    vne::testbed::SceneInspectorPlugin plugin;
-    EXPECT_EQ(plugin.getName(), "SceneInspector");
-}
-
-TEST(SceneInspectorPlugin, CreateLayersReturnsValidLayer) {
-    vne::testbed::SceneInspectorPlugin plugin;
-    auto layers = plugin.createLayers();
-    ASSERT_EQ(layers.size(), 1u);
-    ASSERT_NE(layers[0], nullptr);
-    EXPECT_EQ(layers[0]->getName(), "SceneInspector");
-}
-
-// ---------------------------------------------------------------------------
-// PluginRegistry: registerPlugin and createAndPushLayers
-// ---------------------------------------------------------------------------
-
-struct MockPlugin : public vne::testbed::IPlugin {
-    std::string name_;
-    int layer_count_{0};
-
-    MockPlugin(std::string name, int layer_count)
-        : name_(std::move(name))
-        , layer_count_(layer_count) {}
-
-    std::string getName() const override { return name_; }
-
-    std::vector<std::unique_ptr<vne::testbed::ILayer>> createLayers() override {
-        std::vector<std::unique_ptr<vne::testbed::ILayer>> out;
-        for (int i = 0; i < layer_count_; ++i) {
-            out.push_back(std::make_unique<RecordingLayer>("MockLayer" + std::to_string(i)));
-        }
-        return out;
-    }
-};
-
-TEST(PluginRegistry, RegisterPluginWithNullDoesNotIncreaseCount) {
-    auto& reg = vne::testbed::PluginRegistry::instance();
-    const auto before = reg.getPluginCount();
-    reg.registerPlugin(nullptr);
-    EXPECT_EQ(reg.getPluginCount(), before);
-}
-
-TEST(PluginRegistry, RegisterPluginAddsPlugin) {
-    auto& reg = vne::testbed::PluginRegistry::instance();
-    const auto before = reg.getPluginCount();
-    reg.registerPlugin(std::make_unique<MockPlugin>("TestPlugin", 0));
-    EXPECT_EQ(reg.getPluginCount(), before + 1);
-}
-
-TEST_F(LayerStackTest, CreateAndPushLayersFromPluginWithMultipleLayers) {
-    auto& reg = vne::testbed::PluginRegistry::instance();
-    reg.registerPlugin(std::make_unique<MockPlugin>("MultiLayerPlugin", 3));
-
-    vne::testbed::LayerStack fresh_stack;
-    vne::testbed::AppContext ctx{};
-    reg.createAndPushLayers(fresh_stack, ctx);
-
-    EXPECT_GE(fresh_stack.getCount(), 3u);
-    EXPECT_NE(fresh_stack.findLayerByName("MockLayer0"), nullptr);
-    EXPECT_NE(fresh_stack.findLayerByName("MockLayer1"), nullptr);
-    EXPECT_NE(fresh_stack.findLayerByName("MockLayer2"), nullptr);
-
-    fresh_stack.clear();
-}
-
-TEST_F(LayerStackTest, CreateAndPushLayersFromPluginWithEmptyLayers) {
-    auto& reg = vne::testbed::PluginRegistry::instance();
-    reg.registerPlugin(std::make_unique<MockPlugin>("EmptyPlugin", 0));
-
-    vne::testbed::LayerStack fresh_stack;
-    vne::testbed::AppContext ctx{};
-    reg.createAndPushLayers(fresh_stack, ctx);
-
-    // Plugin with 0 layers adds nothing; createAndPushLayers does not crash
-    EXPECT_GE(fresh_stack.getCount(), 1u);  // at least SceneInspector from REGISTER_PLUGIN
-    fresh_stack.clear();
-}
-
-// ---------------------------------------------------------------------------
-// PluginRegistry: createAndPushLayers populates from registered plugins
-// ---------------------------------------------------------------------------
-
-TEST_F(LayerStackTest, CreateAndPushLayersPopulatesStack) {
-    EXPECT_GE(vne::testbed::PluginRegistry::instance().getPluginCount(), 1u);
-
-    vne::testbed::PluginRegistry::instance().createAndPushLayers(stack, app_ctx);
-    EXPECT_GE(stack.getCount(), 1u);
-
-    auto* found = stack.findLayerByName("SceneInspector");
-    ASSERT_NE(found, nullptr);
-    EXPECT_EQ(found->getName(), "SceneInspector");
-
-    stack.onUpdate(0.016F);
-    stack.onGuiRender(render_ctx);
-    stack.clear();
-}
-
-// ---------------------------------------------------------------------------
-// Interface sanity: ILayer, IPlugin, IRenderAdapter, IDebugDraw
-// ---------------------------------------------------------------------------
-
-TEST(ILayer, RecordingLayerIsConcreteILayer) {
-    static_assert(std::is_base_of_v<vne::testbed::ILayer, RecordingLayer>);
-    static_assert(!std::is_abstract_v<RecordingLayer>);
-}
-
-TEST(IPlugin, SceneInspectorPluginIsConcreteIPlugin) {
-    static_assert(std::is_base_of_v<vne::testbed::IPlugin, vne::testbed::SceneInspectorPlugin>);
-    static_assert(!std::is_abstract_v<vne::testbed::SceneInspectorPlugin>);
-}
-
-TEST(IRenderAdapter, IsAbstract) {
-    static_assert(std::is_abstract_v<vne::testbed::IRenderAdapter>);
-}
-
-TEST(IDebugDraw, IsAbstract) {
-    static_assert(std::is_abstract_v<vne::testbed::IDebugDraw>);
+TEST_F(LayerStackTest, GetAllReturnsLayersThenOverlays) {
+    pushRecordingLayer("L1");
+    pushRecordingLayer("L2");
+    pushRecordingOverlay("O1");
+    auto all = stack.getAll();
+    ASSERT_EQ(all.size(), 3u);
+    EXPECT_EQ(all[0]->getName(), "L1");
+    EXPECT_EQ(all[1]->getName(), "L2");
+    EXPECT_EQ(all[2]->getName(), "O1");
 }

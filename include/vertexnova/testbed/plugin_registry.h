@@ -41,8 +41,17 @@ class PluginRegistry {
     /** @brief Create layers from all plugins and push them to the stack. */
     void createAndPushLayers(LayerStack& stack, AppContext& ctx);
 
-    /** @brief Number of registered plugins (for tests). */
+    /** @brief Number of registered plugins. */
     [[nodiscard]] std::size_t getPluginCount() const { return plugins_.size(); }
+
+    /**
+     * @brief Remove all registered plugins.
+     *
+     * Intended for unit-test isolation only.  Production code should not call
+     * this; statically registered plugins (REGISTER_PLUGIN) will not re-register
+     * themselves after a reset.
+     */
+    void reset();
 
     PluginRegistry(const PluginRegistry&) = delete;
     PluginRegistry& operator=(const PluginRegistry&) = delete;

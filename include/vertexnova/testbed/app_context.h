@@ -12,38 +12,37 @@
 
 /**
  * @file app_context.h
- * @brief Backend-agnostic app context: window, renderer adapter, optional debugDraw.
- * Core does not depend on GLFW/OpenGL; the runner supplies concrete implementations.
+ * @brief Backend-agnostic app context: window, renderer adapter, optional debug draw.
+ *
+ * The testbed core does not depend on GLFW, OpenGL, or any specific
+ * rendering backend.  The runner constructs concrete implementations
+ * of IWindow, IRenderAdapter, and optionally IDebugDraw, then passes
+ * them through AppContext to every layer via onAttach().
+ *
+ * @see window.h       IWindow interface
+ * @see render_adapter.h  IRenderAdapter interface
+ * @see debug_draw.h   IDebugDraw interface
  */
 
+#include "vertexnova/testbed/debug_draw.h"
 #include "vertexnova/testbed/render_adapter.h"
+#include "vertexnova/testbed/window.h"
 
 namespace vne {
 namespace testbed {
 
-/** @brief Minimal window interface (size, poll); implemented by runner with GLFW etc. */
-struct IWindow {
-    virtual ~IWindow() = default;
-    virtual int getWidth() const = 0;
-    virtual int getHeight() const = 0;
-    virtual void pollEvents() = 0;
-    virtual bool shouldClose() const = 0;
-};
-
-/** @brief Optional debug draw; can be nullptr. */
-struct IDebugDraw {
-    virtual ~IDebugDraw() = default;
-    virtual void draw() = 0;
-};
-
 /**
  * @struct AppContext
  * @brief Opaque container filled by the runner; plugins access window/renderer/debugDraw.
+ *
+ * All pointers are non-owning.  The runner is responsible for the lifetime
+ * of each object and must ensure they outlive the LayerStack.
+ * @c debugDraw may be @c nullptr when debug drawing is not required.
  */
 struct AppContext {
-    IWindow* window = nullptr;
-    IRenderAdapter* renderer = nullptr;
-    IDebugDraw* debugDraw = nullptr;
+    IWindow* window{nullptr};
+    IRenderAdapter* renderer{nullptr};
+    IDebugDraw* debugDraw{nullptr};
 };
 
 }  // namespace testbed

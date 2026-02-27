@@ -48,9 +48,7 @@ std::unique_ptr<ILayer> LayerStack::popLayer() {
     }
     auto layer = std::move(layers_.back());
     layers_.pop_back();
-    if (layer->isEnabled()) {
-        layer->onDisable();
-    }
+    layer->setEnabled(false);  // updates is_enabled_ and fires onDisable() if needed
     layer->onDetach();
     return layer;
 }
@@ -61,14 +59,13 @@ std::unique_ptr<ILayer> LayerStack::popOverlay() {
     }
     auto overlay = std::move(overlays_.back());
     overlays_.pop_back();
-    if (overlay->isEnabled()) {
-        overlay->onDisable();
-    }
+    overlay->setEnabled(false);  // updates is_enabled_ and fires onDisable() if needed
     overlay->onDetach();
     return overlay;
 }
 
 void LayerStack::clear() {
+    // Tear down in reverse push order: overlays (LIFO) then layers (LIFO).
     for (auto it = overlays_.rbegin(); it != overlays_.rend(); ++it) {
         if (*it) {
             if ((*it)->isEnabled()) {
@@ -79,12 +76,12 @@ void LayerStack::clear() {
     }
     overlays_.clear();
 
-    for (auto& layer : layers_) {
-        if (layer) {
-            if (layer->isEnabled()) {
-                layer->onDisable();
+    for (auto it = layers_.rbegin(); it != layers_.rend(); ++it) {
+        if (*it) {
+            if ((*it)->isEnabled()) {
+                (*it)->onDisable();
             }
-            layer->onDetach();
+            (*it)->onDetach();
         }
     }
     layers_.clear();
@@ -156,12 +153,14 @@ void LayerStack::onGuiRender(const RenderContext& ctx) {
 }
 
 void LayerStack::onGuiEnd(const RenderContext& ctx) {
-    for (const auto& layer : layers_) {
-        if (layer && layer->isEnabled()) {
-            layer->onGuiEnd(ctx);
+    // Full reverse of onGuiBegin: overlays top-to-bottom first, then layers top-to-bottom.
+    // Mirrors the begin/end stack discipline (last begun is first ended).
+    for (auto it = overlays_.rbegin(); it != overlays_.rend(); ++it) {
+        if (*it && (*it)->isEnabled()) {
+            (*it)->onGuiEnd(ctx);
         }
     }
-    for (auto it = overlays_.rbegin(); it != overlays_.rend(); ++it) {
+    for (auto it = layers_.rbegin(); it != layers_.rend(); ++it) {
         if (*it && (*it)->isEnabled()) {
             (*it)->onGuiEnd(ctx);
         }

@@ -18,12 +18,11 @@
  * light panels using ImGui.  This layer does **not** depend on any
  * specific rendering backend; it only reads scene data and draws UI.
  *
- * This stub provides empty default implementations so that derived
- * classes (or unit tests) can override only the hooks they care about.
+ * This stub provides no overrides so the ILayer defaults apply; real
+ * ImGui logic will be added in onGuiRender() once the UI backend is wired.
  */
 
 #include "vertexnova/testbed/layer.h"
-#include "vertexnova/testbed/render_context.h"
 
 namespace vne {
 namespace testbed {
@@ -36,15 +35,6 @@ class SceneInspectorLayer : public ILayer {
    public:
     SceneInspectorLayer()
         : ILayer("SceneInspector") {}
-
-    void onAttach(AppContext& /*ctx*/) override {}
-    void onDetach() override {}
-    void onUpdate(float /*dt*/) override {}
-    void onBeginRender(const RenderContext& /*ctx*/) override {}
-    void onRender(const RenderContext& /*ctx*/) override {}
-    void onGuiBegin(const RenderContext& /*ctx*/) override {}
-    void onGuiRender(const RenderContext& /*ctx*/) override {}
-    void onGuiEnd(const RenderContext& /*ctx*/) override {}
 };
 
 }  // namespace testbed
