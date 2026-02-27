@@ -1,22 +1,36 @@
-# Testbed plugin system: final combined design
+# Testbed plugin system: design and history
 
-This document merges the **existing implementation** (vnedevtestbed: AppContext, PluginRegistry, REGISTER_PLUGIN, runner) with the **new ideas** (PluginManager, lifecycle-only hooks, richer IDebugDraw, IRenderAdapter with init/shutdown) into a single, implementable design for `vertexnova/testbed` in the main vnetestbed library.
+This document has two parts:
 
-## Implementation status (current codebase)
-
-The **current vnetestbed implementation** follows a **layer-based** design that differs from the “PluginManager + IPlugin lifecycle” described below:
-
-- **No PluginManager.** The driver is **LayerStack**. The runner creates a LayerStack and calls `onUpdate(dt)`, `onBeginRender(ctx)`, `onRender(ctx)`, `onGuiBegin` / `onGuiRender` / `onGuiEnd(ctx)`, and `onEvent(event)` on it each frame.
-- **IPlugin** does not receive per-frame hooks. It has **getName()** and **createLayers()** only. Plugins are registered with **PluginRegistry::registerPlugin** (or **REGISTER_PLUGIN(PluginClass)**) and **PluginRegistry::instance().createAndPushLayers(stack, ctx)** pushes layers from all plugins onto the stack.
-- **ILayer** is the runtime unit: **onAttach(AppContext&)** once (so layers can store window/renderer/debugDraw), then **onUpdate**, **onBeginRender**, **onRender**, **onGuiBegin** / **onGuiRender** / **onGuiEnd**, **onDetach**. Render context is **RenderContext** (FrameInfo + debug_draw), not passed to IPlugin.
-- **AppContext** holds IWindow*, IRenderAdapter*, IDebugDraw* (minimal `draw()` in app_context.h; rich API in debug_draw.h with line/aabb/text/flush).
-- **IRenderAdapter**: init(void*), beginFrame(), endFrame(), shutdown() — as in this design.
-
-See **testbed.md** for the actual API and usage.
+1. **Implemented architecture** — The codebase uses a **layer-based** design: **IPlugin** is a factory (`getName()`, `createLayers()`); **ILayer** has the lifecycle hooks; **LayerStack** drives layers. This is the intended, current design. It is described in **testbed.md** and summarized below.
+2. **Alternative design (not implemented)** — Sections 1–7 below describe a different design (PluginManager driving IPlugin lifecycle with onInit/onUpdate/onRender/onImGui/onShutdown). That design was considered but **not** adopted. It is kept here for context and possible future reference only.
 
 ---
 
-## 1. Existing vs new (summary)
+## Implemented architecture (layer-based)
+
+**Authoritative reference:** [testbed.md](testbed.md).
+
+| Concept | In this codebase |
+|--------|-------------------|
+| **IPlugin** | Factory only: `getName()`, `createLayers()` → `vector<unique_ptr<ILayer>>`. No lifecycle methods. |
+| **ILayer** | Runtime unit with lifecycle: `onAttach(AppContext&)`, `onDetach`, `onUpdate(float dt)`, `onBeginRender`, `onRender`, `onGuiBegin`, `onGuiRender`, `onGuiEnd`, `onEvent`. |
+| **Driver** | **LayerStack** (not PluginManager). Runner calls `stack.onUpdate(dt)`, `stack.onRender(ctx)`, etc. |
+| **Registration** | **PluginRegistry** singleton + `REGISTER_PLUGIN(PluginClass)`; `createAndPushLayers(stack, ctx)` pushes all plugins’ layers onto the stack. |
+| **Context** | **AppContext** (IWindow*, IRenderAdapter*, IDebugDraw*) passed to layers at **onAttach** only. Per-frame: **RenderContext** (FrameInfo, debug_draw) passed to layer callbacks. |
+| **IRenderAdapter** | init(void*), beginFrame(), endFrame(), shutdown(). |
+
+Plugins do not receive lifecycle callbacks. Layers do. The runner populates a LayerStack (via PluginRegistry or manual pushLayer), then drives the stack each frame.
+
+---
+
+## Alternative design (not implemented): PluginManager + IPlugin lifecycle
+
+The following sections describe a design where **IPlugin** has onInit/onUpdate/onRender/onImGui/onShutdown and a **PluginManager** drives plugins. **This is not what the codebase implements.** It is retained for design history and possible future evolution.
+
+---
+
+### 1. Existing vs new (summary)
 
 | Aspect | Existing (vnedevtestbed) | New (pasted design) |
 |--------|---------------------------|----------------------|
@@ -32,7 +46,7 @@ See **testbed.md** for the actual API and usage.
 
 ---
 
-## 2. Design decisions (combined)
+### 2. Design decisions (combined)
 
 - **Single plugin interface**: One `IPlugin` type used by both the runner and unit tests.
 - **Context at init only**: Plugins receive `AppContext&` only in `onInit(AppContext& ctx)`. They may store `ctx.window`, `ctx.renderer`, `ctx.debugDraw` for use in later hooks. All other hooks are context-free: `onUpdate(float dt)`, `onRender()`, `onImGui()`, `onShutdown()`. This keeps tests simple (mock AppContext at init or empty struct) and matches the “lifecycle-only” style of the new design.
@@ -43,9 +57,9 @@ See **testbed.md** for the actual API and usage.
 
 ---
 
-## 3. Final API (concise)
+### 3. Final API (concise)
 
-### 3.1 Plugin lifecycle (`plugin.h`)
+#### 3.1 Plugin lifecycle (`plugin.h`)
 
 ```cpp
 namespace vne::testbed {
@@ -68,14 +82,14 @@ public:
 - **onInit(AppContext& ctx)** called once; plugins may store pointers from `ctx` (e.g. window, renderer, debugDraw).
 - **onUpdate(dt)**, **onRender()**, **onImGui()**, **onShutdown()** take no context; use `float` for dt to match the new design and tests.
 
-### 3.2 AppContext and backend interfaces
+#### 3.2 AppContext and backend interfaces
 
 - **AppContext** (`app_context.h`): struct holding `IWindow* window`, `IRenderAdapter* renderer`, `IDebugDraw* debugDraw` (all nullable). Runner fills it once and passes it to `PluginManager::init(ctx)`.
 - **IWindow** (`window.h` or in `app_context.h`): getWidth(), getHeight(), pollEvents(), shouldClose(). Unchanged from existing.
 - **IRenderAdapter** (`render_adapter.h`): init(void* window_handle), beginFrame(), endFrame(), shutdown(). Replaces the old “IRendererAdapter” with only begin/end; add init/shutdown so the adapter owns its lifecycle.
 - **IDebugDraw** (`debug_draw.h`): Use `vne::math::Vec3f` and a struct `DebugAabb { Vec3f min; Vec3f max; }`. Methods: line(from, to, color), aabb(box, color), text(pos, label), flush(). Replaces the single draw().
 
-### 3.3 Plugin manager and optional registry
+#### 3.3 Plugin manager and optional registry
 
 - **PluginManager** (`plugin_manager.h` / `.cpp`):
   - addPlugin(std::unique_ptr<IPlugin>)
@@ -88,13 +102,13 @@ public:
 
 - **PluginRegistry** (optional, `plugin_registry.h` / `.cpp`): singleton, registerPlugin(name, unique_ptr<IPlugin>), getPlugins(). Macro REGISTER_PLUGIN(PluginClass) for static registration. Runner may use it to discover plugins and then add them to a PluginManager, or add plugins explicitly.
 
-### 3.4 Example plugin
+#### 3.4 Example plugin
 
 - **SceneInspectorPlugin** (`plugins/scene_inspector_plugin.h`): implements `IPlugin` with empty overrides; stub for a future scene-graph inspector UI.
 
 ---
 
-## 4. File layout (final)
+### 4. File layout (final)
 
 ```
 include/vertexnova/testbed/
@@ -117,7 +131,7 @@ All headers listed in `src/CMakeLists.txt` (e.g. HEADER_FILES / source_group) an
 
 ---
 
-## 5. Runner flow (examples/02_plugin_runner or equivalent)
+### 5. Runner flow (examples/02_plugin_runner or equivalent)
 
 1. Create window (e.g. GLFW), create render adapter (e.g. OpenGL), optionally create debug-draw implementation.
 2. Build AppContext: set window, renderer, debugDraw.
@@ -137,7 +151,7 @@ Existing vnedevtestbed runner logic (order of init/update/render/gui/shutdown, r
 
 ---
 
-## 6. Unit tests
+### 6. Unit tests
 
 - **PluginManager**: StartsEmpty, AddPluginIncreasesCount, InitCallsOnInitOnAllPlugins (pass a mock or empty AppContext), UpdatePassesDeltaTime, RenderCallsOnRenderOnAllPlugins, ImGuiCallsOnImGuiOnAllPlugins, ShutdownCallsOnShutdownInReverseOrder, ShutdownClearsPlugins.
 - **SceneInspectorPlugin**: CanBeInstantiatedAndRegistered; run full lifecycle (init with empty AppContext, update, render, imGui, shutdown) without crash.
@@ -147,7 +161,7 @@ Use Google Test; optionally VNE_LOG_* in one test to confirm logging; follow COD
 
 ---
 
-## 7. Migration from current vnedevtestbed
+### 7. Migration from current vnedevtestbed
 
 - Move headers/sources into `include/vertexnova/testbed/` and `src/vertexnova/testbed/`; namespace `vne::devtestbed` → `vne::testbed`; includes `vertexnova/devtestbed/` → `vertexnova/testbed/`.
 - Change IPlugin to the combined signature: onInit(AppContext&) once; onUpdate(float), onRender(), onImGui(), onShutdown() with no context.
