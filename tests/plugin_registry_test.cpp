@@ -58,9 +58,7 @@ class PluginRegistryTest : public ::testing::Test {
         RecordingLayer::total_detach_count = 0;
         vne::testbed::PluginRegistry::instance().reset();
     }
-    void TearDown() override {
-        vne::testbed::PluginRegistry::instance().reset();
-    }
+    void TearDown() override { vne::testbed::PluginRegistry::instance().reset(); }
 
     vne::testbed::LayerStack stack;
     vne::testbed::AppContext ctx{};
