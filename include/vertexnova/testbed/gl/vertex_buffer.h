@@ -58,6 +58,9 @@ class VertexBuffer {
     VertexBuffer(VertexBuffer&&) = delete;
     VertexBuffer& operator=(VertexBuffer&&) = delete;
 
+    /** @brief OpenGL buffer name (GLuint). */
+    [[nodiscard]] unsigned int getId() const { return vbo_id_; }
+
     /** @brief Bind as the current GL_ARRAY_BUFFER. */
     void bind() const;
 

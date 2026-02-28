@@ -44,16 +44,12 @@
 #include "vertexnova/events/mouse_event.h"
 #include "vertexnova/events/key_event.h"
 #include "vertexnova/events/types.h"
-#include "vertexnova/logging/logging.h"
-
 #include "common/logging_guard.h"
 
 #include <GLFW/glfw3.h>
 
 #include <chrono>
 #include <memory>
-
-CREATE_VNE_LOGGER_CATEGORY("vnetestbed.examples")
 
 // ---------------------------------------------------------------------------
 // GlfwWindow — IWindow concrete implementation (runner-local, not in lib)

@@ -155,9 +155,9 @@ class OpenGLRenderDevice : public IRenderDevice {
         BlendState blend{};
         DepthState depth{};
         RasterizerState rasterizer{};
-        unsigned int vao_id{0};             ///< OpenGL VAO for this pipeline.
-        const void* last_vbo_ptr{nullptr};  ///< Last VBO bound to VAO (dirty tracking).
-        const void* last_ibo_ptr{nullptr};  ///< Last IBO bound to VAO (dirty tracking).
+        unsigned int vao_id{0};        ///< OpenGL VAO for this pipeline.
+        unsigned int last_vbo_id{0};   ///< Last VBO GL name bound to VAO (dirty tracking).
+        unsigned int last_ibo_id{0};   ///< Last IBO GL name bound to VAO (dirty tracking).
     };
 
     struct TextureSlot {
@@ -186,9 +186,12 @@ class OpenGLRenderDevice : public IRenderDevice {
 
     /**
      * @brief Bind the pipeline's VAO, wire the VBO attrib pointers, and
-     *        optionally bind an IBO.  Skipped when the VBO/IBO haven't changed.
+     *        optionally bind an IBO.  Skipped when the VBO/IBO GL names haven't changed.
      */
     void configureVao(PipelineSlot& ps, const BufferSlot& vbo_slot, const BufferSlot* ibo_slot);
+
+    /** @brief Invalidate all pipeline buffer caches (call when a buffer is destroyed). */
+    void invalidatePipelineBufferCaches();
 
     /** @brief Map DrawMode to the GL_* constant. */
     static unsigned int toGLPrimitive(DrawMode mode);

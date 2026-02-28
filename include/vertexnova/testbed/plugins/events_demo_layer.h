@@ -12,15 +12,15 @@
 
 /**
  * @file plugins/events_demo_layer.h
- * @brief Demo layer integrating vneevents: logs input events to stdout.
+ * @brief Demo layer integrating vneevents: logs input events via VNE_LOG_INFO.
  *
  * Implements vne::events::EventListener to receive events from
  * vne::events::EventManager.  The runner is responsible for converting GLFW
  * callbacks into vne events and pushing them to the EventManager.
  *
- * Each event is printed to stdout via std::printf.  The last kMaxEvents
- * descriptions are also kept in recent_events_ so a future ImGui overlay
- * can display them without needing a separate listener.
+ * Each event is logged via VNE_LOG_INFO.  The last kMaxEvents descriptions
+ * are also kept in recent_events_ so a future ImGui overlay can display them
+ * without needing a separate listener.
  *
  * This layer has no onRender() override; IDebugDraw::text() is not called.
  */

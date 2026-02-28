@@ -217,6 +217,7 @@ void OpenGLRenderDevice::destroy(BufferHandle handle) {
         return;
     }
     buffers_[handle.id].reset();
+    invalidatePipelineBufferCaches();
 }
 
 void OpenGLRenderDevice::destroy(PipelineHandle handle) {
@@ -329,10 +330,10 @@ void OpenGLRenderDevice::applyPipelineState(const PipelineSlot& ps) const {
 }
 
 void OpenGLRenderDevice::configureVao(PipelineSlot& ps, const BufferSlot& vbo_slot, const BufferSlot* ibo_slot) {
-    const void* vbo_ptr = vbo_slot.vbo.get();
-    const void* ibo_ptr = ibo_slot ? static_cast<const void*>(ibo_slot->ibo.get()) : nullptr;
+    const unsigned int vbo_id = vbo_slot.vbo->getId();
+    const unsigned int ibo_id = ibo_slot && ibo_slot->ibo ? ibo_slot->ibo->getId() : 0u;
 
-    if (vbo_ptr == ps.last_vbo_ptr && ibo_ptr == ps.last_ibo_ptr) {
+    if (vbo_id == ps.last_vbo_id && ibo_id == ps.last_ibo_id) {
         return;  // VAO is already configured for this VBO/IBO pair.
     }
 
@@ -370,8 +371,17 @@ void OpenGLRenderDevice::configureVao(PipelineSlot& ps, const BufferSlot& vbo_sl
         ibo_slot->ibo->unbind();
     }
 
-    ps.last_vbo_ptr = vbo_ptr;
-    ps.last_ibo_ptr = ibo_ptr;
+    ps.last_vbo_id = vbo_id;
+    ps.last_ibo_id = ibo_id;
+}
+
+void OpenGLRenderDevice::invalidatePipelineBufferCaches() {
+    for (auto& slot : pipelines_) {
+        if (slot) {
+            slot->last_vbo_id = 0u;
+            slot->last_ibo_id = 0u;
+        }
+    }
 }
 
 // ============================================================================

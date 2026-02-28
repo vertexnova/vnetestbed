@@ -60,6 +60,9 @@ class IndexBuffer {
     IndexBuffer(IndexBuffer&&) = delete;
     IndexBuffer& operator=(IndexBuffer&&) = delete;
 
+    /** @brief OpenGL buffer name (GLuint). */
+    [[nodiscard]] unsigned int getId() const { return ebo_id_; }
+
     /** @brief Bind as the current GL_ELEMENT_ARRAY_BUFFER. */
     void bind() const;
 
