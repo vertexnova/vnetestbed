@@ -23,9 +23,8 @@
 #include <glad/glad_es3.h>
 #endif
 
+#include "vertexnova/common/macros.h"
 #include <vertexnova/logging/logging.h>
-
-#include <cassert>
 
 namespace {
 
@@ -186,6 +185,12 @@ TextureHandle OpenGLRenderDevice::createTexture(const TextureDesc& desc) {
 
 void OpenGLRenderDevice::updateBuffer(BufferHandle handle, const void* data, uint32_t bytes) {
     if (!handle.isValid() || handle.id >= buffers_.size() || !buffers_[handle.id]) {
+        return;
+    }
+    if (data == nullptr || bytes == 0u) {
+        if (data == nullptr && bytes > 0u) {
+            VNE_ASSERT_MSG(data != nullptr, "updateBuffer: data must not be null when bytes > 0");
+        }
         return;
     }
     auto& slot = *buffers_[handle.id];
