@@ -97,11 +97,13 @@ class GlfwWindow : public IWindow {
     void setEventForwarding(bool enable);
     bool isEventForwarding() const { return event_forwarding_; }
 
+    /** @brief Refresh DPI scale from GLFW (e.g. after resize). */
+    void updateDPIScale();
+
    private:
     explicit GlfwWindow(GLFWwindow* window);
 
     void setupCallbacks();
-    void updateDPIScale();
 
     GLFWwindow* window_{nullptr};
     bool event_forwarding_{false};
