@@ -14,9 +14,11 @@ coverage:
       default:
         threshold: 0%
         target: 0%
+        informational: true
     patch:
       default:
         target: 0%
+        informational: true
 
 # Ignore files that are not part of library coverage
 ignore:
