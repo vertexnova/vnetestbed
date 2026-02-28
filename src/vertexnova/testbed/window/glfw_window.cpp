@@ -45,8 +45,8 @@ namespace {
 // glfwInit() is called when the count goes 0 → 1.
 // glfwTerminate() is called when the count goes 1 → 0.
 std::mutex g_glfw_mutex;
-int        g_glfw_window_count{0};  // guarded by g_glfw_mutex
-bool       g_glfw_init_ok{false};   // guarded by g_glfw_mutex
+int g_glfw_window_count{0};  // guarded by g_glfw_mutex
+bool g_glfw_init_ok{false};  // guarded by g_glfw_mutex
 
 void glfwErrorCallback(int error, const char* description) {
     VNE_UNUSED(error);
