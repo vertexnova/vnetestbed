@@ -78,7 +78,7 @@ endif()
 #
 # VNE_TESTBED_OPENGL and VNE_TESTBED_OPENGLES are mutually exclusive.
 # Default is chosen from VNE_TARGET_PLATFORM: desktop (macOS, Windows, Linux)
-# -> OpenGL 3.3; mobile/embedded/Web (iOS, Android, visionOS, Web) -> OpenGL ES 3.0.
+# -> OpenGL 4.1; mobile/embedded/Web (iOS, Android, visionOS, Web) -> OpenGL ES 3.0.
 # Override with -DVNE_TESTBED_OPENGL=ON or -DVNE_TESTBED_OPENGLES=ON.
 #==============================================================================
 if(TARGET glad::glad)
@@ -93,7 +93,7 @@ if(TARGET glad::glad)
     else()
         set(_vne_testbed_gl_default_opengl ON)
     endif()
-    option(VNE_TESTBED_OPENGL "Build the OpenGL 3.3 render adapter, debug draw, and demo layers" ${_vne_testbed_gl_default_opengl})
+    option(VNE_TESTBED_OPENGL "Build the OpenGL 4.1 render adapter, debug draw, and demo layers" ${_vne_testbed_gl_default_opengl})
     option(VNE_TESTBED_OPENGLES "Build OpenGL ES 3.0 backend" ${_vne_testbed_gl_default_es})
 else()
     set(VNE_TESTBED_OPENGL OFF)

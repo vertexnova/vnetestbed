@@ -97,7 +97,7 @@ See **examples/02_plugin_runner** for a full runner with GLFW and a stub render 
 
 ### OpenGL / OpenGL ES backend
 
-The gl/ backend (OpenGLRenderAdapter, OpenGLDebugDraw, BufferLayout, VertexArray, Shader, etc.) can be built as **OpenGL 3.3** (`VNE_TESTBED_OPENGL`) or **OpenGL ES 3.0** (`VNE_TESTBED_OPENGLES`). Exactly one of these options should be enabled per build. When building with `VNE_TESTBED_OPENGLES`, the runner must request an OpenGL ES context (e.g. with GLFW: `GLFW_CLIENT_API` = `GLFW_OPENGL_ES_API`, major 3, minor 0).
+The gl/ backend (OpenGLRenderAdapter, OpenGLDebugDraw, BufferLayout, VertexArray, Shader, etc.) can be built as **OpenGL 4.1** (`VNE_TESTBED_OPENGL`) or **OpenGL ES 3.0** (`VNE_TESTBED_OPENGLES`). Exactly one of these options should be enabled per build. When building with `VNE_TESTBED_OPENGLES`, the runner must request an OpenGL ES context (e.g. with GLFW: `GLFW_CLIENT_API` = `GLFW_OPENGL_ES_API`, major 3, minor 0).
 
 ## Plugins and layers
 
@@ -112,7 +112,7 @@ The gl/ backend (OpenGLRenderAdapter, OpenGLDebugDraw, BufferLayout, VertexArray
 | VNE_TESTBED_TESTS | ON (dev/CI) | Build unit tests. |
 | VNE_TESTBED_EXAMPLES | ON (dev) / OFF (submodule/CI) | Build examples. |
 | VNE_TESTBED_CI | OFF | When ON, forces tests ON and examples OFF. |
-| VNE_TESTBED_OPENGL | ON (if glad present) | Build the OpenGL 3.3 render adapter, debug draw, and demo layers. Mutually exclusive with VNE_TESTBED_OPENGLES. |
+| VNE_TESTBED_OPENGL | ON (if glad present) | Build the OpenGL 4.1 render adapter, debug draw, and demo layers. Mutually exclusive with VNE_TESTBED_OPENGLES. |
 | VNE_TESTBED_OPENGLES | OFF | Build the OpenGL ES 3.0 backend (gl/ primitives and demo layers). Mutually exclusive with VNE_TESTBED_OPENGL. For ES builds the runner must request an OpenGL ES context (e.g. GLFW: `GLFW_CLIENT_API` = `GLFW_OPENGL_ES_API`, version 3.0). |
 | WARNINGS_AS_ERRORS | OFF | Treat compiler warnings as errors. |
 | ENABLE_DOXYGEN | OFF | Generate Doxygen documentation. |

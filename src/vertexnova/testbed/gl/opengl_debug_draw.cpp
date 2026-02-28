@@ -22,9 +22,10 @@ namespace testbed {
 namespace gl {
 
 // ---------------------------------------------------------------------------
-// Minimal GLSL 4.10 shaders for debug line rendering
+// GLSL 4.10 / GLSL ES 3.00 shaders for debug line rendering
 // ---------------------------------------------------------------------------
 
+#if defined(VNE_TESTBED_OPENGL)
 static const char* kDebugVertSrc = R"(
 #version 410 core
 layout(location = 0) in vec3 aPos;
@@ -49,6 +50,33 @@ void main() {
     FragColor = vec4(vColor, 1.0);
 }
 )";
+#else  // OpenGL ES 3.0
+static const char* kDebugVertSrc = R"(
+#version 300 es
+layout(location = 0) in vec3 aPos;
+layout(location = 1) in vec3 aColor;
+
+uniform mat4 uVP;
+
+out vec3 vColor;
+
+void main() {
+    vColor = aColor;
+    gl_Position = uVP * vec4(aPos, 1.0);
+}
+)";
+
+static const char* kDebugFragSrc = R"(
+#version 300 es
+precision mediump float;
+in  vec3 vColor;
+out vec4 FragColor;
+
+void main() {
+    FragColor = vec4(vColor, 1.0);
+}
+)";
+#endif
 
 // ---------------------------------------------------------------------------
 
