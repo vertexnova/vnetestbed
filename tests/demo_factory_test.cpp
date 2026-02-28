@@ -76,7 +76,6 @@ TEST_F(DemoFactoryTest, RegisterAndList) {
     EXPECT_EQ(ids[0], "alpha");
 }
 
-
 TEST_F(DemoFactoryTest, CreateDemoByIdInstallsAndReturnsTrue) {
     DemoFactory::registerDemo("one", [](Application& a) {
         a.getLayerStack().pushLayer(std::make_unique<RecordingLayer>("One"), a.getAppContext());

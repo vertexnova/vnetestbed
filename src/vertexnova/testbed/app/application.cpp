@@ -215,8 +215,12 @@ int runDemoApplication(int /*argc*/, char** /*argv*/, const ApplicationDescripto
 #endif
 
 // Test-only: create/destroy Application so test TUs don't need the complete Impl type.
-Application* createApplicationForTest() { return new Application(); }
-void destroyApplicationForTest(Application* p) { delete p; }
+Application* createApplicationForTest() {
+    return new Application();
+}
+void destroyApplicationForTest(Application* p) {
+    delete p;
+}
 
 }  // namespace testbed
 }  // namespace vne
