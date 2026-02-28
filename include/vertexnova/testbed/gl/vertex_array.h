@@ -23,6 +23,8 @@
 
 #ifdef VNE_TESTBED_OPENGL
 
+#include "vertexnova/testbed/gl/buffer_layout.h"
+#include "vertexnova/testbed/gl/index_buffer.h"
 #include "vertexnova/testbed/gl/vertex_buffer.h"
 
 #include <initializer_list>
@@ -77,17 +79,41 @@ class VertexArray {
     void unbind() const;
 
     /**
-     * @brief Bind a VertexBuffer and declare its attribute layout.
+     * @brief Bind a VertexBuffer and declare its attribute layout (BufferLayout).
      *
      * @param vb     The buffer whose data is described by @p layout.
      *               Must be alive for the lifetime of this VAO.
-     * @param layout List of VertexElement descriptors (position + count).
+     * @param layout BufferLayout (ShaderDataType per element, stride, offsets).
      *               Attributes are assigned locations 0, 1, 2, … in order.
+     */
+    void addVertexBuffer(VertexBuffer& vb, const BufferLayout& layout);
+
+    /**
+     * @brief Bind a VertexBuffer with ad-hoc VertexElement list (legacy).
+     *
+     * @param vb     The buffer whose data is described by @p layout.
+     * @param layout List of VertexElement descriptors (float components only).
      */
     void addVertexBuffer(VertexBuffer& vb, std::initializer_list<VertexElement> layout);
 
+    /**
+     * @brief Set the index buffer for indexed drawing (glDrawElements).
+     *
+     * Must be called while no VAO is bound, or the implementation will bind
+     * this VAO and bind the index buffer so the VAO records the EBO.
+     *
+     * @param ib Index buffer (must be alive for the lifetime of this VAO).
+     */
+    void setIndexBuffer(IndexBuffer& ib);
+
+    /**
+     * @brief Index count from the last set index buffer (0 if none).
+     */
+    [[nodiscard]] std::size_t getIndexCount() const { return index_count_; }
+
    private:
     unsigned int vao_id_{0u};
+    std::size_t index_count_{0u};
 };
 
 }  // namespace gl

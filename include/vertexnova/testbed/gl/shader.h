@@ -51,6 +51,19 @@ class Shader {
     Shader(const char* vert_src, const char* frag_src);
     ~Shader();
 
+    /**
+     * @brief Load and compile a shader program from two GLSL files.
+     *
+     * Reads vert_path and frag_path into strings and delegates to the
+     * source constructor. Returns an invalid Shader (isValid() == false)
+     * if a file could not be read or compilation/linking failed.
+     *
+     * @param vert_path Path to vertex shader source file.
+     * @param frag_path Path to fragment shader source file.
+     * @return Shader instance (check isValid()).
+     */
+    static Shader fromFile(const char* vert_path, const char* frag_path);
+
     Shader(const Shader&) = delete;
     Shader& operator=(const Shader&) = delete;
     Shader(Shader&&) = delete;

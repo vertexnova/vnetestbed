@@ -94,6 +94,11 @@ if(VNE_TESTBED_OPENGL)
         vertexnova/testbed/gl/shader.cpp
         vertexnova/testbed/gl/vertex_buffer.cpp
         vertexnova/testbed/gl/vertex_array.cpp
+        vertexnova/testbed/gl/index_buffer.cpp
+        vertexnova/testbed/gl/opengl_context.cpp
+        vertexnova/testbed/gl/texture2d.cpp
+        vertexnova/testbed/gl/sampler2d.cpp
+        vertexnova/testbed/gl/draw.cpp
         vertexnova/testbed/gl/opengl_render_adapter.cpp
         vertexnova/testbed/gl/opengl_debug_draw.cpp
         # Demo layer plugins

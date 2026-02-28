@@ -1,0 +1,80 @@
+/* ---------------------------------------------------------------------
+ * Copyright (c) 2026 Ajeet Singh Yadav. All rights reserved.
+ * Licensed under the Apache License, Version 2.0 (the "License")
+ *
+ * Author:    Ajeet Singh Yadav
+ * Created:   February 2026
+ *
+ * Autodoc:   yes
+ * ----------------------------------------------------------------------
+ */
+
+#include "vertexnova/testbed/gl/sampler2d.h"
+
+#include <glad/glad.h>
+
+namespace vne {
+namespace testbed {
+namespace gl {
+
+namespace {
+
+GLenum wrapToGL(SamplerWrap w) {
+    switch (w) {
+        case SamplerWrap::Repeat:
+            return GL_REPEAT;
+        case SamplerWrap::ClampToEdge:
+            return GL_CLAMP_TO_EDGE;
+        case SamplerWrap::MirroredRepeat:
+            return GL_MIRRORED_REPEAT;
+    }
+    return GL_REPEAT;
+}
+
+GLenum filterToGL(SamplerFilter f) {
+    switch (f) {
+        case SamplerFilter::Nearest:
+            return GL_NEAREST;
+        case SamplerFilter::Linear:
+            return GL_LINEAR;
+    }
+    return GL_LINEAR;
+}
+
+void setSamplerParams(unsigned int sampler_id, const Sampler2DDescriptor& desc) {
+    glSamplerParameteri(sampler_id, GL_TEXTURE_WRAP_S,
+                        static_cast<GLint>(wrapToGL(desc.wrap_s)));
+    glSamplerParameteri(sampler_id, GL_TEXTURE_WRAP_T,
+                        static_cast<GLint>(wrapToGL(desc.wrap_t)));
+    glSamplerParameteri(sampler_id, GL_TEXTURE_MIN_FILTER,
+                        static_cast<GLint>(filterToGL(desc.min_filter)));
+    glSamplerParameteri(sampler_id, GL_TEXTURE_MAG_FILTER,
+                        static_cast<GLint>(filterToGL(desc.mag_filter)));
+}
+
+}  // namespace
+
+Sampler2D::Sampler2D() : Sampler2D(Sampler2DDescriptor{}) {}
+
+Sampler2D::Sampler2D(const Sampler2DDescriptor& desc) {
+    glGenSamplers(1, &sampler_id_);
+    if (sampler_id_ != 0u) {
+        setSamplerParams(sampler_id_, desc);
+    }
+}
+
+Sampler2D::~Sampler2D() {
+    if (sampler_id_ != 0u) {
+        glDeleteSamplers(1, &sampler_id_);
+    }
+}
+
+void Sampler2D::bind(uint32_t unit) const {
+    if (sampler_id_ != 0u) {
+        glBindSampler(static_cast<GLuint>(unit), sampler_id_);
+    }
+}
+
+}  // namespace gl
+}  // namespace testbed
+}  // namespace vne

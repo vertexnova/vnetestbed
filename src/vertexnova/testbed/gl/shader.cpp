@@ -14,14 +14,40 @@
 #include <glad/glad.h>
 
 #include <cstdio>
+#include <fstream>
+#include <sstream>
 
 namespace vne {
 namespace testbed {
 namespace gl {
 
+namespace {
+
+std::string readFile(const char* path) {
+    std::ifstream file(path);
+    if (!file.is_open()) {
+        std::fprintf(stderr, "[Shader] Failed to open file: %s\n", path);
+        return {};
+    }
+    std::ostringstream oss;
+    oss << file.rdbuf();
+    return oss.str();
+}
+
+}  // namespace
+
 // ---------------------------------------------------------------------------
 // Construction / destruction
 // ---------------------------------------------------------------------------
+
+Shader Shader::fromFile(const char* vert_path, const char* frag_path) {
+    std::string vert_src = readFile(vert_path);
+    std::string frag_src = readFile(frag_path);
+    if (vert_src.empty() || frag_src.empty()) {
+        return Shader("", "");
+    }
+    return Shader(vert_src.c_str(), frag_src.c_str());
+}
 
 unsigned int Shader::compileStage(unsigned int type, const char* src) {
     unsigned int id = glCreateShader(type);

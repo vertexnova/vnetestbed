@@ -22,6 +22,7 @@
 
 #ifdef VNE_TESTBED_OPENGL
 
+#include "vertexnova/testbed/gl/opengl_context.h"
 #include "vertexnova/testbed/render_adapter.h"
 #include "vertexnova/math/core/core.h"
 
@@ -92,9 +93,9 @@ class OpenGLRenderAdapter : public IRenderAdapter {
     [[nodiscard]] bool isInitialized() const { return initialized_; }
 
    private:
+    OpenGLContext context_;
     vne::math::Vec4f clear_color_{0.12f, 0.12f, 0.16f, 1.0f};
     bool initialized_{false};
-    void* window_handle_{nullptr};  ///< Stored for viewport queries
 };
 
 }  // namespace gl
