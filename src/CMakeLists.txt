@@ -98,6 +98,7 @@ if(VNE_TESTBED_OPENGL)
         vertexnova/testbed/gl/opengl_context.cpp
         vertexnova/testbed/gl/texture2d.cpp
         vertexnova/testbed/gl/sampler2d.cpp
+        vertexnova/testbed/gl/framebuffer.cpp
         vertexnova/testbed/gl/draw.cpp
         vertexnova/testbed/gl/opengl_render_adapter.cpp
         vertexnova/testbed/gl/opengl_debug_draw.cpp
