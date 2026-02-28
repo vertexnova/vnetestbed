@@ -9,7 +9,7 @@
 #==============================================================================
 
 set(SOURCE_FILES
-    vertexnova/testbed/application.cpp
+    vertexnova/testbed/app/application.cpp
     vertexnova/testbed/logging_guard.cpp
     vertexnova/testbed/plugin_registry.cpp
     vertexnova/testbed/layer.cpp
@@ -18,10 +18,10 @@ set(SOURCE_FILES
 )
 
 set(HEADER_FILES
-    ${VNE_INCLUDE_DIR}/vertexnova/testbed/application.h
-    ${VNE_INCLUDE_DIR}/vertexnova/testbed/application_descriptor.h
-    ${VNE_INCLUDE_DIR}/vertexnova/testbed/demo_application.h
-    ${VNE_INCLUDE_DIR}/vertexnova/testbed/demo_factory.h
+    ${VNE_INCLUDE_DIR}/vertexnova/testbed/app/application.h
+    ${VNE_INCLUDE_DIR}/vertexnova/testbed/app/application_descriptor.h
+    ${VNE_INCLUDE_DIR}/vertexnova/testbed/app/demo_application.h
+    ${VNE_INCLUDE_DIR}/vertexnova/testbed/app/demo_factory.h
     ${VNE_INCLUDE_DIR}/vertexnova/testbed/logging_guard.h
     ${VNE_INCLUDE_DIR}/vertexnova/testbed/layer.h
     ${VNE_INCLUDE_DIR}/vertexnova/testbed/layer_stack.h

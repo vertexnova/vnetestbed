@@ -11,14 +11,14 @@
  */
 
 /**
- * @file application.h
+ * @file app/application.h
  * @brief Application harness: creates window and renderer from descriptor, owns LayerStack, runs main loop.
  *
  * Backend-agnostic API; concrete window/render creation is in the .cpp (GLFW + OpenGL today,
  * vnecross + OpenGL in a future build). Use initialize(descriptor), run(), shutdown().
  */
 
-#include "vertexnova/testbed/application_descriptor.h"
+#include "vertexnova/testbed/app/application_descriptor.h"
 #include "vertexnova/testbed/app_context.h"
 #include "vertexnova/testbed/layer_stack.h"
 #include "vertexnova/testbed/render_context.h"

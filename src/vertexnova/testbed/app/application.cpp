@@ -9,10 +9,10 @@
  * ----------------------------------------------------------------------
  */
 
-#include "vertexnova/testbed/application.h"
+#include "vertexnova/testbed/app/application.h"
 
-#include "vertexnova/testbed/application_descriptor.h"
-#include "vertexnova/testbed/demo_application.h"
+#include "vertexnova/testbed/app/application_descriptor.h"
+#include "vertexnova/testbed/app/demo_application.h"
 #include "vertexnova/testbed/logging_guard.h"
 
 #if defined(VNE_TESTBED_OPENGL) || defined(VNE_TESTBED_OPENGLES)

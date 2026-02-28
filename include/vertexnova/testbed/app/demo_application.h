@@ -11,16 +11,16 @@
  */
 
 /**
- * @file demo_application.h
+ * @file app/demo_application.h
  * @brief Thin Application subclass that installs the selected demo via DemoFactory.
  *
  * Selection order: env VNE_DEMO, compile-time VNE_DEMO_ID, else CreateDefault (e.g. first registered).
  * Use for samples: construct DemoApplication, initialize(descriptor), run(), shutdown().
  */
 
-#include "vertexnova/testbed/application.h"
-#include "vertexnova/testbed/application_descriptor.h"
-#include "vertexnova/testbed/demo_factory.h"
+#include "vertexnova/testbed/app/application.h"
+#include "vertexnova/testbed/app/application_descriptor.h"
+#include "vertexnova/testbed/app/demo_factory.h"
 
 #include <cstdlib>
 

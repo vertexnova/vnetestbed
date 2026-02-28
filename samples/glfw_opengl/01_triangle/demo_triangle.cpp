@@ -7,8 +7,8 @@
  * ----------------------------------------------------------------------
  */
 
-#include "vertexnova/testbed/application.h"
-#include "vertexnova/testbed/demo_factory.h"
+#include "vertexnova/testbed/app/application.h"
+#include "vertexnova/testbed/app/demo_factory.h"
 #include "vertexnova/testbed/layer.h"
 #include "vertexnova/testbed/render_device.h"
 

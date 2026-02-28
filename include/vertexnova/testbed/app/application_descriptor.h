@@ -11,7 +11,7 @@
  */
 
 /**
- * @file application_descriptor.h
+ * @file app/application_descriptor.h
  * @brief Descriptor for Application initialization (window/render backends, title, size).
  *
  * Used by Application::initialize(). Backend selection allows the same

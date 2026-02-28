@@ -11,7 +11,7 @@
  */
 
 /**
- * @file demo_factory.h
+ * @file app/demo_factory.h
  * @brief Registry of demo installers; one demo per sample executable via VNETESTBED_REGISTER_DEMO.
  *
  * Usage in a sample .cpp:
@@ -24,7 +24,7 @@
  * or CreateDefault(*this) (e.g. first registered).
  */
 
-#include "vertexnova/testbed/application.h"
+#include "vertexnova/testbed/app/application.h"
 
 #include <functional>
 #include <string>

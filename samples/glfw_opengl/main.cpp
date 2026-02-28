@@ -8,8 +8,8 @@
  * ----------------------------------------------------------------------
  */
 
-#include "vertexnova/testbed/application_descriptor.h"
-#include "vertexnova/testbed/demo_application.h"
+#include "vertexnova/testbed/app/application_descriptor.h"
+#include "vertexnova/testbed/app/demo_application.h"
 
 int main(int argc, char** argv) {
     vne::testbed::ApplicationDescriptor desc{};
