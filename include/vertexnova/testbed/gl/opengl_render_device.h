@@ -86,7 +86,9 @@ class OpenGLRenderDevice : public IRenderDevice {
     // IRenderDevice — resource creation
     // -----------------------------------------------------------------------
 
-    ShaderHandle createShader(const char* vert_src, const char* frag_src) override;
+    ShaderHandle compileShader(const char* vert_src, const char* frag_src) override;
+    ShaderHandle createShader(const std::filesystem::path& vert_path,
+                              const std::filesystem::path& frag_path) override;
     BufferHandle createVertexBuffer(const void* data, uint32_t bytes, bool dynamic = false) override;
     BufferHandle createIndexBuffer(const uint32_t* data, uint32_t count) override;
     PipelineHandle createPipeline(const PipelineDesc& desc) override;

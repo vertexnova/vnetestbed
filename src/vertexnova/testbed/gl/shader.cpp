@@ -48,16 +48,6 @@ std::string readFile(const std::filesystem::path& path) {
 // Construction / destruction
 // ---------------------------------------------------------------------------
 
-Shader Shader::fromFile(const std::filesystem::path& vert_path, const std::filesystem::path& frag_path) {
-    std::string vert_src = readFile(vert_path);
-    std::string frag_src = readFile(frag_path);
-    // readFile already logged the open error; skip the GL compiler round-trip.
-    if (vert_src.empty() || frag_src.empty()) {
-        return {};
-    }
-    return Shader(vert_src.c_str(), frag_src.c_str());
-}
-
 unsigned int Shader::compileStage(unsigned int type, const char* src) {
     unsigned int id = glCreateShader(type);
     glShaderSource(id, 1, &src, nullptr);
@@ -76,10 +66,7 @@ unsigned int Shader::compileStage(unsigned int type, const char* src) {
     return id;
 }
 
-Shader::Shader(const char* vert_src, const char* frag_src) {
-    if (!vert_src || !frag_src) {
-        return;  // fromFile short-circuit: leave program_id_ == 0.
-    }
+void Shader::compileAndLink(const char* vert_src, const char* frag_src) {
     unsigned int vs = compileStage(GL_VERTEX_SHADER, vert_src);
     unsigned int fs = compileStage(GL_FRAGMENT_SHADER, frag_src);
     if (vs == 0u || fs == 0u) {
@@ -105,6 +92,20 @@ Shader::Shader(const char* vert_src, const char* frag_src) {
 
     glDeleteShader(vs);
     glDeleteShader(fs);
+}
+
+Shader::Shader(const char* vert_src, const char* frag_src) {
+    if (vert_src && frag_src) {
+        compileAndLink(vert_src, frag_src);
+    }
+}
+
+Shader::Shader(const std::filesystem::path& vert_path, const std::filesystem::path& frag_path) {
+    std::string vert_src = readFile(vert_path);
+    std::string frag_src = readFile(frag_path);
+    if (!vert_src.empty() && !frag_src.empty()) {
+        compileAndLink(vert_src.c_str(), frag_src.c_str());
+    }
 }
 
 Shader::~Shader() {

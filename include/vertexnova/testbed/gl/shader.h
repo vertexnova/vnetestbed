@@ -48,24 +48,24 @@ class Shader {
      * @param vert_src  Null-terminated GLSL vertex shader source.
      * @param frag_src  Null-terminated GLSL fragment shader source.
      *
-     * Compilation errors are logged to stderr.  isValid() returns false
-     * if compilation or linking failed.
+     * Compilation errors are logged.  isValid() returns false if
+     * compilation or linking failed.
      */
     Shader(const char* vert_src, const char* frag_src);
-    ~Shader();
 
     /**
      * @brief Load and compile a shader program from two GLSL files.
      *
-     * Reads vert_path and frag_path into strings and delegates to the
-     * source constructor. Returns an invalid Shader (isValid() == false)
-     * if a file could not be read or compilation/linking failed.
+     * Reads vert_path and frag_path, then compiles and links. Returns an
+     * invalid Shader (isValid() == false) if a file could not be read or
+     * compilation/linking failed.
      *
      * @param vert_path Path to vertex shader source file.
      * @param frag_path Path to fragment shader source file.
-     * @return Shader instance (check isValid()).
      */
-    static Shader fromFile(const std::filesystem::path& vert_path, const std::filesystem::path& frag_path);
+    Shader(const std::filesystem::path& vert_path, const std::filesystem::path& frag_path);
+
+    ~Shader();
 
     Shader(const Shader&) = delete;
     Shader& operator=(const Shader&) = delete;
@@ -102,6 +102,9 @@ class Shader {
 
    private:
     unsigned int program_id_{0u};
+
+    /** @brief Compile and link from source; sets program_id_ or leaves 0. */
+    void compileAndLink(const char* vert_src, const char* frag_src);
 
     /** @brief Compile a single shader stage; returns 0 on error. */
     static unsigned int compileStage(unsigned int type, const char* src);

@@ -85,11 +85,23 @@ uint32_t OpenGLRenderDevice::allocSlot(std::vector<std::unique_ptr<T>>& pool, st
 // Resource creation
 // ============================================================================
 
-ShaderHandle OpenGLRenderDevice::createShader(const char* vert_src, const char* frag_src) {
+ShaderHandle OpenGLRenderDevice::compileShader(const char* vert_src, const char* frag_src) {
     auto slot = std::make_unique<ShaderSlot>();
     slot->shader = std::make_unique<Shader>(vert_src, frag_src);
     if (!slot->shader->isValid()) {
-        VNE_LOG_ERROR << "createShader: compilation failed";
+        VNE_LOG_ERROR << "compileShader: compilation failed";
+        return {};
+    }
+    const uint32_t id = allocSlot(shaders_, std::move(slot));
+    return {id};
+}
+
+ShaderHandle OpenGLRenderDevice::createShader(const std::filesystem::path& vert_path,
+                                              const std::filesystem::path& frag_path) {
+    auto slot = std::make_unique<ShaderSlot>();
+    slot->shader = std::make_unique<Shader>(vert_path, frag_path);
+    if (!slot->shader->isValid()) {
+        VNE_LOG_ERROR << "createShader: failed";
         return {};
     }
     const uint32_t id = allocSlot(shaders_, std::move(slot));

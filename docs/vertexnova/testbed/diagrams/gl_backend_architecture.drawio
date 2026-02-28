@@ -13,7 +13,7 @@
                 <mxCell id="context" value="OpenGLContext + glad&#10;(GL 4.1 or ES 3.0)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff3e0;strokeColor=#e65100;fontSize=11;fontColor=#1a1a1a;" parent="1" vertex="1">
                     <mxGeometry x="80" y="250" width="180" height="44" as="geometry"/>
                 </mxCell>
-                <mxCell id="device" value="OpenGLRenderDevice&#10;(IRenderDevice)&#10;createShader, createPipeline, draw, destroy..." style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e8f5e9;strokeColor=#2e7d32;strokeWidth=2;fontSize=11;align=left;spacingLeft=8;fontColor=#1a1a1a;" parent="1" vertex="1">
+                <mxCell id="device" value="OpenGLRenderDevice&#10;(IRenderDevice)&#10;createShader, compileShader, createPipeline, draw, destroy..." style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e8f5e9;strokeColor=#2e7d32;strokeWidth=2;fontSize=11;align=left;spacingLeft=8;fontColor=#1a1a1a;" parent="1" vertex="1">
                     <mxGeometry x="380" y="120" width="260" height="60" as="geometry"/>
                 </mxCell>
                 <mxCell id="debug" value="OpenGLDebugDraw&#10;(IDebugDraw)&#10;line, aabb, setViewProjectionMatrix, flush" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e8f5e9;strokeColor=#2e7d32;strokeWidth=2;fontSize=11;align=left;spacingLeft=8;fontColor=#1a1a1a;" parent="1" vertex="1">

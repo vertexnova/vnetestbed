@@ -85,7 +85,7 @@ void TriangleDemoLayer::onAttach(AppContext& ctx) {
         return;
     }
 
-    shader_ = device_->createShader(kVertSrc, kFragSrc);
+    shader_ = device_->compileShader(kVertSrc, kFragSrc);
 
     vbo_ = device_->createVertexBuffer(kVertices, sizeof(kVertices));
 

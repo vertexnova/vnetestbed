@@ -18,7 +18,7 @@
  * IRenderDevice interface.  No gl/ headers are included here; the concrete
  * backend is selected by the runner.
  *
- *   onAttach  → createShader + createVertexBuffer + createPipeline
+ *   onAttach  → compileShader/createShader + createVertexBuffer + createPipeline
  *   onRender  → DebugGroupScope + draw
  *   onDetach  → destroy pipeline, buffer, shader
  */

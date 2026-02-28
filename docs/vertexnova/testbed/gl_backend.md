@@ -26,7 +26,7 @@ All public types live in namespace `vne::testbed::gl`. Demo layers and runners i
 | Header | Types | Description |
 |--------|--------|-------------|
 | gl/opengl_render_adapter.h | OpenGLRenderAdapter | **IRenderAdapter**: init(window_handle), beginFrame(), endFrame(), shutdown(). Creates and owns the OpenGL context (glad). |
-| gl/opengl_render_device.h | OpenGLRenderDevice | **IRenderDevice**: createShader, createVertexBuffer, createIndexBuffer, createPipeline, createTexture; updateBuffer, updateTexture; destroy(handle); setInt/setFloat/setVec3/setVec4/setMat4; draw, drawIndexed; pushDebugGroup, popDebugGroup. Slot-based handle ids (0 = invalid). |
+| gl/opengl_render_device.h | OpenGLRenderDevice | **IRenderDevice**: createShader (from file), compileShader (from source), createVertexBuffer, createIndexBuffer, createPipeline, createTexture; updateBuffer, updateTexture; destroy(handle); setInt/setFloat/setVec3/setVec4/setMat4; draw, drawIndexed; pushDebugGroup, popDebugGroup. Slot-based handle ids (0 = invalid). |
 | gl/opengl_debug_draw.h | OpenGLDebugDraw | **IDebugDraw**: line(), aabb(), text() (no-op), flush(). Batched line rendering; call setViewProjectionMatrix() before flush(). |
 
 The gl/ layer also contains RAII primitives used as implementation details (Shader, VertexBuffer, IndexBuffer, VertexArray, Texture2D, BufferLayout, etc.). Demo layers do not include these directly; they use only **IRenderDevice** and the handles/types from `render_device.h`.
