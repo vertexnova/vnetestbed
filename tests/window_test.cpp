@@ -100,7 +100,7 @@ TEST(GlfwWindowDescriptor, DefaultVisibleTrue) {
 
 TEST(GlfwWindowDescriptor, DefaultBackendOpenGL) {
     GlfwWindowDescriptor d;
-    EXPECT_EQ(d.graphics_backend, GlfwGraphicsBackend::OpenGL);
+    EXPECT_EQ(d.graphics_backend, GlfwGraphicsBackend::eOpenGL);
 }
 
 TEST(GlfwWindowDescriptor, ConvenienceConstructorSetsFields) {

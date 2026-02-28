@@ -112,7 +112,7 @@ void TriangleDemoLayer::onRender(const RenderContext& /*ctx*/) {
         return;
     }
     DebugGroupScope _{*device_, "TriangleDemoLayer"};
-    device_->draw(pipeline_, vbo_, 3u, DrawMode::Triangles);
+    device_->draw(pipeline_, vbo_, 3u, DrawMode::eTriangles);
 }
 
 }  // namespace testbed

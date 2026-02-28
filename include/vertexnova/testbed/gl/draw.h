@@ -32,7 +32,7 @@ class VertexArray;
 /**
  * @brief Primitive type for draw calls.
  */
-enum class DrawMode { Triangles, Lines, LineStrip, Points };
+enum class DrawMode { eTriangles = 0, eLines = 1, eLineStrip = 2, ePoints = 3 };
 
 /**
  * @brief Bind the VAO and issue one draw call (indexed or non-indexed).

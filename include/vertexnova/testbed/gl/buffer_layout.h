@@ -38,36 +38,49 @@ namespace gl {
  * @enum ShaderDataType
  * @brief GLSL-compatible data types for vertex attributes.
  */
-enum class ShaderDataType { None = 0, Float, Float2, Float3, Float4, Mat3, Mat4, Int, Int2, Int3, Int4, Bool };
+enum class ShaderDataType {
+    eNone = 0,
+    eFloat = 1,
+    eFloat2 = 2,
+    eFloat3 = 3,
+    eFloat4 = 4,
+    eMat3 = 5,
+    eMat4 = 6,
+    eInt = 7,
+    eInt2 = 8,
+    eInt3 = 9,
+    eInt4 = 10,
+    eBool = 11
+};
 
 /**
  * @brief Size in bytes for a ShaderDataType.
  */
 inline std::size_t shaderDataTypeSize(ShaderDataType type) {
     switch (type) {
-        case ShaderDataType::Float:
+        case ShaderDataType::eFloat:
             return 4;
-        case ShaderDataType::Float2:
+        case ShaderDataType::eFloat2:
             return 4 * 2;
-        case ShaderDataType::Float3:
+        case ShaderDataType::eFloat3:
             return 4 * 3;
-        case ShaderDataType::Float4:
+        case ShaderDataType::eFloat4:
             return 4 * 4;
-        case ShaderDataType::Mat3:
+        case ShaderDataType::eMat3:
             return 4 * 3 * 3;
-        case ShaderDataType::Mat4:
+        case ShaderDataType::eMat4:
             return 4 * 4 * 4;
-        case ShaderDataType::Int:
+        case ShaderDataType::eInt:
             return 4;
-        case ShaderDataType::Int2:
+        case ShaderDataType::eInt2:
             return 4 * 2;
-        case ShaderDataType::Int3:
+        case ShaderDataType::eInt3:
             return 4 * 3;
-        case ShaderDataType::Int4:
+        case ShaderDataType::eInt4:
             return 4 * 4;
-        case ShaderDataType::Bool:
+        case ShaderDataType::eBool:
             return 1;
-        case ShaderDataType::None:
+        case ShaderDataType::eNone:
         default:
             return 0;
     }
@@ -79,7 +92,7 @@ inline std::size_t shaderDataTypeSize(ShaderDataType type) {
  */
 struct BufferElement {
     std::string name;
-    ShaderDataType type{ShaderDataType::None};
+    ShaderDataType type{ShaderDataType::eNone};
     std::size_t size{0};
     std::size_t offset{0};
     bool normalized{false};
@@ -98,29 +111,29 @@ struct BufferElement {
      */
     uint32_t getComponentCount() const {
         switch (type) {
-            case ShaderDataType::Float:
+            case ShaderDataType::eFloat:
                 return 1;
-            case ShaderDataType::Float2:
+            case ShaderDataType::eFloat2:
                 return 2;
-            case ShaderDataType::Float3:
+            case ShaderDataType::eFloat3:
                 return 3;
-            case ShaderDataType::Float4:
+            case ShaderDataType::eFloat4:
                 return 4;
-            case ShaderDataType::Mat3:
+            case ShaderDataType::eMat3:
                 return 3;  // 3 * float3
-            case ShaderDataType::Mat4:
+            case ShaderDataType::eMat4:
                 return 4;  // 4 * float4
-            case ShaderDataType::Int:
+            case ShaderDataType::eInt:
                 return 1;
-            case ShaderDataType::Int2:
+            case ShaderDataType::eInt2:
                 return 2;
-            case ShaderDataType::Int3:
+            case ShaderDataType::eInt3:
                 return 3;
-            case ShaderDataType::Int4:
+            case ShaderDataType::eInt4:
                 return 4;
-            case ShaderDataType::Bool:
+            case ShaderDataType::eBool:
                 return 1;
-            case ShaderDataType::None:
+            case ShaderDataType::eNone:
             default:
                 return 0;
         }

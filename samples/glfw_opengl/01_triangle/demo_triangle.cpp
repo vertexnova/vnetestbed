@@ -15,9 +15,7 @@
 namespace {
 
 void RegisterTriangleDemo(vne::testbed::Application& app) {
-    app.getLayerStack().pushLayer(
-        std::make_unique<vne::testbed::TriangleDemoLayer>(),
-        app.getAppContext());
+    app.getLayerStack().pushLayer(std::make_unique<vne::testbed::TriangleDemoLayer>(), app.getAppContext());
 }
 
 }  // namespace

@@ -25,11 +25,11 @@ namespace {
 
 std::size_t bytesPerPixel(Texture2DFormat format) {
     switch (format) {
-        case Texture2DFormat::RGBA8:
+        case Texture2DFormat::eRGBA8:
             return 4u;
-        case Texture2DFormat::RGB8:
+        case Texture2DFormat::eRGB8:
             return 3u;
-        case Texture2DFormat::R8:
+        case Texture2DFormat::eR8:
             return 1u;
     }
     return 4u;
@@ -37,17 +37,17 @@ std::size_t bytesPerPixel(Texture2DFormat format) {
 
 void formatToGL(Texture2DFormat format, GLenum* out_internal, GLenum* out_format, GLenum* out_type) {
     switch (format) {
-        case Texture2DFormat::RGBA8:
+        case Texture2DFormat::eRGBA8:
             *out_internal = GL_RGBA8;
             *out_format = GL_RGBA;
             *out_type = GL_UNSIGNED_BYTE;
             break;
-        case Texture2DFormat::RGB8:
+        case Texture2DFormat::eRGB8:
             *out_internal = GL_RGB8;
             *out_format = GL_RGB;
             *out_type = GL_UNSIGNED_BYTE;
             break;
-        case Texture2DFormat::R8:
+        case Texture2DFormat::eR8:
             *out_internal = GL_R8;
             *out_format = GL_RED;
             *out_type = GL_UNSIGNED_BYTE;
