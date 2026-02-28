@@ -167,10 +167,9 @@ TEST_F(BufferLayoutTest, BufferLayout_StrideAndOffsets_TwoElements) {
 }
 
 TEST_F(BufferLayoutTest, BufferLayout_Offsets_ThreeElements) {
-    BufferLayout layout{
-        {BufferElement(ShaderDataType::Float2, "uv"),
-         BufferElement(ShaderDataType::Float3, "pos"),
-         BufferElement(ShaderDataType::Float, "alpha")}};
+    BufferLayout layout{{BufferElement(ShaderDataType::Float2, "uv"),
+                         BufferElement(ShaderDataType::Float3, "pos"),
+                         BufferElement(ShaderDataType::Float, "alpha")}};
     EXPECT_EQ(layout.getStride(), 8u + 12u + 4u);
     ASSERT_EQ(layout.getElements().size(), 3u);
     EXPECT_EQ(layout.getElements()[0].offset, 0u);

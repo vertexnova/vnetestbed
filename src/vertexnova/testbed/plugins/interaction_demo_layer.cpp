@@ -30,7 +30,6 @@
 namespace vne {
 namespace testbed {
 
-
 namespace {
 // EventManager::registerListener requires shared_ptr<EventListener>.
 // The layer's lifetime is managed by LayerStack (unique_ptr), so we create
@@ -44,7 +43,7 @@ vne::events::EventManager::ListenerPtr asListenerPtr(vne::events::EventListener*
 // This value is chosen to approximate a 60Hz update rate (1/60 ≈ 0.0167).
 // If you want frame-rate independent input, consider passing the real delta time from onUpdate/render context instead.
 constexpr double kEventFixedDeltaTime = 0.016;
-}
+}  // namespace
 
 InteractionDemoLayer::InteractionDemoLayer()
     : ILayer("InteractionDemoLayer")
@@ -131,7 +130,9 @@ void InteractionDemoLayer::onEvent(const vne::events::Event& event) {
         }
         case ET::eMouseScrolled: {
             const auto& e = static_cast<const vne::events::MouseScrolledEvent&>(event);
-            controller_->handleMouseScroll(static_cast<float>(e.xOffset()), static_cast<float>(e.yOffset()), kEventFixedDeltaTime);
+            controller_->handleMouseScroll(static_cast<float>(e.xOffset()),
+                                           static_cast<float>(e.yOffset()),
+                                           kEventFixedDeltaTime);
             break;
         }
         case ET::eKeyPressed: {

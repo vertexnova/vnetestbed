@@ -15,7 +15,7 @@
 #include "vertexnova/events/types.h"
 #include "vertexnova/logging/logging.h"
 
-namespace { 
+namespace {
 CREATE_VNE_LOGGER_CATEGORY("vnetestbed.plugins")
 }  // namespace
 
