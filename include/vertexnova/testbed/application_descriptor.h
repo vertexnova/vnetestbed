@@ -28,15 +28,15 @@ namespace testbed {
  * @brief Window backend: which windowing API to use.
  */
 enum class WindowBackend {
-    GLFW,     ///< GLFW window (desktop); requires VNE_TESTBED_OPENGL or VNE_TESTBED_OPENGLES.
-    VneCross  ///< vnecross window (future).
+    eGLFW = 0,     ///< GLFW window (desktop); requires VNE_TESTBED_OPENGL or VNE_TESTBED_OPENGLES.
+    eVneCross = 1  ///< vnecross window (future).
 };
 
 /**
  * @brief Render backend: which rendering API to use.
  */
 enum class RenderBackend {
-    OpenGL  ///< OpenGL 4.1 or OpenGL ES 3.0; requires corresponding window/context.
+    eOpenGL = 0  ///< OpenGL 4.1 or OpenGL ES 3.0; requires corresponding window/context.
 };
 
 /**
@@ -48,8 +48,8 @@ struct ApplicationDescriptor {
     uint32_t width{800};
     uint32_t height{600};
     bool vsync_enabled{true};
-    WindowBackend window_backend{WindowBackend::GLFW};
-    RenderBackend render_backend{RenderBackend::OpenGL};
+    WindowBackend window_backend{WindowBackend::eGLFW};
+    RenderBackend render_backend{RenderBackend::eOpenGL};
 
 #if defined(VNE_TESTBED_OPENGLES)
     bool use_opengl_es{true};

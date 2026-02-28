@@ -11,7 +11,7 @@
 
 #include "vertexnova/testbed/logging_guard.h"
 
-#if __has_include("vertexnova/logging/logging.h")
+#if defined(VNE_TESTBED_LOGGING)
 #include "vertexnova/logging/logging.h"
 
 CREATE_VNE_LOGGER_CATEGORY("vnetestbed")
@@ -20,7 +20,7 @@ CREATE_VNE_LOGGER_CATEGORY("vnetestbed")
 namespace vne {
 namespace testbed {
 
-#if __has_include("vertexnova/logging/logging.h")
+#if defined(VNE_TESTBED_LOGGING)
 
 LoggingGuard::LoggingGuard() {
     (void)VNE_LOGGER_CATEGORY;  // use category (macro may define it)

@@ -17,9 +17,10 @@ namespace testbed {
  * @class LoggingGuard
  * @brief RAII guard for console logging in samples and tests.
  *
- * When vne::logging is available, configures the logging system with console
- * output in the constructor and shuts it down in the destructor. Use at the
- * start of main() in sample programs. When logging is not linked, a no-op.
+ * When vne::logging is linked (VNE_TESTBED_LOGGING defined by CMake), configures
+ * the logging system with console output in the constructor and shuts it down
+ * in the destructor. Use at the start of main() in sample programs. When
+ * logging is not linked, a no-op.
  *
  * @code
  * int main() {

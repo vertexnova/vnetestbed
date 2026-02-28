@@ -49,7 +49,7 @@ bool Application::initialize(const ApplicationDescriptor& descriptor) {
     if (running_) {
         return true;
     }
-    if (descriptor.window_backend != WindowBackend::GLFW || descriptor.render_backend != RenderBackend::OpenGL) {
+    if (descriptor.window_backend != WindowBackend::eGLFW || descriptor.render_backend != RenderBackend::eOpenGL) {
         return false;
     }
 
@@ -155,8 +155,8 @@ int runDemoApplication(int argc, char** argv) {
     desc.title = "VneTestbed — GLFW OpenGL sample";
     desc.width = 1280;
     desc.height = 720;
-    desc.window_backend = WindowBackend::GLFW;
-    desc.render_backend = RenderBackend::OpenGL;
+    desc.window_backend = WindowBackend::eGLFW;
+    desc.render_backend = RenderBackend::eOpenGL;
     DemoApplication app;
     if (!app.initialize(desc)) {
         return 1;
