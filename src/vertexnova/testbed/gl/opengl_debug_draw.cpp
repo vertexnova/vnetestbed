@@ -91,8 +91,7 @@ void OpenGLDebugDraw::setViewProjectionMatrix(const vne::math::Mat4f& vp) {
 // Queue primitives
 // ---------------------------------------------------------------------------
 
-void OpenGLDebugDraw::line(vne::math::Vec3f from, vne::math::Vec3f to,
-                            vne::math::Vec3f color) {
+void OpenGLDebugDraw::line(vne::math::Vec3f from, vne::math::Vec3f to, vne::math::Vec3f color) {
     // Vertex 1
     vertex_data_.push_back(from[0]);
     vertex_data_.push_back(from[1]);
@@ -147,8 +146,7 @@ void OpenGLDebugDraw::flush() {
     shader_->setMat4("uVP", vp_matrix_);
 
     vao_->bind();
-    glDrawArrays(GL_LINES, 0,
-                 static_cast<GLsizei>(vertex_data_.size() / kFloatsPerVertex));
+    glDrawArrays(GL_LINES, 0, static_cast<GLsizei>(vertex_data_.size() / kFloatsPerVertex));
     vao_->unbind();
 
     shader_->unbind();

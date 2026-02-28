@@ -44,7 +44,8 @@ class EventsDemoLayer : public ILayer, public vne::events::EventListener {
    public:
     static constexpr std::size_t kMaxEvents = 12u;
 
-    EventsDemoLayer() : ILayer("EventsDemoLayer") {}
+    EventsDemoLayer()
+        : ILayer("EventsDemoLayer") {}
 
     void onAttach(AppContext& ctx) override;
     void onDetach() override;

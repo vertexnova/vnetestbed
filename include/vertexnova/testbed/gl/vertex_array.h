@@ -84,8 +84,7 @@ class VertexArray {
      * @param layout List of VertexElement descriptors (position + count).
      *               Attributes are assigned locations 0, 1, 2, … in order.
      */
-    void addVertexBuffer(VertexBuffer& vb,
-                         std::initializer_list<VertexElement> layout);
+    void addVertexBuffer(VertexBuffer& vb, std::initializer_list<VertexElement> layout);
 
    private:
     unsigned int vao_id_{0u};

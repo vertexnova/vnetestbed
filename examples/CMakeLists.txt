@@ -12,3 +12,9 @@ add_subdirectory(01_hello_testbed)
 
 # 02 - Layer runner: GLFW window + layer lifecycle (LayerStack)
 add_subdirectory(02_plugin_runner)
+
+# 03 - OpenGL renderer: real GPU rendering + vnescene camera + vneinteraction + vneevents
+# Only build when vne::interaction is available (VNE_WITH_VNEINTRACTION=ON).
+if(TARGET vne::interaction)
+    add_subdirectory(03_opengl_renderer)
+endif()

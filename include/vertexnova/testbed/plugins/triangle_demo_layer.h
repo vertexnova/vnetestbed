@@ -43,16 +43,17 @@ namespace testbed {
  */
 class TriangleDemoLayer : public ILayer {
    public:
-    TriangleDemoLayer() : ILayer("TriangleDemoLayer") {}
+    TriangleDemoLayer()
+        : ILayer("TriangleDemoLayer") {}
 
     void onAttach(AppContext& ctx) override;
     void onDetach() override;
     void onRender(const RenderContext& ctx) override;
 
    private:
-    std::unique_ptr<gl::Shader>       shader_;
+    std::unique_ptr<gl::Shader> shader_;
     std::unique_ptr<gl::VertexBuffer> vbo_;
-    std::unique_ptr<gl::VertexArray>  vao_;
+    std::unique_ptr<gl::VertexArray> vao_;
 };
 
 }  // namespace testbed

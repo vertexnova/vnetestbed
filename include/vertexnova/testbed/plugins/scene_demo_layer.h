@@ -59,18 +59,16 @@ class SceneDemoLayer : public ILayer {
      *
      * InteractionDemoLayer uses this to attach the camera manipulator.
      */
-    [[nodiscard]] std::shared_ptr<vne::scene::PerspectiveCamera> getCamera() const {
-        return camera_;
-    }
+    [[nodiscard]] std::shared_ptr<vne::scene::PerspectiveCamera> getCamera() const { return camera_; }
 
    private:
     std::shared_ptr<vne::scene::PerspectiveCamera> camera_;
-    vne::scene::SceneState                          scene_state_;
-    gl::OpenGLDebugDraw*                            debug_draw_{nullptr};
+    vne::scene::SceneState scene_state_;
+    gl::OpenGLDebugDraw* debug_draw_{nullptr};
 
     // Grid configuration
-    static constexpr int   kGridLines     = 20;
-    static constexpr float kGridSpacing   = 1.0f;
+    static constexpr int kGridLines = 20;
+    static constexpr float kGridSpacing = 1.0f;
     static constexpr float kGridHalfWidth = kGridLines * kGridSpacing * 0.5f;
 
     void drawGrid();

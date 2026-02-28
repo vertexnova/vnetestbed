@@ -80,13 +80,15 @@ class OpenGLDebugDraw : public IDebugDraw {
     // IDebugDraw
     // -----------------------------------------------------------------------
 
-    void line(vne::math::Vec3f from, vne::math::Vec3f to,
-              vne::math::Vec3f color) override;
+    void line(vne::math::Vec3f from, vne::math::Vec3f to, vne::math::Vec3f color) override;
 
     void aabb(DebugAabb box, vne::math::Vec3f color) override;
 
     /** @brief No-op in this implementation (text requires ImGui or a font atlas). */
-    void text(vne::math::Vec3f pos, std::string_view label) override { (void)pos; (void)label; }
+    void text(vne::math::Vec3f pos, std::string_view label) override {
+        (void)pos;
+        (void)label;
+    }
 
     /**
      * @brief Upload all queued primitives to the GPU and issue draw calls.
@@ -98,14 +100,14 @@ class OpenGLDebugDraw : public IDebugDraw {
 
    private:
     static constexpr std::size_t kMaxLineVertices = 65536u;  ///< 32 K lines
-    static constexpr std::size_t kFloatsPerVertex = 6u;       ///< xyz + rgb
+    static constexpr std::size_t kFloatsPerVertex = 6u;      ///< xyz + rgb
 
-    std::vector<float>            vertex_data_;
-    std::unique_ptr<Shader>       shader_;
+    std::vector<float> vertex_data_;
+    std::unique_ptr<Shader> shader_;
     std::unique_ptr<VertexBuffer> vbo_;
-    std::unique_ptr<VertexArray>  vao_;
-    vne::math::Mat4f              vp_matrix_{};
-    bool                          initialized_{false};
+    std::unique_ptr<VertexArray> vao_;
+    vne::math::Mat4f vp_matrix_{};
+    bool initialized_{false};
 };
 
 }  // namespace gl

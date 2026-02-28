@@ -111,8 +111,7 @@ void Shader::setMat4(const char* name, const vne::math::Mat4f& m) const {
     // Mat4f stores columns as std::array<Vec4f, 4>; Vec4f has std::array<float, 4>.
     // Both are standard-layout with no padding, so &columns[0][0] gives a valid
     // pointer to 16 contiguous floats in column-major order.
-    glUniformMatrix4fv(glGetUniformLocation(program_id_, name),
-                       1, GL_FALSE, &m.columns[0][0]);
+    glUniformMatrix4fv(glGetUniformLocation(program_id_, name), 1, GL_FALSE, &m.columns[0][0]);
 }
 
 }  // namespace gl

@@ -74,7 +74,7 @@ class InteractionDemoLayer : public ILayer, public vne::events::EventListener {
     // Last known mouse position, for computing deltas in MouseMovedEvent.
     double last_mouse_x_{0.0};
     double last_mouse_y_{0.0};
-    bool   first_mouse_{true};
+    bool first_mouse_{true};
 };
 
 }  // namespace testbed

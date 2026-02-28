@@ -40,6 +40,7 @@ class GlfwWindow : public IWindow {
     }
     void pollEvents() override { glfwPollEvents(); }
     bool shouldClose() const override { return glfwWindowShouldClose(window_) != 0; }
+    void* getNativeHandle() const override { return window_; }
 
    private:
     GLFWwindow* window_;

@@ -60,6 +60,13 @@ _deps/
 # Clangd cache
 .cache/
 
+# Visual Studio Code
+.vscode/
+
+# Claude
+.claude
+.copilot
+
 # macOS
 .DS_Store
 ._*

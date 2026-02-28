@@ -22,8 +22,7 @@ SceneDemoLayer::SceneDemoLayer()
 
 void SceneDemoLayer::onAttach(AppContext& ctx) {
     // Create a perspective camera (60° FOV, assume 16:9 initially).
-    camera_ = std::make_shared<vne::scene::PerspectiveCamera>(
-        60.0f, 1280.0f, 720.0f, 0.1f, 1000.0f, "DemoCamera");
+    camera_ = std::make_shared<vne::scene::PerspectiveCamera>(60.0f, 1280.0f, 720.0f, 0.1f, 1000.0f, "DemoCamera");
     camera_->setPosition({3.0f, 2.0f, 5.0f});
     camera_->setTarget({0.0f, 0.0f, 0.0f});
     camera_->setGraphicsApi(vne::math::GraphicsApi::eOpenGL);
@@ -54,8 +53,7 @@ void SceneDemoLayer::onRender(const RenderContext& ctx) {
 
     // Update camera aspect ratio if the window was resized.
     if (ctx.frame_info.width > 0 && ctx.frame_info.height > 0) {
-        const float aspect = static_cast<float>(ctx.frame_info.width) /
-                             static_cast<float>(ctx.frame_info.height);
+        const float aspect = static_cast<float>(ctx.frame_info.width) / static_cast<float>(ctx.frame_info.height);
         camera_->setAspectRatio(aspect);
         camera_->updateProjectionMatrix();
     }
@@ -79,24 +77,20 @@ void SceneDemoLayer::drawGrid() {
     for (int i = -kGridLines; i <= kGridLines; ++i) {
         const float t = static_cast<float>(i) * kGridSpacing;
         // Lines parallel to Z axis
-        debug_draw_->line({t, 0.0f, -kGridHalfWidth},
-                          {t, 0.0f,  kGridHalfWidth},
-                          grid_color);
+        debug_draw_->line({t, 0.0f, -kGridHalfWidth}, {t, 0.0f, kGridHalfWidth}, grid_color);
         // Lines parallel to X axis
-        debug_draw_->line({-kGridHalfWidth, 0.0f, t},
-                          { kGridHalfWidth, 0.0f, t},
-                          grid_color);
+        debug_draw_->line({-kGridHalfWidth, 0.0f, t}, {kGridHalfWidth, 0.0f, t}, grid_color);
     }
 }
 
 void SceneDemoLayer::drawAxes() {
     const float len = kGridHalfWidth;
     // X axis — red
-    debug_draw_->line({0.0f, 0.0f, 0.0f}, {len,  0.0f, 0.0f}, {1.0f, 0.15f, 0.15f});
+    debug_draw_->line({0.0f, 0.0f, 0.0f}, {len, 0.0f, 0.0f}, {1.0f, 0.15f, 0.15f});
     // Y axis — green
-    debug_draw_->line({0.0f, 0.0f, 0.0f}, {0.0f, len,  0.0f}, {0.15f, 1.0f, 0.15f});
+    debug_draw_->line({0.0f, 0.0f, 0.0f}, {0.0f, len, 0.0f}, {0.15f, 1.0f, 0.15f});
     // Z axis — blue
-    debug_draw_->line({0.0f, 0.0f, 0.0f}, {0.0f, 0.0f, len},  {0.15f, 0.15f, 1.0f});
+    debug_draw_->line({0.0f, 0.0f, 0.0f}, {0.0f, 0.0f, len}, {0.15f, 0.15f, 1.0f});
 }
 
 }  // namespace testbed

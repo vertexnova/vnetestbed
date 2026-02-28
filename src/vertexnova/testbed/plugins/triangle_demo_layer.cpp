@@ -60,8 +60,8 @@ static const float kTriangleVertices[] = {
 
 void TriangleDemoLayer::onAttach(AppContext& /*ctx*/) {
     shader_ = std::make_unique<gl::Shader>(kTriVertSrc, kTriFragSrc);
-    vbo_    = std::make_unique<gl::VertexBuffer>(kTriangleVertices, sizeof(kTriangleVertices));
-    vao_    = std::make_unique<gl::VertexArray>();
+    vbo_ = std::make_unique<gl::VertexBuffer>(kTriangleVertices, sizeof(kTriangleVertices));
+    vao_ = std::make_unique<gl::VertexArray>();
     vao_->addVertexBuffer(*vbo_, {{"aPos", 3}, {"aColor", 3}});
 }
 

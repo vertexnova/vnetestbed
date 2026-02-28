@@ -43,6 +43,18 @@ struct IWindow {
 
     /** @brief Returns true when the user has requested the window to close. */
     virtual bool shouldClose() const = 0;
+
+    /**
+     * @brief Returns the platform-specific native window handle.
+     *
+     * The type of the returned pointer depends on the backend:
+     *  - GLFW runner:           GLFWwindow*
+     *  - vnecrosswindow runner: vnecrosswindow native handle
+     *
+     * Used by IRenderAdapter::init() so the adapter can bind its rendering
+     * context to the window without the runner needing to know the adapter type.
+     */
+    virtual void* getNativeHandle() const = 0;
 };
 
 }  // namespace testbed

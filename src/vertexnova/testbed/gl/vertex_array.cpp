@@ -35,8 +35,7 @@ void VertexArray::unbind() const {
     glBindVertexArray(0);
 }
 
-void VertexArray::addVertexBuffer(VertexBuffer& vb,
-                                  std::initializer_list<VertexElement> layout) {
+void VertexArray::addVertexBuffer(VertexBuffer& vb, std::initializer_list<VertexElement> layout) {
     glBindVertexArray(vao_id_);
     vb.bind();
 
@@ -50,13 +49,12 @@ void VertexArray::addVertexBuffer(VertexBuffer& vb,
     GLuint location = 0u;
     for (const auto& elem : layout) {
         glEnableVertexAttribArray(location);
-        glVertexAttribPointer(
-            location,
-            elem.count,
-            GL_FLOAT,
-            elem.normalized ? GL_TRUE : GL_FALSE,
-            static_cast<GLsizei>(stride),
-            reinterpret_cast<const void*>(offset));
+        glVertexAttribPointer(location,
+                              elem.count,
+                              GL_FLOAT,
+                              elem.normalized ? GL_TRUE : GL_FALSE,
+                              static_cast<GLsizei>(stride),
+                              reinterpret_cast<const void*>(offset));
         offset += static_cast<std::size_t>(elem.count) * sizeof(float);
         ++location;
     }

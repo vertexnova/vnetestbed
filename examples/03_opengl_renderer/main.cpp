@@ -59,7 +59,8 @@ namespace testbed {
 
 class GlfwWindow : public IWindow {
    public:
-    explicit GlfwWindow(GLFWwindow* w) : window_(w) {}
+    explicit GlfwWindow(GLFWwindow* w)
+        : window_(w) {}
 
     int getWidth() const override {
         int w = 0;
@@ -89,33 +90,29 @@ class GlfwWindow : public IWindow {
 static void onGlfwKey(GLFWwindow* /*w*/, int key, int /*scan*/, int action, int /*mods*/) {
     auto& mgr = vne::events::EventManager::instance();
     if (action == GLFW_PRESS) {
-        mgr.pushEvent(std::make_unique<vne::events::KeyPressedEvent>(
-            static_cast<vne::events::KeyCode>(key)));
+        mgr.pushEvent(std::make_unique<vne::events::KeyPressedEvent>(static_cast<vne::events::KeyCode>(key)));
     } else if (action == GLFW_RELEASE) {
-        mgr.pushEvent(std::make_unique<vne::events::KeyReleasedEvent>(
-            static_cast<vne::events::KeyCode>(key)));
+        mgr.pushEvent(std::make_unique<vne::events::KeyReleasedEvent>(static_cast<vne::events::KeyCode>(key)));
     }
 }
 
 static void onGlfwMouseButton(GLFWwindow* /*w*/, int button, int action, int /*mods*/) {
     auto& mgr = vne::events::EventManager::instance();
     if (action == GLFW_PRESS) {
-        mgr.pushEvent(std::make_unique<vne::events::MouseButtonPressedEvent>(
-            static_cast<vne::events::MouseButton>(button)));
+        mgr.pushEvent(
+            std::make_unique<vne::events::MouseButtonPressedEvent>(static_cast<vne::events::MouseButton>(button)));
     } else {
-        mgr.pushEvent(std::make_unique<vne::events::MouseButtonReleasedEvent>(
-            static_cast<vne::events::MouseButton>(button)));
+        mgr.pushEvent(
+            std::make_unique<vne::events::MouseButtonReleasedEvent>(static_cast<vne::events::MouseButton>(button)));
     }
 }
 
 static void onGlfwCursorPos(GLFWwindow* /*w*/, double x, double y) {
-    vne::events::EventManager::instance().pushEvent(
-        std::make_unique<vne::events::MouseMovedEvent>(x, y));
+    vne::events::EventManager::instance().pushEvent(std::make_unique<vne::events::MouseMovedEvent>(x, y));
 }
 
 static void onGlfwScroll(GLFWwindow* /*w*/, double xoff, double yoff) {
-    vne::events::EventManager::instance().pushEvent(
-        std::make_unique<vne::events::MouseScrolledEvent>(xoff, yoff));
+    vne::events::EventManager::instance().pushEvent(std::make_unique<vne::events::MouseScrolledEvent>(xoff, yoff));
 }
 
 // ---------------------------------------------------------------------------
@@ -136,8 +133,7 @@ int main() {
     glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GLFW_TRUE);
 #endif
 
-    GLFWwindow* window = glfwCreateWindow(
-        1280, 720, "vnetestbed — OpenGL renderer demo", nullptr, nullptr);
+    GLFWwindow* window = glfwCreateWindow(1280, 720, "vnetestbed — OpenGL renderer demo", nullptr, nullptr);
     if (!window) {
         std::fprintf(stderr, "glfwCreateWindow failed\n");
         glfwTerminate();
@@ -147,16 +143,16 @@ int main() {
     glfwSwapInterval(1);  // vsync
 
     // Register GLFW → vne event bridge.
-    glfwSetKeyCallback(window,         onGlfwKey);
+    glfwSetKeyCallback(window, onGlfwKey);
     glfwSetMouseButtonCallback(window, onGlfwMouseButton);
-    glfwSetCursorPosCallback(window,   onGlfwCursorPos);
-    glfwSetScrollCallback(window,      onGlfwScroll);
+    glfwSetCursorPosCallback(window, onGlfwCursorPos);
+    glfwSetScrollCallback(window, onGlfwScroll);
 
     // -----------------------------------------------------------------------
     // Renderer and debug draw
     // -----------------------------------------------------------------------
 
-    vne::testbed::GlfwWindow          glfwWin(window);
+    vne::testbed::GlfwWindow glfwWin(window);
     vne::testbed::gl::OpenGLRenderAdapter renderer;
 
     if (!renderer.init(glfwWin.getNativeHandle())) {
@@ -179,8 +175,8 @@ int main() {
     // -----------------------------------------------------------------------
 
     vne::testbed::AppContext app_ctx;
-    app_ctx.window    = &glfwWin;
-    app_ctx.renderer  = &renderer;
+    app_ctx.window = &glfwWin;
+    app_ctx.renderer = &renderer;
     app_ctx.debugDraw = &debugDraw;
 
     // -----------------------------------------------------------------------
@@ -196,8 +192,7 @@ int main() {
     // Interaction layer — drives the scene camera with mouse/keyboard.
     auto* interaction = new vne::testbed::InteractionDemoLayer();
     interaction->setCamera(scene->getCamera());
-    layer_stack.pushLayer(
-        std::unique_ptr<vne::testbed::InteractionDemoLayer>(interaction), app_ctx);
+    layer_stack.pushLayer(std::unique_ptr<vne::testbed::InteractionDemoLayer>(interaction), app_ctx);
 
     // Triangle layer — validates the basic render pipeline.
     layer_stack.pushLayer(std::make_unique<vne::testbed::TriangleDemoLayer>(), app_ctx);
@@ -218,15 +213,14 @@ int main() {
         vne::events::EventManager::instance().processEvents();
 
         auto now = std::chrono::steady_clock::now();
-        const float dt = static_cast<float>(
-            std::chrono::duration<double>(now - prev).count());
+        const float dt = static_cast<float>(std::chrono::duration<double>(now - prev).count());
         prev = now;
 
         vne::testbed::RenderContext render_ctx{};
-        render_ctx.frame_info.width  = app_ctx.window->getWidth();
+        render_ctx.frame_info.width = app_ctx.window->getWidth();
         render_ctx.frame_info.height = app_ctx.window->getHeight();
-        render_ctx.frame_info.dt     = dt;
-        render_ctx.debug_draw        = &debugDraw;
+        render_ctx.frame_info.dt = dt;
+        render_ctx.debug_draw = &debugDraw;
 
         // Update
         layer_stack.onUpdate(dt);
