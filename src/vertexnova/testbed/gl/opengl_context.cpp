@@ -18,7 +18,9 @@
 #endif
 #include <GLFW/glfw3.h>
 
-#include <cstdio>
+#include <vertexnova/logging/logging.h>
+
+CREATE_VNE_LOGGER_CATEGORY("vnetestbed.gl")
 
 namespace vne {
 namespace testbed {
@@ -44,18 +46,23 @@ bool OpenGLContext::create(void* window_handle) {
 
 #if defined(VNE_TESTBED_OPENGL)
     if (!gladLoadGLLoader(reinterpret_cast<GLADloadproc>(glfwGetProcAddress))) {
-        std::fprintf(stderr, "[OpenGLContext] glad failed to load OpenGL.\n");
+        VNE_LOG_ERROR << "glad failed to load OpenGL";
         window_handle_ = nullptr;
         return false;
     }
 #elif defined(VNE_TESTBED_OPENGLES)
     if (!gladLoadGLES2Loader(reinterpret_cast<GLADloadproc>(glfwGetProcAddress))) {
-        std::fprintf(stderr, "[OpenGLContext] glad failed to load OpenGL ES.\n");
+        VNE_LOG_ERROR << "glad failed to load OpenGL ES";
         window_handle_ = nullptr;
         return false;
     }
 #endif
     glad_loaded_ = true;
+#if defined(VNE_TESTBED_OPENGL)
+    VNE_LOG_INFO << "OpenGL context created";
+#else
+    VNE_LOG_INFO << "OpenGL ES context created";
+#endif
     return true;
 }
 

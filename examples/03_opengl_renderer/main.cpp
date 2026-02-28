@@ -44,12 +44,16 @@
 #include "vertexnova/events/mouse_event.h"
 #include "vertexnova/events/key_event.h"
 #include "vertexnova/events/types.h"
+#include "vertexnova/logging/logging.h"
+
+#include "common/logging_guard.h"
 
 #include <GLFW/glfw3.h>
 
 #include <chrono>
-#include <cstdio>
 #include <memory>
+
+CREATE_VNE_LOGGER_CATEGORY("vnetestbed.examples")
 
 // ---------------------------------------------------------------------------
 // GlfwWindow — IWindow concrete implementation (runner-local, not in lib)
@@ -121,8 +125,10 @@ static void onGlfwScroll(GLFWwindow* /*w*/, double xoff, double yoff) {
 // ---------------------------------------------------------------------------
 
 int main() {
+    vne::testbed::examples::LoggingGuard logging_guard;
+
     if (!glfwInit()) {
-        std::fprintf(stderr, "glfwInit failed\n");
+        VNE_LOG_ERROR << "glfwInit failed";
         return 1;
     }
 
@@ -142,7 +148,7 @@ int main() {
 
     GLFWwindow* window = glfwCreateWindow(1280, 720, "vnetestbed — OpenGL renderer demo", nullptr, nullptr);
     if (!window) {
-        std::fprintf(stderr, "glfwCreateWindow failed\n");
+        VNE_LOG_ERROR << "glfwCreateWindow failed";
         glfwTerminate();
         return 1;
     }
@@ -165,13 +171,13 @@ int main() {
     vne::testbed::gl::OpenGLDebugDraw debugDraw;
 
     if (!renderer.init(glfwWin.getNativeHandle())) {
-        std::fprintf(stderr, "OpenGLRenderAdapter::init failed\n");
+        VNE_LOG_ERROR << "OpenGLRenderAdapter::init failed";
         glfwDestroyWindow(window);
         glfwTerminate();
         return 1;
     }
     if (!debugDraw.init()) {
-        std::fprintf(stderr, "OpenGLDebugDraw::init failed\n");
+        VNE_LOG_ERROR << "OpenGLDebugDraw::init failed";
         glfwDestroyWindow(window);
         glfwTerminate();
         return 1;

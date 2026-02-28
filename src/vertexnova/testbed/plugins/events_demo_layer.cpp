@@ -13,9 +13,11 @@
 
 #include "vertexnova/events/event_manager.h"
 #include "vertexnova/events/types.h"
+#include "vertexnova/logging/logging.h"
 
-#include <cstdio>
-#include <memory>
+namespace { 
+CREATE_VNE_LOGGER_CATEGORY("vnetestbed.plugins")
+}  // namespace
 
 namespace vne {
 namespace testbed {
@@ -56,7 +58,7 @@ void EventsDemoLayer::onDetach() {
 
 void EventsDemoLayer::onEvent(const vne::events::Event& event) {
     const std::string desc = event.toString();
-    std::printf("[EventsDemoLayer] %s\n", desc.c_str());
+    VNE_LOG_INFO << desc;
 
     recent_events_.push_back(desc);
     if (recent_events_.size() > kMaxEvents) {

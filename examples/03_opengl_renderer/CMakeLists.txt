@@ -15,11 +15,17 @@ endif()
 
 add_executable(example_03_opengl_renderer main.cpp)
 
+target_include_directories(example_03_opengl_renderer PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/..)
+
 target_link_libraries(example_03_opengl_renderer
     PRIVATE
         vne::testbed
         glfw
 )
+
+if(TARGET vne::logging)
+    target_link_libraries(example_03_opengl_renderer PRIVATE vne::logging)
+endif()
 
 set_target_properties(example_03_opengl_renderer PROPERTIES
     RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin"

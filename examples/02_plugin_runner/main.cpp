@@ -61,8 +61,9 @@ class StubRendererAdapter : public IRenderAdapter {
 }  // namespace vne
 
 int main() {
-    if (!glfwInit())
+    if (!glfwInit()) {
         return 1;
+    }
 
     // Desktop backend targets OpenGL 4.1 (see VNE_TESTBED_OPENGL).
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);

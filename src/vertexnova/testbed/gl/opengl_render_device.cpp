@@ -23,8 +23,15 @@
 #include <glad/glad_es3.h>
 #endif
 
+#include <vertexnova/logging/logging.h>
+
 #include <cassert>
-#include <cstdio>
+
+namespace {
+
+CREATE_VNE_LOGGER_CATEGORY("vnetestbed.gl")
+
+}  // namespace
 
 namespace vne {
 namespace testbed {
@@ -82,7 +89,7 @@ ShaderHandle OpenGLRenderDevice::createShader(const char* vert_src, const char* 
     auto slot = std::make_unique<ShaderSlot>();
     slot->shader = std::make_unique<Shader>(vert_src, frag_src);
     if (!slot->shader->isValid()) {
-        std::fprintf(stderr, "[OpenGLRenderDevice] createShader: compilation failed\n");
+        VNE_LOG_ERROR << "createShader: compilation failed";
         return {};
     }
     const uint32_t id = allocSlot(shaders_, std::move(slot));
@@ -114,11 +121,11 @@ BufferHandle OpenGLRenderDevice::createIndexBuffer(const uint32_t* data, uint32_
 
 PipelineHandle OpenGLRenderDevice::createPipeline(const PipelineDesc& desc) {
     if (!desc.shader.isValid()) {
-        std::fprintf(stderr, "[OpenGLRenderDevice] createPipeline: invalid shader handle\n");
+        VNE_LOG_ERROR << "createPipeline: invalid shader handle";
         return {};
     }
     if (desc.shader.id >= shaders_.size() || !shaders_[desc.shader.id]) {
-        std::fprintf(stderr, "[OpenGLRenderDevice] createPipeline: shader %u not found\n", desc.shader.id);
+        VNE_LOG_ERROR << "createPipeline: shader " << desc.shader.id << " not found";
         return {};
     }
 
@@ -154,7 +161,7 @@ TextureHandle OpenGLRenderDevice::createTexture(const TextureDesc& desc) {
     auto slot = std::make_unique<TextureSlot>();
     slot->tex = std::make_unique<Texture2D>(gl_desc);
     if (!slot->tex->isValid()) {
-        std::fprintf(stderr, "[OpenGLRenderDevice] createTexture: allocation failed\n");
+        VNE_LOG_ERROR << "createTexture: allocation failed";
         return {};
     }
     const uint32_t id = allocSlot(textures_, std::move(slot));
@@ -187,20 +194,23 @@ void OpenGLRenderDevice::updateTexture(TextureHandle handle, const void* data, u
 // ============================================================================
 
 void OpenGLRenderDevice::destroy(ShaderHandle handle) {
-    if (!handle.isValid() || handle.id >= shaders_.size())
+    if (!handle.isValid() || handle.id >= shaders_.size()) {
         return;
+    }
     shaders_[handle.id].reset();
 }
 
 void OpenGLRenderDevice::destroy(BufferHandle handle) {
-    if (!handle.isValid() || handle.id >= buffers_.size())
+    if (!handle.isValid() || handle.id >= buffers_.size()) {
         return;
+    }
     buffers_[handle.id].reset();
 }
 
 void OpenGLRenderDevice::destroy(PipelineHandle handle) {
-    if (!handle.isValid() || handle.id >= pipelines_.size())
+    if (!handle.isValid() || handle.id >= pipelines_.size()) {
         return;
+    }
     auto& slot = pipelines_[handle.id];
     if (slot && slot->vao_id != 0u) {
         glDeleteVertexArrays(1, &slot->vao_id);
@@ -209,8 +219,9 @@ void OpenGLRenderDevice::destroy(PipelineHandle handle) {
 }
 
 void OpenGLRenderDevice::destroy(TextureHandle handle) {
-    if (!handle.isValid() || handle.id >= textures_.size())
+    if (!handle.isValid() || handle.id >= textures_.size()) {
         return;
+    }
     textures_[handle.id].reset();
 }
 
@@ -219,36 +230,41 @@ void OpenGLRenderDevice::destroy(TextureHandle handle) {
 // ============================================================================
 
 void OpenGLRenderDevice::setInt(ShaderHandle sh, const char* name, int value) {
-    if (!sh.isValid() || sh.id >= shaders_.size() || !shaders_[sh.id])
+    if (!sh.isValid() || sh.id >= shaders_.size() || !shaders_[sh.id]) {
         return;
+    }
     shaders_[sh.id]->shader->bind();
     shaders_[sh.id]->shader->setInt(name, value);
 }
 
 void OpenGLRenderDevice::setFloat(ShaderHandle sh, const char* name, float value) {
-    if (!sh.isValid() || sh.id >= shaders_.size() || !shaders_[sh.id])
+    if (!sh.isValid() || sh.id >= shaders_.size() || !shaders_[sh.id]) {
         return;
+    }
     shaders_[sh.id]->shader->bind();
     shaders_[sh.id]->shader->setFloat(name, value);
 }
 
 void OpenGLRenderDevice::setVec3(ShaderHandle sh, const char* name, const vne::math::Vec3f& v) {
-    if (!sh.isValid() || sh.id >= shaders_.size() || !shaders_[sh.id])
+    if (!sh.isValid() || sh.id >= shaders_.size() || !shaders_[sh.id]) {
         return;
+    }
     shaders_[sh.id]->shader->bind();
     shaders_[sh.id]->shader->setVec3(name, v);
 }
 
 void OpenGLRenderDevice::setVec4(ShaderHandle sh, const char* name, const vne::math::Vec4f& v) {
-    if (!sh.isValid() || sh.id >= shaders_.size() || !shaders_[sh.id])
+    if (!sh.isValid() || sh.id >= shaders_.size() || !shaders_[sh.id]) {
         return;
+    }
     shaders_[sh.id]->shader->bind();
     shaders_[sh.id]->shader->setVec4(name, v);
 }
 
 void OpenGLRenderDevice::setMat4(ShaderHandle sh, const char* name, const vne::math::Mat4f& m) {
-    if (!sh.isValid() || sh.id >= shaders_.size() || !shaders_[sh.id])
+    if (!sh.isValid() || sh.id >= shaders_.size() || !shaders_[sh.id]) {
         return;
+    }
     shaders_[sh.id]->shader->bind();
     shaders_[sh.id]->shader->setMat4(name, m);
 }
@@ -341,15 +357,18 @@ void OpenGLRenderDevice::configureVao(PipelineSlot& ps, const BufferSlot& vbo_sl
 // ============================================================================
 
 void OpenGLRenderDevice::draw(PipelineHandle ph, BufferHandle vbo_h, uint32_t vertex_count, DrawMode mode) {
-    if (!ph.isValid() || ph.id >= pipelines_.size() || !pipelines_[ph.id])
+    if (!ph.isValid() || ph.id >= pipelines_.size() || !pipelines_[ph.id]) {
         return;
-    if (!vbo_h.isValid() || vbo_h.id >= buffers_.size() || !buffers_[vbo_h.id])
+    }
+    if (!vbo_h.isValid() || vbo_h.id >= buffers_.size() || !buffers_[vbo_h.id]) {
         return;
+    }
 
     auto& ps = *pipelines_[ph.id];
     auto& bs = *buffers_[vbo_h.id];
-    if (!bs.vbo)
+    if (!bs.vbo) {
         return;
+    }
 
     if (ps.shader_idx == 0u || ps.shader_idx >= shaders_.size() || !shaders_[ps.shader_idx]) {
         return;
@@ -366,18 +385,22 @@ void OpenGLRenderDevice::draw(PipelineHandle ph, BufferHandle vbo_h, uint32_t ve
 
 void OpenGLRenderDevice::drawIndexed(
     PipelineHandle ph, BufferHandle vbo_h, BufferHandle ibo_h, uint32_t index_count, DrawMode mode) {
-    if (!ph.isValid() || ph.id >= pipelines_.size() || !pipelines_[ph.id])
+    if (!ph.isValid() || ph.id >= pipelines_.size() || !pipelines_[ph.id]) {
         return;
-    if (!vbo_h.isValid() || vbo_h.id >= buffers_.size() || !buffers_[vbo_h.id])
+    }
+    if (!vbo_h.isValid() || vbo_h.id >= buffers_.size() || !buffers_[vbo_h.id]) {
         return;
-    if (!ibo_h.isValid() || ibo_h.id >= buffers_.size() || !buffers_[ibo_h.id])
+    }
+    if (!ibo_h.isValid() || ibo_h.id >= buffers_.size() || !buffers_[ibo_h.id]) {
         return;
+    }
 
     auto& ps = *pipelines_[ph.id];
     auto& vbs = *buffers_[vbo_h.id];
     auto& ibs = *buffers_[ibo_h.id];
-    if (!vbs.vbo || !ibs.ibo)
+    if (!vbs.vbo || !ibs.ibo) {
         return;
+    }
 
     if (ps.shader_idx == 0u || ps.shader_idx >= shaders_.size() || !shaders_[ps.shader_idx]) {
         return;

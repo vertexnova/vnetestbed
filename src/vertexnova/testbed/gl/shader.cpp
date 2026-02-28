@@ -17,9 +17,12 @@
 #include <glad/glad_es3.h>
 #endif
 
-#include <cstdio>
+#include <vertexnova/logging/logging.h>
+
 #include <fstream>
 #include <sstream>
+
+CREATE_VNE_LOGGER_CATEGORY("vnetestbed.gl")
 
 namespace vne {
 namespace testbed {
@@ -30,7 +33,7 @@ namespace {
 std::string readFile(const char* path) {
     std::ifstream file(path);
     if (!file.is_open()) {
-        std::fprintf(stderr, "[Shader] Failed to open file: %s\n", path);
+        VNE_LOG_ERROR << "Failed to open shader file: " << path;
         return {};
     }
     std::ostringstream oss;
@@ -64,7 +67,7 @@ unsigned int Shader::compileStage(unsigned int type, const char* src) {
         char log[512];
         glGetShaderInfoLog(id, 512, nullptr, log);
         const char* stage = (type == GL_VERTEX_SHADER) ? "vertex" : "fragment";
-        std::fprintf(stderr, "[Shader] %s compile error:\n%s\n", stage, log);
+        VNE_LOG_ERROR << "Shader " << stage << " compile error: " << log;
         glDeleteShader(id);
         return 0u;
     }
@@ -90,7 +93,7 @@ Shader::Shader(const char* vert_src, const char* frag_src) {
     if (!ok) {
         char log[512];
         glGetProgramInfoLog(program_id_, 512, nullptr, log);
-        std::fprintf(stderr, "[Shader] link error:\n%s\n", log);
+        VNE_LOG_ERROR << "Shader link error: " << log;
         glDeleteProgram(program_id_);
         program_id_ = 0u;
     }
