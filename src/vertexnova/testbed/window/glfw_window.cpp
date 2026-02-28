@@ -17,6 +17,7 @@
 #include <atomic>
 #include <algorithm>
 #include <memory>
+#include <mutex>
 
 #if defined(VNE_TESTBED_OPENGL) || defined(VNE_TESTBED_OPENGLES)
 #include "vertexnova/events/event_manager.h"
@@ -33,12 +34,23 @@ namespace window {
 
 namespace {
 
-static std::atomic<int> g_glfw_init_count{0};
+// GLFW init runs exactly once; no thread proceeds to hints/create until init has completed.
+static std::once_flag g_glfw_init_once;
+static std::atomic<bool> g_glfw_init_ok{false};
+// Number of GlfwWindow instances; terminate when the last is destroyed.
+static std::atomic<int> g_glfw_window_count{0};
 
 void glfwErrorCallback(int error, const char* description) {
     (void)error;
     (void)description;
     // Can be wired to vne::logging if desired
+}
+
+void ensureGlfwInit() {
+    std::call_once(g_glfw_init_once, []() {
+        glfwSetErrorCallback(glfwErrorCallback);
+        g_glfw_init_ok.store(glfwInit() != 0);
+    });
 }
 
 void setOpenGLHints(GlfwGraphicsBackend backend) {
@@ -182,19 +194,18 @@ GlfwWindow::~GlfwWindow() {
     glfwDestroyWindow(window_);
     window_ = nullptr;
 
-    if (g_glfw_init_count.fetch_sub(1) == 1) {
+    if (g_glfw_window_count.fetch_sub(1) == 1) {
         glfwTerminate();
     }
 }
 
 std::unique_ptr<GlfwWindow> GlfwWindow::create(const GlfwWindowDescriptor& descriptor) {
-    if (g_glfw_init_count.fetch_add(1) == 0) {
-        glfwSetErrorCallback(glfwErrorCallback);
-        if (!glfwInit()) {
-            g_glfw_init_count.fetch_sub(1);
-            return nullptr;
-        }
+    ensureGlfwInit();
+    if (!g_glfw_init_ok.load()) {
+        return nullptr;
     }
+
+    g_glfw_window_count.fetch_add(1);
 
     glfwWindowHint(GLFW_VISIBLE, descriptor.visible ? GLFW_TRUE : GLFW_FALSE);
     glfwWindowHint(GLFW_RESIZABLE, descriptor.resizable ? GLFW_TRUE : GLFW_FALSE);
@@ -208,7 +219,7 @@ std::unique_ptr<GlfwWindow> GlfwWindow::create(const GlfwWindowDescriptor& descr
                                        nullptr,
                                        nullptr);
     if (!raw) {
-        if (g_glfw_init_count.fetch_sub(1) == 1) {
+        if (g_glfw_window_count.fetch_sub(1) == 1) {
             glfwTerminate();
         }
         return nullptr;
@@ -244,7 +255,7 @@ int GlfwWindow::getHeight() const {
 }
 
 void GlfwWindow::pollEvents() {
-    if (g_glfw_init_count.load() > 0) {
+    if (g_glfw_init_ok.load()) {
         glfwPollEvents();
     }
 }
