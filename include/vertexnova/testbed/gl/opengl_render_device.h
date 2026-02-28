@@ -155,9 +155,9 @@ class OpenGLRenderDevice : public IRenderDevice {
         BlendState blend{};
         DepthState depth{};
         RasterizerState rasterizer{};
-        uint32_t vao_id{0};        ///< OpenGL VAO for this pipeline.
-        uint32_t last_vbo_id{0};   ///< Last VBO GL name bound to VAO (dirty tracking).
-        uint32_t last_ibo_id{0};   ///< Last IBO GL name bound to VAO (dirty tracking).
+        uint32_t vao_id{0};       ///< OpenGL VAO for this pipeline.
+        uint32_t last_vbo_id{0};  ///< Last VBO GL name bound to VAO (dirty tracking).
+        uint32_t last_ibo_id{0};  ///< Last IBO GL name bound to VAO (dirty tracking).
     };
 
     struct TextureSlot {
