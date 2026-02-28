@@ -1,0 +1,87 @@
+<mxfile host="65bd71144e">
+    <diagram name="GL backend architecture" id="gl-arch">
+        <mxGraphModel dx="1705" dy="405" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1200" pageHeight="900" math="0" shadow="0">
+            <root>
+                <mxCell id="0"/>
+                <mxCell id="1" parent="0"/>
+                <mxCell id="runner" value="Runner&#10;(e.g. 03_opengl_renderer)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e3f2fd;strokeColor=#1565c0;strokeWidth=2;fontStyle=1;fontSize=12;fontColor=#1a1a1a;" parent="1" vertex="1">
+                    <mxGeometry x="40" y="40" width="180" height="50" as="geometry"/>
+                </mxCell>
+                <mxCell id="adapter" value="OpenGLRenderAdapter&#10;(IRenderAdapter)&#10;init, beginFrame, endFrame, shutdown" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e8f5e9;strokeColor=#2e7d32;strokeWidth=2;fontSize=11;align=left;spacingLeft=8;fontColor=#1a1a1a;" parent="1" vertex="1">
+                    <mxGeometry y="150" width="260" height="70" as="geometry"/>
+                </mxCell>
+                <mxCell id="context" value="OpenGLContext + glad&#10;(GL 4.1 or ES 3.0)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff3e0;strokeColor=#e65100;fontSize=11;fontColor=#1a1a1a;" parent="1" vertex="1">
+                    <mxGeometry x="80" y="250" width="180" height="44" as="geometry"/>
+                </mxCell>
+                <mxCell id="device" value="OpenGLRenderDevice&#10;(IRenderDevice)&#10;createShader, createPipeline, draw, destroy..." style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e8f5e9;strokeColor=#2e7d32;strokeWidth=2;fontSize=11;align=left;spacingLeft=8;fontColor=#1a1a1a;" parent="1" vertex="1">
+                    <mxGeometry x="380" y="120" width="260" height="60" as="geometry"/>
+                </mxCell>
+                <mxCell id="debug" value="OpenGLDebugDraw&#10;(IDebugDraw)&#10;line, aabb, setViewProjectionMatrix, flush" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e8f5e9;strokeColor=#2e7d32;strokeWidth=2;fontSize=11;align=left;spacingLeft=8;fontColor=#1a1a1a;" parent="1" vertex="1">
+                    <mxGeometry x="380" y="210" width="260" height="60" as="geometry"/>
+                </mxCell>
+                <mxCell id="layers" value="Demo layers&#10;(Triangle, Scene, Events...)&#10;use IRenderDevice + IDebugDraw only" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fce4ec;strokeColor=#c2185b;fontSize=11;align=left;spacingLeft=8;fontColor=#1a1a1a;" parent="1" vertex="1">
+                    <mxGeometry x="380" y="300" width="240" height="60" as="geometry"/>
+                </mxCell>
+                <mxCell id="impl" value="gl/ implementation details&#10;(Shader, VertexBuffer, IndexBuffer,&#10;VertexArray, Texture2D, BufferLayout)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#616161;fontSize=10;align=left;spacingLeft=8;fontColor=#424242;dashed=1;" parent="1" vertex="1">
+                    <mxGeometry x="360" y="400" width="300" height="56" as="geometry"/>
+                </mxCell>
+                <mxCell id="e1" style="endArrow=blockThin;endFill=1;html=1;strokeWidth=2;strokeColor=#1565c0;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" parent="1" source="runner" target="adapter" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="e1l" value="creates, init()" style="edgeLabel;html=1;align=center;verticalAlign=middle;fontSize=9;fontColor=#ffffff;backgroundColor=#424242;" parent="e1" connectable="0" vertex="1">
+                    <mxGeometry x="-0.1" y="1" relative="1" as="geometry">
+                        <mxPoint as="offset"/>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="e2" style="endArrow=blockThin;endFill=1;html=1;strokeWidth=2;strokeColor=#2e7d32;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" parent="1" source="adapter" target="context" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="e2l" value="owns, loads glad" style="edgeLabel;html=1;align=center;verticalAlign=middle;fontSize=9;fontColor=#ffffff;backgroundColor=#424242;" parent="e2" connectable="0" vertex="1">
+                    <mxGeometry x="-0.1" y="1" relative="1" as="geometry">
+                        <mxPoint as="offset"/>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="e3" style="endArrow=blockThin;endFill=1;html=1;strokeWidth=2;strokeColor=#1565c0;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" parent="1" source="runner" target="device" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="e3l" value="constructs" style="edgeLabel;html=1;align=center;verticalAlign=middle;fontSize=9;fontColor=#ffffff;backgroundColor=#424242;" parent="e3" connectable="0" vertex="1">
+                    <mxGeometry x="-0.1" y="1" relative="1" as="geometry">
+                        <mxPoint as="offset"/>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="e4" style="endArrow=blockThin;endFill=1;html=1;strokeWidth=2;strokeColor=#1565c0;exitX=1;exitY=0.6;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" parent="1" source="runner" target="debug" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="e4l" value="constructs, init()" style="edgeLabel;html=1;align=center;verticalAlign=middle;fontSize=9;fontColor=#ffffff;backgroundColor=#424242;" parent="e4" connectable="0" vertex="1">
+                    <mxGeometry x="-0.1" y="1" relative="1" as="geometry">
+                        <mxPoint as="offset"/>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="e5" style="endArrow=blockThin;endFill=1;html=1;strokeWidth=1;strokeColor=#c2185b;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" parent="1" source="device" target="layers" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="e5l" value="ctx.device" style="edgeLabel;html=1;align=center;verticalAlign=middle;fontSize=9;fontColor=#ffffff;backgroundColor=#424242;" parent="e5" connectable="0" vertex="1">
+                    <mxGeometry x="-0.1" y="1" relative="1" as="geometry">
+                        <mxPoint as="offset"/>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="e6" style="endArrow=blockThin;endFill=1;html=1;strokeWidth=1;strokeColor=#c2185b;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" parent="1" source="debug" target="layers" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="e6l" value="ctx.debugDraw" style="edgeLabel;html=1;align=center;verticalAlign=middle;fontSize=9;fontColor=#ffffff;backgroundColor=#424242;" parent="e6" connectable="0" vertex="1">
+                    <mxGeometry x="-0.1" y="1" relative="1" as="geometry">
+                        <mxPoint as="offset"/>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="e7" style="endArrow=blockThin;endFill=1;html=1;strokeWidth=1;strokeColor=#616161;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;dashed=1;" parent="1" source="device" target="impl" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="e7l" value="uses internally" style="edgeLabel;html=1;align=center;verticalAlign=middle;fontSize=9;fontColor=#ffffff;backgroundColor=#424242;" parent="e7" connectable="0" vertex="1">
+                    <mxGeometry x="-0.1" y="1" relative="1" as="geometry">
+                        <mxPoint as="offset"/>
+                    </mxGeometry>
+                </mxCell>
+            </root>
+        </mxGraphModel>
+    </diagram>
+</mxfile>

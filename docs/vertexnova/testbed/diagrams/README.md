@@ -16,6 +16,13 @@ drawio -x -f png -o api.png api.drawio
 drawio -x -f png -o architecture.png architecture.drawio
 ```
 
+Export GL backend diagrams:
+
+```bash
+drawio -x -f png -o gl_backend_architecture.png gl_backend_architecture.drawio
+drawio -x -f png -o gl_backend_classes.png gl_backend_classes.drawio
+```
+
 Or export all at once:
 
 ```bash
@@ -31,8 +38,10 @@ drawio -x -f png -o . .
 
 ### Files
 
-| Source | Output | Used in testbed.md | Contents |
-|--------|--------|---------------------|----------|
-| context.drawio | context.png | Overview | C4 system context: Application → VneTestbed (AppContext, LayerStack, IPlugin, ILayer, Registry) |
-| api.drawio | api.png | API usage | Runner flow: Build AppContext → LayerStack + createAndPushLayers → loop (onUpdate, onRender, onGui*) |
-| architecture.drawio | architecture.png | Project layout | Folder structure and build flow (examples: 01_hello_testbed, 02_plugin_runner) |
+| Source | Output | Used in | Contents |
+|--------|--------|---------|----------|
+| context.drawio | context.png | testbed.md (Overview) | C4 system context: Application → VneTestbed (AppContext, LayerStack, IPlugin, ILayer, Registry) |
+| api.drawio | api.png | testbed.md (API usage) | Runner flow: Build AppContext → LayerStack + createAndPushLayers → loop (onUpdate, onRender, onGui*) |
+| architecture.drawio | architecture.png | testbed.md (Project layout) | Folder structure and build flow (examples: 01_hello_testbed, 02_plugin_runner) |
+| gl_backend_architecture.drawio | gl_backend_architecture.png | gl_backend.md | GL backend: Runner → OpenGLRenderAdapter/Device/DebugDraw, context, layers, gl/ impl details |
+| gl_backend_classes.drawio | gl_backend_classes.png | gl_backend.md | Class diagram: IRenderAdapter/IRenderDevice/IDebugDraw and OpenGL implementations, handles/descriptors |

@@ -1,0 +1,139 @@
+<mxfile host="65bd71144e">
+    <diagram name="GL backend class diagram" id="gl-classes">
+        <mxGraphModel dx="1200" dy="750" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1600" pageHeight="1200" math="0" shadow="0">
+            <root>
+                <mxCell id="0"/>
+                <mxCell id="1" parent="0"/>
+                <mxCell id="iradapter" value="&lt;b&gt;&amp;laquo;interface&amp;raquo;&lt;/b&gt;&lt;br&gt;&lt;b&gt;IRenderAdapter&lt;/b&gt;&lt;hr&gt;+ init(window_handle: void*): bool&lt;br&gt;+ beginFrame(): void&lt;br&gt;+ endFrame(): void&lt;br&gt;+ shutdown(): void" style="shape=umlClass;whiteSpace=wrap;html=1;fillColor=#e3f2fd;strokeColor=#1565c0;strokeWidth=2;align=left;spacingLeft=8;fontSize=11;fontColor=#1a1a1a;" parent="1" vertex="1">
+                    <mxGeometry x="40" y="40" width="240" height="100" as="geometry"/>
+                </mxCell>
+                <mxCell id="gladapter" value="&lt;b&gt;OpenGLRenderAdapter&lt;/b&gt;&lt;hr&gt;- context_: OpenGLContext&lt;br&gt;&amp;nbsp;&lt;hr&gt;+ init(window_handle: void*): bool&lt;br&gt;+ beginFrame(): void&lt;br&gt;+ endFrame(): void&lt;br&gt;+ shutdown(): void" style="shape=umlClass;whiteSpace=wrap;html=1;fillColor=#e8f5e9;strokeColor=#2e7d32;strokeWidth=2;align=left;spacingLeft=8;fontSize=11;fontColor=#1a1a1a;" parent="1" vertex="1">
+                    <mxGeometry x="30" y="200" width="260" height="120" as="geometry"/>
+                </mxCell>
+                <mxCell id="irender" value="&lt;b&gt;&amp;laquo;interface&amp;raquo;&lt;/b&gt;&lt;br&gt;&lt;b&gt;IRenderDevice&lt;/b&gt;&lt;hr&gt;+ createShader(vert, frag): ShaderHandle&lt;br&gt;+ createVertexBuffer(...): BufferHandle&lt;br&gt;+ createIndexBuffer(...): BufferHandle&lt;br&gt;+ createPipeline(desc): PipelineHandle&lt;br&gt;+ createTexture(desc): TextureHandle&lt;br&gt;+ updateBuffer(...), updateTexture(...)&lt;br&gt;+ destroy(handle) [×4 overloads]&lt;br&gt;+ setInt/setFloat/setVec3/setVec4/setMat4&lt;br&gt;+ draw(...), drawIndexed(...)&lt;br&gt;+ pushDebugGroup(label), popDebugGroup()&lt;br&gt;+ shutdown(): void" style="shape=umlClass;whiteSpace=wrap;html=1;fillColor=#e3f2fd;strokeColor=#1565c0;strokeWidth=2;align=left;spacingLeft=8;fontSize=10;fontColor=#1a1a1a;" parent="1" vertex="1">
+                    <mxGeometry x="380" y="20" width="280" height="200" as="geometry"/>
+                </mxCell>
+                <mxCell id="gldevice" value="&lt;b&gt;OpenGLRenderDevice&lt;/b&gt;&lt;hr&gt;- shaders_: vector&amp;lt;ShaderSlot&amp;gt;&lt;br&gt;- buffers_: vector&amp;lt;BufferSlot&amp;gt;&lt;br&gt;- pipelines_: vector&amp;lt;PipelineSlot&amp;gt;&lt;br&gt;- textures_: vector&amp;lt;TextureSlot&amp;gt;&lt;br&gt;&amp;nbsp;&lt;hr&gt;(implements IRenderDevice)" style="shape=umlClass;whiteSpace=wrap;html=1;fillColor=#e8f5e9;strokeColor=#2e7d32;strokeWidth=2;align=left;spacingLeft=8;fontSize=11;fontColor=#1a1a1a;" parent="1" vertex="1">
+                    <mxGeometry x="400" y="280" width="240" height="110" as="geometry"/>
+                </mxCell>
+                <mxCell id="idebug" value="&lt;b&gt;&amp;laquo;interface&amp;raquo;&lt;/b&gt;&lt;br&gt;&lt;b&gt;IDebugDraw&lt;/b&gt;&lt;hr&gt;+ line(from, to, color): void&lt;br&gt;+ aabb(box, color): void&lt;br&gt;+ text(pos, label): void&lt;br&gt;+ setViewProjectionMatrix(vp): void&lt;br&gt;+ flush(): void" style="shape=umlClass;whiteSpace=wrap;html=1;fillColor=#e3f2fd;strokeColor=#1565c0;strokeWidth=2;align=left;spacingLeft=8;fontSize=11;fontColor=#1a1a1a;" parent="1" vertex="1">
+                    <mxGeometry x="720" y="40" width="260" height="110" as="geometry"/>
+                </mxCell>
+                <mxCell id="gldebug" value="&lt;b&gt;OpenGLDebugDraw&lt;/b&gt;&lt;hr&gt;- shader_: Shader&lt;br&gt;- vbo_: VertexBuffer&lt;br&gt;- vao_: VertexArray&lt;br&gt;- vertex_data_: vector&amp;lt;float&amp;gt;&lt;br&gt;&amp;nbsp;&lt;hr&gt;+ init(): bool&lt;br&gt;(implements IDebugDraw)" style="shape=umlClass;whiteSpace=wrap;html=1;fillColor=#e8f5e9;strokeColor=#2e7d32;strokeWidth=2;align=left;spacingLeft=8;fontSize=11;fontColor=#1a1a1a;" parent="1" vertex="1">
+                    <mxGeometry x="720" y="200" width="290" height="160" as="geometry"/>
+                </mxCell>
+                <mxCell id="handles" value="&lt;b&gt;Handles &amp;amp; descriptors&lt;/b&gt;&lt;hr&gt;(from render_device.h)&lt;br&gt;ShaderHandle, BufferHandle,&lt;br&gt;PipelineHandle, TextureHandle&lt;br&gt;PipelineDesc, BlendState,&lt;br&gt;DepthState, RasterizerState&lt;br&gt;DrawMode, TextureFormat, ..." style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff3e0;strokeColor=#e65100;align=left;spacingLeft=8;fontSize=10;fontColor=#1a1a1a;" parent="1" vertex="1">
+                    <mxGeometry x="760" y="380" width="220" height="100" as="geometry"/>
+                </mxCell>
+                <mxCell id="glcontext" value="&lt;b&gt;OpenGLContext&lt;/b&gt;&lt;hr&gt;(context + glad)" style="shape=umlClass;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#616161;align=left;spacingLeft=8;fontSize=10;fontColor=#1a1a1a;" parent="1" vertex="1">
+                    <mxGeometry x="80" y="360" width="180" height="50" as="geometry"/>
+                </mxCell>
+                <mxCell id="shader" value="&lt;b&gt;Shader&lt;/b&gt;&lt;hr&gt;(GL program)" style="shape=umlClass;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#616161;align=left;spacingLeft=8;fontSize=10;fontColor=#1a1a1a;" parent="1" vertex="1">
+                    <mxGeometry x="40" y="480" width="120" height="50" as="geometry"/>
+                </mxCell>
+                <mxCell id="vertexbuffer" value="&lt;b&gt;VertexBuffer&lt;/b&gt;&lt;hr&gt;(VBO)" style="shape=umlClass;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#616161;align=left;spacingLeft=8;fontSize=10;fontColor=#1a1a1a;" parent="1" vertex="1">
+                    <mxGeometry x="180" y="480" width="120" height="50" as="geometry"/>
+                </mxCell>
+                <mxCell id="indexbuffer" value="&lt;b&gt;IndexBuffer&lt;/b&gt;&lt;hr&gt;(EBO)" style="shape=umlClass;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#616161;align=left;spacingLeft=8;fontSize=10;fontColor=#1a1a1a;" parent="1" vertex="1">
+                    <mxGeometry x="320" y="480" width="120" height="50" as="geometry"/>
+                </mxCell>
+                <mxCell id="vertexarray" value="&lt;b&gt;VertexArray&lt;/b&gt;&lt;hr&gt;(VAO)" style="shape=umlClass;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#616161;align=left;spacingLeft=8;fontSize=10;fontColor=#1a1a1a;" parent="1" vertex="1">
+                    <mxGeometry x="460" y="480" width="120" height="50" as="geometry"/>
+                </mxCell>
+                <mxCell id="texture2d" value="&lt;b&gt;Texture2D&lt;/b&gt;&lt;hr&gt;(2D texture)" style="shape=umlClass;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#616161;align=left;spacingLeft=8;fontSize=10;fontColor=#1a1a1a;" parent="1" vertex="1">
+                    <mxGeometry x="600" y="480" width="120" height="50" as="geometry"/>
+                </mxCell>
+                <mxCell id="bufferlayout" value="&lt;b&gt;BufferLayout&lt;/b&gt;&lt;hr&gt;(stride, elements)" style="shape=umlClass;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#616161;align=left;spacingLeft=8;fontSize=10;fontColor=#1a1a1a;" parent="1" vertex="1">
+                    <mxGeometry x="740" y="480" width="140" height="50" as="geometry"/>
+                </mxCell>
+                <mxCell id="framebuffer" value="&lt;b&gt;Framebuffer&lt;/b&gt;&lt;hr&gt;(FBO)" style="shape=umlClass;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#616161;align=left;spacingLeft=8;fontSize=10;fontColor=#1a1a1a;" parent="1" vertex="1">
+                    <mxGeometry x="40" y="560" width="120" height="50" as="geometry"/>
+                </mxCell>
+                <mxCell id="sampler2d" value="&lt;b&gt;Sampler2D&lt;/b&gt;&lt;hr&gt;(sampler)" style="shape=umlClass;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#616161;align=left;spacingLeft=8;fontSize=10;fontColor=#1a1a1a;" parent="1" vertex="1">
+                    <mxGeometry x="180" y="560" width="130" height="50" as="geometry"/>
+                </mxCell>
+                <mxCell id="bufferelement" value="&lt;b&gt;BufferElement&lt;/b&gt;&lt;hr&gt;(struct)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#eeeeee;strokeColor=#757575;align=left;spacingLeft=8;fontSize=10;fontColor=#1a1a1a;" parent="1" vertex="1">
+                    <mxGeometry x="740" y="560" width="140" height="44" as="geometry"/>
+                </mxCell>
+                <mxCell id="drawutil" value="&lt;b&gt;draw()&lt;/b&gt;&lt;hr&gt;(free fn)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#eeeeee;strokeColor=#757575;align=left;spacingLeft=8;fontSize=10;fontColor=#1a1a1a;" parent="1" vertex="1">
+                    <mxGeometry x="330" y="560" width="100" height="44" as="geometry"/>
+                </mxCell>
+                <mxCell id="inh1" style="endArrow=blockThin;endFill=1;html=1;strokeWidth=2;strokeColor=#2e7d32;exitX=0.5;exitY=0;exitDx=0;exitDy=0;entryX=0.5;entryY=1;entryDx=0;entryDy=0;endSize=8;" parent="1" source="gladapter" target="iradapter" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="inh1l" value="implements" style="edgeLabel;html=1;align=center;verticalAlign=middle;fontSize=9;fontColor=#ffffff;backgroundColor=#424242;" parent="inh1" connectable="0" vertex="1">
+                    <mxGeometry x="-0.2" y="1" relative="1" as="geometry">
+                        <mxPoint as="offset"/>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="inh2" style="endArrow=blockThin;endFill=1;html=1;strokeWidth=2;strokeColor=#2e7d32;exitX=0.5;exitY=0;exitDx=0;exitDy=0;entryX=0.5;entryY=1;entryDx=0;entryDy=0;endSize=8;" parent="1" source="gldevice" target="irender" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="inh2l" value="implements" style="edgeLabel;html=1;align=center;verticalAlign=middle;fontSize=9;fontColor=#ffffff;backgroundColor=#424242;" parent="inh2" connectable="0" vertex="1">
+                    <mxGeometry x="-0.2" y="1" relative="1" as="geometry">
+                        <mxPoint as="offset"/>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="inh3" style="endArrow=blockThin;endFill=1;html=1;strokeWidth=2;strokeColor=#2e7d32;exitX=0.5;exitY=0;exitDx=0;exitDy=0;entryX=0.5;entryY=1;entryDx=0;entryDy=0;endSize=8;" parent="1" source="gldebug" target="idebug" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="inh3l" value="implements" style="edgeLabel;html=1;align=center;verticalAlign=middle;fontSize=9;fontColor=#ffffff;backgroundColor=#424242;" parent="inh3" connectable="0" vertex="1">
+                    <mxGeometry x="-0.2" y="1" relative="1" as="geometry">
+                        <mxPoint as="offset"/>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="use1" style="endArrow=open;endFill=0;html=1;strokeWidth=1;strokeColor=#e65100;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;dashed=1;" parent="1" source="irender" target="handles" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="use1l" value="returns / uses" style="edgeLabel;html=1;align=center;verticalAlign=middle;fontSize=9;fontColor=#ffffff;backgroundColor=#424242;" parent="use1" connectable="0" vertex="1">
+                    <mxGeometry x="-0.2" y="1" relative="1" as="geometry">
+                        <mxPoint as="offset"/>
+                    </mxGeometry>
+                </mxCell>
+                <!-- OpenGLRenderAdapter owns OpenGLContext -->
+                <mxCell id="e_adapt_ctx" style="endArrow=open;endFill=0;html=1;strokeWidth=1;strokeColor=#616161;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;dashed=1;" parent="1" source="gladapter" target="glcontext" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="e_adapt_ctx_l" value="owns" style="edgeLabel;html=1;align=center;verticalAlign=middle;fontSize=9;fontColor=#ffffff;backgroundColor=#424242;" parent="e_adapt_ctx" connectable="0" vertex="1">
+                    <mxGeometry x="-0.2" y="1" relative="1" as="geometry"><mxPoint as="offset"/></mxGeometry>
+                </mxCell>
+                <!-- OpenGLRenderDevice uses gl/ classes -->
+                <mxCell id="e_dev_shader" style="endArrow=open;endFill=0;html=1;strokeWidth=1;strokeColor=#616161;exitX=0.25;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;dashed=1;" parent="1" source="gldevice" target="shader" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="e_dev_vb" style="endArrow=open;endFill=0;html=1;strokeWidth=1;strokeColor=#616161;exitX=0.35;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;dashed=1;" parent="1" source="gldevice" target="vertexbuffer" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="e_dev_ib" style="endArrow=open;endFill=0;html=1;strokeWidth=1;strokeColor=#616161;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;dashed=1;" parent="1" source="gldevice" target="indexbuffer" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="e_dev_vao" style="endArrow=open;endFill=0;html=1;strokeWidth=1;strokeColor=#616161;exitX=0.65;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;dashed=1;" parent="1" source="gldevice" target="vertexarray" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="e_dev_tex" style="endArrow=open;endFill=0;html=1;strokeWidth=1;strokeColor=#616161;exitX=0.75;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;dashed=1;" parent="1" source="gldevice" target="texture2d" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="e_dev_layout" style="endArrow=open;endFill=0;html=1;strokeWidth=1;strokeColor=#616161;exitX=0.85;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;dashed=1;" parent="1" source="gldevice" target="bufferlayout" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <!-- OpenGLDebugDraw uses Shader, VertexBuffer, VertexArray -->
+                <mxCell id="e_dbg_shader" style="endArrow=open;endFill=0;html=1;strokeWidth=1;strokeColor=#616161;exitX=0.25;exitY=1;exitDx=0;exitDy=0;entryX=0.75;entryY=0;entryDx=0;entryDy=0;dashed=1;" parent="1" source="gldebug" target="shader" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="e_dbg_vb" style="endArrow=open;endFill=0;html=1;strokeWidth=1;strokeColor=#616161;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;dashed=1;" parent="1" source="gldebug" target="vertexbuffer" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="e_dbg_vao" style="endArrow=open;endFill=0;html=1;strokeWidth=1;strokeColor=#616161;exitX=0.75;exitY=1;exitDx=0;exitDy=0;entryX=0.25;entryY=0;entryDx=0;entryDy=0;dashed=1;" parent="1" source="gldebug" target="vertexarray" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <!-- VertexArray uses BufferLayout; BufferLayout contains BufferElement -->
+                <mxCell id="e_vao_layout" style="endArrow=open;endFill=0;html=1;strokeWidth=1;strokeColor=#616161;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;dashed=1;" parent="1" source="vertexarray" target="bufferlayout" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="e_layout_elem" style="endArrow=open;endFill=0;html=1;strokeWidth=1;strokeColor=#757575;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;dashed=1;" parent="1" source="bufferlayout" target="bufferelement" edge="1">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+            </root>
+        </mxGraphModel>
+    </diagram>
+</mxfile>
