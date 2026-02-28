@@ -79,7 +79,7 @@ class Framebuffer {
      * Valid after construction if isValid(). Do not delete this texture;
      * it is owned by this Framebuffer.
      */
-    [[nodiscard]] unsigned int getColorTextureId() const { return color_texture_id_; }
+    [[nodiscard]] uint32_t getColorTextureId() const { return color_texture_id_; }
 
     /** @brief Framebuffer width. */
     [[nodiscard]] uint32_t getWidth() const { return width_; }
@@ -89,9 +89,9 @@ class Framebuffer {
     [[nodiscard]] bool isValid() const { return fbo_id_ != 0u; }
 
    private:
-    unsigned int fbo_id_{0u};
-    unsigned int color_texture_id_{0u};
-    unsigned int depth_rbo_id_{0u};
+    uint32_t fbo_id_{0u};
+    uint32_t color_texture_id_{0u};
+    uint32_t depth_rbo_id_{0u};
     uint32_t width_{0u};
     uint32_t height_{0u};
 };

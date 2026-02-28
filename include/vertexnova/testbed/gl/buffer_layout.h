@@ -95,7 +95,7 @@ struct BufferElement {
     /**
      * @brief Number of components (e.g. 3 for Float3, 4 for Mat4 as 4*float4).
      */
-    unsigned int getComponentCount() const {
+    uint32_t getComponentCount() const {
         switch (type) {
             case ShaderDataType::Float:
                 return 1;

@@ -45,7 +45,7 @@ GLenum filterToGL(SamplerFilter f) {
     return GL_LINEAR;
 }
 
-void setSamplerParams(unsigned int sampler_id, const Sampler2DDescriptor& desc) {
+void setSamplerParams(uint32_t sampler_id, const Sampler2DDescriptor& desc) {
     glSamplerParameteri(sampler_id, GL_TEXTURE_WRAP_S, static_cast<GLint>(wrapToGL(desc.wrap_s)));
     glSamplerParameteri(sampler_id, GL_TEXTURE_WRAP_T, static_cast<GLint>(wrapToGL(desc.wrap_t)));
     glSamplerParameteri(sampler_id, GL_TEXTURE_MIN_FILTER, static_cast<GLint>(filterToGL(desc.min_filter)));

@@ -101,13 +101,13 @@ class Shader {
     void setMat4(const char* name, const vne::math::Mat4f& m) const;
 
    private:
-    unsigned int program_id_{0u};
+    uint32_t program_id_{0u};
 
     /** @brief Compile and link from source; sets program_id_ or leaves 0. */
     void compileAndLink(const char* vert_src, const char* frag_src);
 
     /** @brief Compile a single shader stage; returns 0 on error. */
-    static unsigned int compileStage(unsigned int type, const char* src);
+    static uint32_t compileStage(uint32_t type, const char* src);
 };
 
 }  // namespace gl

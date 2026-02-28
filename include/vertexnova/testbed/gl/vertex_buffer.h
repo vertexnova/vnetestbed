@@ -59,7 +59,7 @@ class VertexBuffer {
     VertexBuffer& operator=(VertexBuffer&&) = delete;
 
     /** @brief OpenGL buffer name (GLuint). */
-    [[nodiscard]] unsigned int getId() const { return vbo_id_; }
+    [[nodiscard]] uint32_t getId() const { return vbo_id_; }
 
     /** @brief Bind as the current GL_ARRAY_BUFFER. */
     void bind() const;
@@ -75,7 +75,7 @@ class VertexBuffer {
     void setData(const void* data, std::size_t byte_size);
 
    private:
-    unsigned int vbo_id_{0u};
+    uint32_t vbo_id_{0u};
 };
 
 }  // namespace gl

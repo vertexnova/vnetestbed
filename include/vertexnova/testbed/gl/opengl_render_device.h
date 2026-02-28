@@ -155,9 +155,9 @@ class OpenGLRenderDevice : public IRenderDevice {
         BlendState blend{};
         DepthState depth{};
         RasterizerState rasterizer{};
-        unsigned int vao_id{0};        ///< OpenGL VAO for this pipeline.
-        unsigned int last_vbo_id{0};   ///< Last VBO GL name bound to VAO (dirty tracking).
-        unsigned int last_ibo_id{0};   ///< Last IBO GL name bound to VAO (dirty tracking).
+        uint32_t vao_id{0};        ///< OpenGL VAO for this pipeline.
+        uint32_t last_vbo_id{0};   ///< Last VBO GL name bound to VAO (dirty tracking).
+        uint32_t last_ibo_id{0};   ///< Last IBO GL name bound to VAO (dirty tracking).
     };
 
     struct TextureSlot {
@@ -194,16 +194,16 @@ class OpenGLRenderDevice : public IRenderDevice {
     void invalidatePipelineBufferCaches();
 
     /** @brief Map DrawMode to the GL_* constant. */
-    static unsigned int toGLPrimitive(DrawMode mode);
+    static uint32_t toGLPrimitive(DrawMode mode);
 
     /** @brief Map BlendFactor to the GL_* constant. */
-    static unsigned int toGLBlendFactor(BlendFactor f);
+    static uint32_t toGLBlendFactor(BlendFactor f);
 
     /** @brief Map BlendEquation to the GL_* constant. */
-    static unsigned int toGLBlendEquation(BlendEquation eq);
+    static uint32_t toGLBlendEquation(BlendEquation eq);
 
     /** @brief Map CompareFunc to the GL_* constant. */
-    static unsigned int toGLCompareFunc(CompareFunc func);
+    static uint32_t toGLCompareFunc(CompareFunc func);
 };
 
 }  // namespace gl

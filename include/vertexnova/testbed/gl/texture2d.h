@@ -91,7 +91,7 @@ class Texture2D {
     [[nodiscard]] bool isValid() const { return texture_id_ != 0u; }
 
    private:
-    unsigned int texture_id_{0u};
+    uint32_t texture_id_{0u};
     uint32_t width_{0u};
     uint32_t height_{0u};
     Texture2DFormat format_{Texture2DFormat::RGBA8};

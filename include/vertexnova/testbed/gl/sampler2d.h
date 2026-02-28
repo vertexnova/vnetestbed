@@ -78,7 +78,7 @@ class Sampler2D {
     [[nodiscard]] bool isValid() const { return sampler_id_ != 0u; }
 
    private:
-    unsigned int sampler_id_{0u};
+    uint32_t sampler_id_{0u};
 };
 
 }  // namespace gl

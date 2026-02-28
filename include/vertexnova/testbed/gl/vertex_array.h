@@ -114,7 +114,7 @@ class VertexArray {
     [[nodiscard]] std::size_t getIndexCount() const { return index_count_; }
 
    private:
-    unsigned int vao_id_{0u};
+    uint32_t vao_id_{0u};
     std::size_t index_count_{0u};
 };
 

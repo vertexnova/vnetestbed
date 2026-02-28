@@ -48,8 +48,8 @@ std::string readFile(const std::filesystem::path& path) {
 // Construction / destruction
 // ---------------------------------------------------------------------------
 
-unsigned int Shader::compileStage(unsigned int type, const char* src) {
-    unsigned int id = glCreateShader(type);
+uint32_t Shader::compileStage(uint32_t type, const char* src) {
+    uint32_t id = glCreateShader(type);
     glShaderSource(id, 1, &src, nullptr);
     glCompileShader(id);
 
@@ -67,8 +67,8 @@ unsigned int Shader::compileStage(unsigned int type, const char* src) {
 }
 
 void Shader::compileAndLink(const char* vert_src, const char* frag_src) {
-    unsigned int vs = compileStage(GL_VERTEX_SHADER, vert_src);
-    unsigned int fs = compileStage(GL_FRAGMENT_SHADER, frag_src);
+    uint32_t vs = compileStage(GL_VERTEX_SHADER, vert_src);
+    uint32_t fs = compileStage(GL_FRAGMENT_SHADER, frag_src);
     if (vs == 0u || fs == 0u) {
         glDeleteShader(vs);
         glDeleteShader(fs);

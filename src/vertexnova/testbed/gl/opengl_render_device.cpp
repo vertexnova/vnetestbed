@@ -330,8 +330,8 @@ void OpenGLRenderDevice::applyPipelineState(const PipelineSlot& ps) const {
 }
 
 void OpenGLRenderDevice::configureVao(PipelineSlot& ps, const BufferSlot& vbo_slot, const BufferSlot* ibo_slot) {
-    const unsigned int vbo_id = vbo_slot.vbo->getId();
-    const unsigned int ibo_id = ibo_slot && ibo_slot->ibo ? ibo_slot->ibo->getId() : 0u;
+    const uint32_t vbo_id = vbo_slot.vbo->getId();
+    const uint32_t ibo_id = ibo_slot && ibo_slot->ibo ? ibo_slot->ibo->getId() : 0u;
 
     if (vbo_id == ps.last_vbo_id && ibo_id == ps.last_ibo_id) {
         return;  // VAO is already configured for this VBO/IBO pair.
@@ -478,7 +478,7 @@ void OpenGLRenderDevice::popDebugGroup() {
 // GL enum mapping helpers
 // ============================================================================
 
-unsigned int OpenGLRenderDevice::toGLPrimitive(DrawMode mode) {
+uint32_t OpenGLRenderDevice::toGLPrimitive(DrawMode mode) {
     switch (mode) {
         case DrawMode::Triangles:
             return GL_TRIANGLES;
@@ -492,7 +492,7 @@ unsigned int OpenGLRenderDevice::toGLPrimitive(DrawMode mode) {
     return GL_TRIANGLES;
 }
 
-unsigned int OpenGLRenderDevice::toGLBlendFactor(BlendFactor f) {
+uint32_t OpenGLRenderDevice::toGLBlendFactor(BlendFactor f) {
     switch (f) {
         case BlendFactor::Zero:
             return GL_ZERO;
@@ -514,7 +514,7 @@ unsigned int OpenGLRenderDevice::toGLBlendFactor(BlendFactor f) {
     return GL_ONE;
 }
 
-unsigned int OpenGLRenderDevice::toGLBlendEquation(BlendEquation eq) {
+uint32_t OpenGLRenderDevice::toGLBlendEquation(BlendEquation eq) {
     switch (eq) {
         case BlendEquation::Add:
             return GL_FUNC_ADD;
@@ -530,7 +530,7 @@ unsigned int OpenGLRenderDevice::toGLBlendEquation(BlendEquation eq) {
     return GL_FUNC_ADD;
 }
 
-unsigned int OpenGLRenderDevice::toGLCompareFunc(CompareFunc func) {
+uint32_t OpenGLRenderDevice::toGLCompareFunc(CompareFunc func) {
     switch (func) {
         case CompareFunc::Never:
             return GL_NEVER;

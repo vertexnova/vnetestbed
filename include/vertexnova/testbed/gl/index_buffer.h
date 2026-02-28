@@ -61,7 +61,7 @@ class IndexBuffer {
     IndexBuffer& operator=(IndexBuffer&&) = delete;
 
     /** @brief OpenGL buffer name (GLuint). */
-    [[nodiscard]] unsigned int getId() const { return ebo_id_; }
+    [[nodiscard]] uint32_t getId() const { return ebo_id_; }
 
     /** @brief Bind as the current GL_ELEMENT_ARRAY_BUFFER. */
     void bind() const;
@@ -80,7 +80,7 @@ class IndexBuffer {
     [[nodiscard]] std::size_t getCount() const { return count_; }
 
    private:
-    unsigned int ebo_id_{0u};
+    uint32_t ebo_id_{0u};
     std::size_t count_{0u};
 };
 

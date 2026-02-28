@@ -83,14 +83,14 @@ void VertexArray::addVertexBuffer(VertexBuffer& vb, const BufferLayout& layout) 
         const GLboolean normalized = elem.normalized ? GL_TRUE : GL_FALSE;
 
         if (elem.type == ShaderDataType::Mat3) {
-            for (unsigned int col = 0; col < 3; ++col) {
+            for (uint32_t col = 0; col < 3; ++col) {
                 glEnableVertexAttribArray(location);
                 const void* offset_ptr = reinterpret_cast<const void*>(elem.offset + col * 3 * sizeof(float));
                 glVertexAttribPointer(location, 3, GL_FLOAT, normalized, gl_stride, offset_ptr);
                 ++location;
             }
         } else if (elem.type == ShaderDataType::Mat4) {
-            for (unsigned int col = 0; col < 4; ++col) {
+            for (uint32_t col = 0; col < 4; ++col) {
                 glEnableVertexAttribArray(location);
                 const void* offset_ptr = reinterpret_cast<const void*>(elem.offset + col * 4 * sizeof(float));
                 glVertexAttribPointer(location, 4, GL_FLOAT, normalized, gl_stride, offset_ptr);
