@@ -25,11 +25,11 @@ namespace {
 
 GLenum wrapToGL(SamplerWrap w) {
     switch (w) {
-        case SamplerWrap::Repeat:
+        case SamplerWrap::eRepeat:
             return GL_REPEAT;
-        case SamplerWrap::ClampToEdge:
+        case SamplerWrap::eClampToEdge:
             return GL_CLAMP_TO_EDGE;
-        case SamplerWrap::MirroredRepeat:
+        case SamplerWrap::eMirroredRepeat:
             return GL_MIRRORED_REPEAT;
     }
     return GL_REPEAT;
@@ -37,9 +37,9 @@ GLenum wrapToGL(SamplerWrap w) {
 
 GLenum filterToGL(SamplerFilter f) {
     switch (f) {
-        case SamplerFilter::Nearest:
+        case SamplerFilter::eNearest:
             return GL_NEAREST;
-        case SamplerFilter::Linear:
+        case SamplerFilter::eLinear:
             return GL_LINEAR;
     }
     return GL_LINEAR;

@@ -33,8 +33,8 @@ namespace window {
  * @brief Graphics backend for window context hints.
  */
 enum class GlfwGraphicsBackend {
-    OpenGL,   ///< OpenGL 4.1 Core (desktop)
-    OpenGLES  ///< OpenGL ES 3.0
+    eOpenGL = 0,   ///< OpenGL 4.1 Core (desktop)
+    eOpenGLES = 1  ///< OpenGL ES 3.0
 };
 
 /**
@@ -51,7 +51,7 @@ struct GlfwWindowDescriptor {
     bool decorated{true};
     bool transparent{false};
     bool visible{true};
-    GlfwGraphicsBackend graphics_backend{GlfwGraphicsBackend::OpenGL};
+    GlfwGraphicsBackend graphics_backend{GlfwGraphicsBackend::eOpenGL};
 
     GlfwWindowDescriptor() = default;
 

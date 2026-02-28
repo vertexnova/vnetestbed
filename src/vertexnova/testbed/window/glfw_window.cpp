@@ -91,7 +91,7 @@ int clampGlfwSize(uint32_t v) {
 }
 
 void setOpenGLHints(GlfwGraphicsBackend backend) {
-    if (backend == GlfwGraphicsBackend::OpenGLES) {
+    if (backend == GlfwGraphicsBackend::eOpenGLES) {
         glfwWindowHint(GLFW_CLIENT_API, GLFW_OPENGL_ES_API);
         glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
         glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 0);
@@ -282,7 +282,7 @@ std::unique_ptr<GlfwWindow> GlfwWindow::create(int width, int height, const char
     desc.width = static_cast<uint32_t>(width > 0 ? width : 800);
     desc.height = static_cast<uint32_t>(height > 0 ? height : 600);
     desc.title = title ? title : "";
-    desc.graphics_backend = use_opengl_es ? GlfwGraphicsBackend::OpenGLES : GlfwGraphicsBackend::OpenGL;
+    desc.graphics_backend = use_opengl_es ? GlfwGraphicsBackend::eOpenGLES : GlfwGraphicsBackend::eOpenGL;
     return create(desc);
 }
 

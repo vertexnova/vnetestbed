@@ -55,6 +55,11 @@ struct IWindow {
      * context to the window without the runner needing to know the adapter type.
      */
     virtual void* getNativeHandle() const = 0;
+
+    /**
+     * @brief Swap front and back buffers (e.g. glfwSwapBuffers). No-op for backends that do not use double-buffering.
+     */
+    virtual void swapBuffers() = 0;
 };
 
 }  // namespace testbed

@@ -50,18 +50,16 @@ endif()
 #   smoke_test.cpp      basic sanity check
 #   layer_test.cpp      ILayer state machine (standalone, no LayerStack)
 #   layer_stack_test.cpp    LayerStack lifecycle, dispatch, ordering
-#   plugin_registry_test.cpp    PluginRegistry registration and layer creation
-#   scene_inspector_test.cpp    SceneInspectorLayer and SceneInspectorPlugin
 #   context_test.cpp    AppContext, RenderContext, FrameInfo, interface traits
+#   demo_factory_test.cpp  DemoFactory registration, id lookup, single/default selection
 #   window_test.cpp     GlfwWindowDescriptor, key mapping, MockWindow, GlfwWindow (GL-only)
 #==============================================================================
 set(TEST_SOURCES
     smoke_test.cpp
     layer_test.cpp
     layer_stack_test.cpp
-    plugin_registry_test.cpp
-    scene_inspector_test.cpp
     context_test.cpp
+    demo_factory_test.cpp
 )
 
 if(VNE_TESTBED_OPENGL OR VNE_TESTBED_OPENGLES)

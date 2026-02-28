@@ -67,6 +67,7 @@ class GlfwWindow : public IWindow {
     void pollEvents() override;
     bool shouldClose() const override;
     void* getNativeHandle() const override;
+    void swapBuffers() override;
 
     // -----------------------------------------------------------------------
     // Window properties
@@ -83,7 +84,6 @@ class GlfwWindow : public IWindow {
     // -----------------------------------------------------------------------
     // Window operations
     // -----------------------------------------------------------------------
-    void swapBuffers();
     void minimize();
     void maximize();
     void restore();

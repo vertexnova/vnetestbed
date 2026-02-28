@@ -26,13 +26,13 @@ namespace {
 
 GLenum drawModeToGL(DrawMode mode) {
     switch (mode) {
-        case DrawMode::Triangles:
+        case DrawMode::eTriangles:
             return GL_TRIANGLES;
-        case DrawMode::Lines:
+        case DrawMode::eLines:
             return GL_LINES;
-        case DrawMode::LineStrip:
+        case DrawMode::eLineStrip:
             return GL_LINE_STRIP;
-        case DrawMode::Points:
+        case DrawMode::ePoints:
             return GL_POINTS;
     }
     return GL_TRIANGLES;

@@ -11,7 +11,6 @@
 
 #include "vertexnova/testbed/app_context.h"
 #include "vertexnova/testbed/layer_stack.h"
-#include "vertexnova/testbed/plugin_registry.h"
 #include "vertexnova/testbed/render_context.h"
 #include "stub_layer.h"
 
@@ -57,7 +56,6 @@ int main() {
 
     vne::testbed::LayerStack layer_stack;
     layer_stack.pushLayer(std::make_unique<vne::testbed::StubLayer>(), app_ctx);
-    vne::testbed::PluginRegistry::instance().createAndPushLayers(layer_stack, app_ctx);
 
     auto prev = std::chrono::steady_clock::now();
     while (!app_ctx.window->shouldClose()) {

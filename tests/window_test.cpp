@@ -100,7 +100,7 @@ TEST(GlfwWindowDescriptor, DefaultVisibleTrue) {
 
 TEST(GlfwWindowDescriptor, DefaultBackendOpenGL) {
     GlfwWindowDescriptor d;
-    EXPECT_EQ(d.graphics_backend, GlfwGraphicsBackend::OpenGL);
+    EXPECT_EQ(d.graphics_backend, GlfwGraphicsBackend::eOpenGL);
 }
 
 TEST(GlfwWindowDescriptor, ConvenienceConstructorSetsFields) {
@@ -308,6 +308,7 @@ struct MockWindow : IWindow {
     void pollEvents() override { ++poll_count; }
     bool shouldClose() const override { return close_flag; }
     void* getNativeHandle() const override { return handle; }
+    void swapBuffers() override {}
 };
 
 TEST(MockWindow, DefaultGetWidth) {

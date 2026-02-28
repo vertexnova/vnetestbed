@@ -34,7 +34,7 @@ namespace gl {
 /**
  * @brief Texture format for 2D textures (maps to GL internal/format/type).
  */
-enum class Texture2DFormat { RGBA8, RGB8, R8 };
+enum class Texture2DFormat { eRGBA8 = 0, eRGB8 = 1, eR8 = 2 };
 
 /**
  * @struct Texture2DDescriptor
@@ -43,7 +43,7 @@ enum class Texture2DFormat { RGBA8, RGB8, R8 };
 struct Texture2DDescriptor {
     uint32_t width{0};
     uint32_t height{0};
-    Texture2DFormat format{Texture2DFormat::RGBA8};
+    Texture2DFormat format{Texture2DFormat::eRGBA8};
 };
 
 /**
@@ -97,7 +97,7 @@ class Texture2D {
     uint32_t texture_id_{0u};
     uint32_t width_{0u};
     uint32_t height_{0u};
-    Texture2DFormat format_{Texture2DFormat::RGBA8};
+    Texture2DFormat format_{Texture2DFormat::eRGBA8};
 };
 
 }  // namespace gl

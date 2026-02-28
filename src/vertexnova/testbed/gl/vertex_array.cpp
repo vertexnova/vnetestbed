@@ -25,30 +25,30 @@ namespace {
 
 GLenum shaderDataTypeToGL(ShaderDataType type) {
     switch (type) {
-        case ShaderDataType::Float:
-        case ShaderDataType::Float2:
-        case ShaderDataType::Float3:
-        case ShaderDataType::Float4:
-        case ShaderDataType::Mat3:
-        case ShaderDataType::Mat4:
+        case ShaderDataType::eFloat:
+        case ShaderDataType::eFloat2:
+        case ShaderDataType::eFloat3:
+        case ShaderDataType::eFloat4:
+        case ShaderDataType::eMat3:
+        case ShaderDataType::eMat4:
             return GL_FLOAT;
-        case ShaderDataType::Int:
-        case ShaderDataType::Int2:
-        case ShaderDataType::Int3:
-        case ShaderDataType::Int4:
+        case ShaderDataType::eInt:
+        case ShaderDataType::eInt2:
+        case ShaderDataType::eInt3:
+        case ShaderDataType::eInt4:
             return GL_INT;
-        case ShaderDataType::Bool:
+        case ShaderDataType::eBool:
             // GL_BOOL is not valid for glVertexAttribIPointer; use GL_UNSIGNED_BYTE (1 byte, 0/1).
             return GL_UNSIGNED_BYTE;
-        case ShaderDataType::None:
+        case ShaderDataType::eNone:
         default:
             return GL_FLOAT;
     }
 }
 
 bool isIntegerType(ShaderDataType type) {
-    return type == ShaderDataType::Int || type == ShaderDataType::Int2 || type == ShaderDataType::Int3
-           || type == ShaderDataType::Int4 || type == ShaderDataType::Bool;
+    return type == ShaderDataType::eInt || type == ShaderDataType::eInt2 || type == ShaderDataType::eInt3
+           || type == ShaderDataType::eInt4 || type == ShaderDataType::eBool;
 }
 
 }  // namespace
@@ -82,14 +82,14 @@ void VertexArray::addVertexBuffer(VertexBuffer& vb, const BufferLayout& layout) 
         const GLenum gl_type = shaderDataTypeToGL(elem.type);
         const GLboolean normalized = elem.normalized ? GL_TRUE : GL_FALSE;
 
-        if (elem.type == ShaderDataType::Mat3) {
+        if (elem.type == ShaderDataType::eMat3) {
             for (uint32_t col = 0; col < 3; ++col) {
                 glEnableVertexAttribArray(location);
                 const void* offset_ptr = reinterpret_cast<const void*>(elem.offset + col * 3 * sizeof(float));
                 glVertexAttribPointer(location, 3, GL_FLOAT, normalized, gl_stride, offset_ptr);
                 ++location;
             }
-        } else if (elem.type == ShaderDataType::Mat4) {
+        } else if (elem.type == ShaderDataType::eMat4) {
             for (uint32_t col = 0; col < 4; ++col) {
                 glEnableVertexAttribArray(location);
                 const void* offset_ptr = reinterpret_cast<const void*>(elem.offset + col * 4 * sizeof(float));

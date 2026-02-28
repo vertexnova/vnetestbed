@@ -32,22 +32,22 @@ namespace gl {
 /**
  * @brief Texture wrap mode (S/T).
  */
-enum class SamplerWrap { Repeat, ClampToEdge, MirroredRepeat };
+enum class SamplerWrap { eRepeat = 0, eClampToEdge = 1, eMirroredRepeat = 2 };
 
 /**
  * @brief Texture filter (min/mag).
  */
-enum class SamplerFilter { Nearest, Linear };
+enum class SamplerFilter { eNearest = 0, eLinear = 1 };
 
 /**
  * @struct Sampler2DDescriptor
  * @brief Descriptor for sampler wrap and filter state.
  */
 struct Sampler2DDescriptor {
-    SamplerWrap wrap_s{SamplerWrap::Repeat};
-    SamplerWrap wrap_t{SamplerWrap::Repeat};
-    SamplerFilter min_filter{SamplerFilter::Linear};
-    SamplerFilter mag_filter{SamplerFilter::Linear};
+    SamplerWrap wrap_s{SamplerWrap::eRepeat};
+    SamplerWrap wrap_t{SamplerWrap::eRepeat};
+    SamplerFilter min_filter{SamplerFilter::eLinear};
+    SamplerFilter mag_filter{SamplerFilter::eLinear};
 };
 
 /**

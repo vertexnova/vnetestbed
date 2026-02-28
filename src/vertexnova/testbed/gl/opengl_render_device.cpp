@@ -159,14 +159,14 @@ TextureHandle OpenGLRenderDevice::createTexture(const TextureDesc& desc) {
     gl_desc.width = desc.width;
     gl_desc.height = desc.height;
     switch (desc.format) {
-        case TextureFormat::RGBA8:
-            gl_desc.format = Texture2DFormat::RGBA8;
+        case TextureFormat::eRGBA8:
+            gl_desc.format = Texture2DFormat::eRGBA8;
             break;
-        case TextureFormat::RGB8:
-            gl_desc.format = Texture2DFormat::RGB8;
+        case TextureFormat::eRGB8:
+            gl_desc.format = Texture2DFormat::eRGB8;
             break;
-        case TextureFormat::R8:
-            gl_desc.format = Texture2DFormat::R8;
+        case TextureFormat::eR8:
+            gl_desc.format = Texture2DFormat::eR8;
             break;
     }
     auto slot = std::make_unique<TextureSlot>();
@@ -321,9 +321,9 @@ void OpenGLRenderDevice::applyPipelineState(const PipelineSlot& ps) const {
     glDepthMask(ps.depth.writeEnabled ? GL_TRUE : GL_FALSE);
 
     // --- Culling ---
-    if (ps.rasterizer.cull != CullMode::None) {
+    if (ps.rasterizer.cull != CullMode::eNone) {
         glEnable(GL_CULL_FACE);
-        glCullFace(ps.rasterizer.cull == CullMode::Front ? GL_FRONT : GL_BACK);
+        glCullFace(ps.rasterizer.cull == CullMode::eFront ? GL_FRONT : GL_BACK);
     } else {
         glDisable(GL_CULL_FACE);
     }
@@ -485,13 +485,13 @@ void OpenGLRenderDevice::popDebugGroup() {
 
 uint32_t OpenGLRenderDevice::toGLPrimitive(DrawMode mode) {
     switch (mode) {
-        case DrawMode::Triangles:
+        case DrawMode::eTriangles:
             return GL_TRIANGLES;
-        case DrawMode::Lines:
+        case DrawMode::eLines:
             return GL_LINES;
-        case DrawMode::LineStrip:
+        case DrawMode::eLineStrip:
             return GL_LINE_STRIP;
-        case DrawMode::Points:
+        case DrawMode::ePoints:
             return GL_POINTS;
     }
     return GL_TRIANGLES;
@@ -499,21 +499,21 @@ uint32_t OpenGLRenderDevice::toGLPrimitive(DrawMode mode) {
 
 uint32_t OpenGLRenderDevice::toGLBlendFactor(BlendFactor f) {
     switch (f) {
-        case BlendFactor::Zero:
+        case BlendFactor::eZero:
             return GL_ZERO;
-        case BlendFactor::One:
+        case BlendFactor::eOne:
             return GL_ONE;
-        case BlendFactor::SrcAlpha:
+        case BlendFactor::eSrcAlpha:
             return GL_SRC_ALPHA;
-        case BlendFactor::OneMinusSrcAlpha:
+        case BlendFactor::eOneMinusSrcAlpha:
             return GL_ONE_MINUS_SRC_ALPHA;
-        case BlendFactor::DstAlpha:
+        case BlendFactor::eDstAlpha:
             return GL_DST_ALPHA;
-        case BlendFactor::OneMinusDstAlpha:
+        case BlendFactor::eOneMinusDstAlpha:
             return GL_ONE_MINUS_DST_ALPHA;
-        case BlendFactor::SrcColor:
+        case BlendFactor::eSrcColor:
             return GL_SRC_COLOR;
-        case BlendFactor::OneMinusSrcColor:
+        case BlendFactor::eOneMinusSrcColor:
             return GL_ONE_MINUS_SRC_COLOR;
     }
     return GL_ONE;
@@ -521,15 +521,15 @@ uint32_t OpenGLRenderDevice::toGLBlendFactor(BlendFactor f) {
 
 uint32_t OpenGLRenderDevice::toGLBlendEquation(BlendEquation eq) {
     switch (eq) {
-        case BlendEquation::Add:
+        case BlendEquation::eAdd:
             return GL_FUNC_ADD;
-        case BlendEquation::Subtract:
+        case BlendEquation::eSubtract:
             return GL_FUNC_SUBTRACT;
-        case BlendEquation::ReverseSubtract:
+        case BlendEquation::eReverseSubtract:
             return GL_FUNC_REVERSE_SUBTRACT;
-        case BlendEquation::Min:
+        case BlendEquation::eMin:
             return GL_MIN;
-        case BlendEquation::Max:
+        case BlendEquation::eMax:
             return GL_MAX;
     }
     return GL_FUNC_ADD;
@@ -537,21 +537,21 @@ uint32_t OpenGLRenderDevice::toGLBlendEquation(BlendEquation eq) {
 
 uint32_t OpenGLRenderDevice::toGLCompareFunc(CompareFunc func) {
     switch (func) {
-        case CompareFunc::Never:
+        case CompareFunc::eNever:
             return GL_NEVER;
-        case CompareFunc::Less:
+        case CompareFunc::eLess:
             return GL_LESS;
-        case CompareFunc::Equal:
+        case CompareFunc::eEqual:
             return GL_EQUAL;
-        case CompareFunc::LessEqual:
+        case CompareFunc::eLessEqual:
             return GL_LEQUAL;
-        case CompareFunc::Greater:
+        case CompareFunc::eGreater:
             return GL_GREATER;
-        case CompareFunc::NotEqual:
+        case CompareFunc::eNotEqual:
             return GL_NOTEQUAL;
-        case CompareFunc::GreaterEqual:
+        case CompareFunc::eGreaterEqual:
             return GL_GEQUAL;
-        case CompareFunc::Always:
+        case CompareFunc::eAlways:
             return GL_ALWAYS;
     }
     return GL_LESS;

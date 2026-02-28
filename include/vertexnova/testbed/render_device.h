@@ -28,7 +28,7 @@
  *   // onRender
  *   DebugGroupScope _{*ctx.device, "MyLayer"};
  *   ctx.device->setMat4(shader_, "u_VP", vp);
- *   ctx.device->draw(pipeline_, vbo_, 3, DrawMode::Triangles);
+ *   ctx.device->draw(pipeline_, vbo_, 3, DrawMode::eTriangles);
  *
  *   // onDetach
  *   ctx.device->destroy(pipeline_);
@@ -81,27 +81,36 @@ struct TextureHandle {
 
 /** @brief Source / destination factor for blending. */
 enum class BlendFactor {
-    Zero,
-    One,
-    SrcAlpha,
-    OneMinusSrcAlpha,
-    DstAlpha,
-    OneMinusDstAlpha,
-    SrcColor,
-    OneMinusSrcColor
+    eZero = 0,
+    eOne = 1,
+    eSrcAlpha = 2,
+    eOneMinusSrcAlpha = 3,
+    eDstAlpha = 4,
+    eOneMinusDstAlpha = 5,
+    eSrcColor = 6,
+    eOneMinusSrcColor = 7
 };
 
 /** @brief Blending equation. */
-enum class BlendEquation { Add, Subtract, ReverseSubtract, Min, Max };
+enum class BlendEquation { eAdd = 0, eSubtract = 1, eReverseSubtract = 2, eMin = 3, eMax = 4 };
 
 /** @brief Depth/stencil comparison function. */
-enum class CompareFunc { Never, Less, Equal, LessEqual, Greater, NotEqual, GreaterEqual, Always };
+enum class CompareFunc {
+    eNever = 0,
+    eLess = 1,
+    eEqual = 2,
+    eLessEqual = 3,
+    eGreater = 4,
+    eNotEqual = 5,
+    eGreaterEqual = 6,
+    eAlways = 7
+};
 
 /** @brief Face culling mode. */
-enum class CullMode { None, Front, Back };
+enum class CullMode { eNone = 0, eFront = 1, eBack = 2 };
 
 /** @brief Primitive topology for draw calls. */
-enum class DrawMode { Triangles, Lines, LineStrip, Points };
+enum class DrawMode { eTriangles = 0, eLines = 1, eLineStrip = 2, ePoints = 3 };
 
 // ---------------------------------------------------------------------------
 
@@ -114,9 +123,9 @@ enum class DrawMode { Triangles, Lines, LineStrip, Points };
  */
 struct BlendState {
     bool enabled{false};
-    BlendFactor src{BlendFactor::SrcAlpha};
-    BlendFactor dst{BlendFactor::OneMinusSrcAlpha};
-    BlendEquation eq{BlendEquation::Add};
+    BlendFactor src{BlendFactor::eSrcAlpha};
+    BlendFactor dst{BlendFactor::eOneMinusSrcAlpha};
+    BlendEquation eq{BlendEquation::eAdd};
 };
 
 /**
@@ -128,7 +137,7 @@ struct BlendState {
 struct DepthState {
     bool testEnabled{true};
     bool writeEnabled{true};
-    CompareFunc func{CompareFunc::Less};
+    CompareFunc func{CompareFunc::eLess};
 };
 
 /**
@@ -138,7 +147,7 @@ struct DepthState {
  * Default: back-face culling, filled polygons.
  */
 struct RasterizerState {
-    CullMode cull{CullMode::Back};
+    CullMode cull{CullMode::eBack};
     bool wireframe{false};  ///< Not supported on OpenGL ES / WebGL.
 };
 
@@ -180,13 +189,13 @@ struct PipelineDesc {
 // ============================================================================
 
 /** @brief Pixel format for 2D textures. */
-enum class TextureFormat { RGBA8, RGB8, R8 };
+enum class TextureFormat { eRGBA8 = 0, eRGB8 = 1, eR8 = 2 };
 
 /** @brief Descriptor for creating a 2D texture. */
 struct TextureDesc {
     uint32_t width{0};
     uint32_t height{0};
-    TextureFormat format{TextureFormat::RGBA8};
+    TextureFormat format{TextureFormat::eRGBA8};
 };
 
 // ============================================================================

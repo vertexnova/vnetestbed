@@ -9,25 +9,27 @@
 #==============================================================================
 
 set(SOURCE_FILES
-    vertexnova/testbed/plugin_registry.cpp
+    vertexnova/testbed/app/application.cpp
+    vertexnova/testbed/app/demo_application.cpp
+    vertexnova/testbed/logging_guard.cpp
     vertexnova/testbed/layer.cpp
     vertexnova/testbed/layer_stack.cpp
-    vertexnova/testbed/plugins/scene_inspector_plugin.cpp
 )
 
 set(HEADER_FILES
+    ${VNE_INCLUDE_DIR}/vertexnova/testbed/app/application.h
+    ${VNE_INCLUDE_DIR}/vertexnova/testbed/app/application_descriptor.h
+    ${VNE_INCLUDE_DIR}/vertexnova/testbed/app/demo_application.h
+    ${VNE_INCLUDE_DIR}/vertexnova/testbed/app/demo_factory.h
+    ${VNE_INCLUDE_DIR}/vertexnova/testbed/logging_guard.h
     ${VNE_INCLUDE_DIR}/vertexnova/testbed/layer.h
     ${VNE_INCLUDE_DIR}/vertexnova/testbed/layer_stack.h
     ${VNE_INCLUDE_DIR}/vertexnova/testbed/render_context.h
     ${VNE_INCLUDE_DIR}/vertexnova/testbed/app_context.h
-    ${VNE_INCLUDE_DIR}/vertexnova/testbed/plugin.h
-    ${VNE_INCLUDE_DIR}/vertexnova/testbed/plugin_registry.h
     ${VNE_INCLUDE_DIR}/vertexnova/testbed/render_adapter.h
     ${VNE_INCLUDE_DIR}/vertexnova/testbed/render_device.h
     ${VNE_INCLUDE_DIR}/vertexnova/testbed/debug_draw.h
     ${VNE_INCLUDE_DIR}/vertexnova/testbed/window.h
-    ${VNE_INCLUDE_DIR}/vertexnova/testbed/plugins/scene_inspector_plugin.h
-    ${VNE_INCLUDE_DIR}/vertexnova/testbed/plugins/scene_inspector_layer.h
 )
 
 add_library(vnetestbed STATIC ${SOURCE_FILES} ${HEADER_FILES})
@@ -54,12 +56,14 @@ if(TARGET vne::common)
 endif()
 if(TARGET vne::logging)
     target_link_libraries(vnetestbed PUBLIC vne::logging)
+    target_compile_definitions(vnetestbed PUBLIC VNE_TESTBED_LOGGING)
 endif()
 if(TARGET glfw)
     target_link_libraries(vnetestbed PUBLIC glfw)
 endif()
 if(TARGET vne::events)
     target_link_libraries(vnetestbed PUBLIC vne::events)
+    target_compile_definitions(vnetestbed PUBLIC VNE_TESTBED_EVENTS)
 endif()
 # vne::math is required: debug_draw.h uses vne::math::Vec3f
 if(NOT TARGET vne::math)
@@ -136,15 +140,10 @@ if(VNE_TESTBED_OPENGL OR VNE_TESTBED_OPENGLES)
         vertexnova/testbed/gl/opengl_render_adapter.cpp
         vertexnova/testbed/gl/opengl_render_device.cpp
         vertexnova/testbed/gl/opengl_debug_draw.cpp
-        # Demo layer plugins (use only IRenderDevice / IDebugDraw — no gl/ includes)
-        vertexnova/testbed/plugins/triangle_demo_layer.cpp
-        vertexnova/testbed/plugins/scene_demo_layer.cpp
-        vertexnova/testbed/plugins/events_demo_layer.cpp
     )
     if(TARGET vne::interaction)
         target_compile_definitions(vnetestbed PUBLIC VNE_TESTBED_INTERACTION)
-        target_sources(vnetestbed PRIVATE vertexnova/testbed/plugins/interaction_demo_layer.cpp)
-        message(STATUS "VNE_TESTBED_INTERACTION: ON — building InteractionDemoLayer")
+        message(STATUS "VNE_TESTBED_INTERACTION: ON")
     endif()
 
     target_link_libraries(vnetestbed PUBLIC glad::glad)
