@@ -233,40 +233,50 @@ void OpenGLRenderDevice::setInt(ShaderHandle sh, const char* name, int value) {
     if (!sh.isValid() || sh.id >= shaders_.size() || !shaders_[sh.id]) {
         return;
     }
-    shaders_[sh.id]->shader->bind();
-    shaders_[sh.id]->shader->setInt(name, value);
+    auto& s = *shaders_[sh.id]->shader;
+    s.bind();
+    s.setInt(name, value);
+    s.unbind();
 }
 
 void OpenGLRenderDevice::setFloat(ShaderHandle sh, const char* name, float value) {
     if (!sh.isValid() || sh.id >= shaders_.size() || !shaders_[sh.id]) {
         return;
     }
-    shaders_[sh.id]->shader->bind();
-    shaders_[sh.id]->shader->setFloat(name, value);
+    auto& s = *shaders_[sh.id]->shader;
+    s.bind();
+    s.setFloat(name, value);
+    s.unbind();
 }
 
 void OpenGLRenderDevice::setVec3(ShaderHandle sh, const char* name, const vne::math::Vec3f& v) {
     if (!sh.isValid() || sh.id >= shaders_.size() || !shaders_[sh.id]) {
         return;
     }
-    shaders_[sh.id]->shader->bind();
-    shaders_[sh.id]->shader->setVec3(name, v);
+    auto& s = *shaders_[sh.id]->shader;
+    s.bind();
+    s.setVec3(name, v);
+    s.unbind();
 }
 
 void OpenGLRenderDevice::setVec4(ShaderHandle sh, const char* name, const vne::math::Vec4f& v) {
     if (!sh.isValid() || sh.id >= shaders_.size() || !shaders_[sh.id]) {
         return;
     }
-    shaders_[sh.id]->shader->bind();
-    shaders_[sh.id]->shader->setVec4(name, v);
+    auto& s = *shaders_[sh.id]->shader;
+    s.bind();
+    s.setVec4(name, v);
+    s.unbind();
 }
 
 void OpenGLRenderDevice::setMat4(ShaderHandle sh, const char* name, const vne::math::Mat4f& m) {
     if (!sh.isValid() || sh.id >= shaders_.size() || !shaders_[sh.id]) {
         return;
     }
-    shaders_[sh.id]->shader->bind();
-    shaders_[sh.id]->shader->setMat4(name, m);
+    auto& s = *shaders_[sh.id]->shader;
+    s.bind();
+    s.setMat4(name, m);
+    s.unbind();
 }
 
 // ============================================================================

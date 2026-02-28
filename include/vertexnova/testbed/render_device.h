@@ -40,7 +40,10 @@
 #include "vertexnova/math/core/core.h"
 
 #include <cstdint>
+#include <filesystem>
+#include <fstream>
 #include <initializer_list>
+#include <sstream>
 #include <vector>
 
 namespace vne {
@@ -221,6 +224,36 @@ class IRenderDevice {
      * @return Valid ShaderHandle on success; {0} on compilation failure.
      */
     virtual ShaderHandle createShader(const char* vert_src, const char* frag_src) = 0;
+
+    /**
+     * @brief Compile and link a shader program from GLSL source files.
+     *
+     * Reads both files into strings and delegates to createShader().
+     * Returns an invalid handle if either file cannot be opened or if
+     * compilation / linking fails.
+     *
+     * @param vert_path  Path to vertex shader source file.
+     * @param frag_path  Path to fragment shader source file.
+     * @return Valid ShaderHandle on success; {0} on failure.
+     */
+    ShaderHandle createShaderFromFile(const std::filesystem::path& vert_path,
+                                      const std::filesystem::path& frag_path) {
+        auto readFile = [](const std::filesystem::path& p) -> std::string {
+            std::ifstream f(p);
+            if (!f.is_open()) {
+                return {};
+            }
+            std::ostringstream ss;
+            ss << f.rdbuf();
+            return ss.str();
+        };
+        const std::string vert_src = readFile(vert_path);
+        const std::string frag_src = readFile(frag_path);
+        if (vert_src.empty() || frag_src.empty()) {
+            return {};
+        }
+        return createShader(vert_src.c_str(), frag_src.c_str());
+    }
 
     /**
      * @brief Allocate a GPU vertex buffer.

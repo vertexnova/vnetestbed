@@ -19,6 +19,7 @@
 
 #include <vertexnova/logging/logging.h>
 
+#include <filesystem>
 #include <fstream>
 #include <sstream>
 
@@ -30,10 +31,10 @@ namespace gl {
 
 namespace {
 
-std::string readFile(const char* path) {
+std::string readFile(const std::filesystem::path& path) {
     std::ifstream file(path);
     if (!file.is_open()) {
-        VNE_LOG_ERROR << "Failed to open shader file: " << path;
+        VNE_LOG_ERROR << "Failed to open shader file: " << path.string();
         return {};
     }
     std::ostringstream oss;
@@ -47,11 +48,12 @@ std::string readFile(const char* path) {
 // Construction / destruction
 // ---------------------------------------------------------------------------
 
-Shader Shader::fromFile(const char* vert_path, const char* frag_path) {
+Shader Shader::fromFile(const std::filesystem::path& vert_path, const std::filesystem::path& frag_path) {
     std::string vert_src = readFile(vert_path);
     std::string frag_src = readFile(frag_path);
+    // readFile already logged the open error; skip the GL compiler round-trip.
     if (vert_src.empty() || frag_src.empty()) {
-        return Shader("", "");
+        return {};
     }
     return Shader(vert_src.c_str(), frag_src.c_str());
 }
@@ -64,8 +66,8 @@ unsigned int Shader::compileStage(unsigned int type, const char* src) {
     int ok = 0;
     glGetShaderiv(id, GL_COMPILE_STATUS, &ok);
     if (!ok) {
-        char log[512];
-        glGetShaderInfoLog(id, 512, nullptr, log);
+        char log[1024];
+        glGetShaderInfoLog(id, 1024, nullptr, log);
         const char* stage = (type == GL_VERTEX_SHADER) ? "vertex" : "fragment";
         VNE_LOG_ERROR << "Shader " << stage << " compile error: " << log;
         glDeleteShader(id);
@@ -75,6 +77,9 @@ unsigned int Shader::compileStage(unsigned int type, const char* src) {
 }
 
 Shader::Shader(const char* vert_src, const char* frag_src) {
+    if (!vert_src || !frag_src) {
+        return;  // fromFile short-circuit: leave program_id_ == 0.
+    }
     unsigned int vs = compileStage(GL_VERTEX_SHADER, vert_src);
     unsigned int fs = compileStage(GL_FRAGMENT_SHADER, frag_src);
     if (vs == 0u || fs == 0u) {
@@ -91,8 +96,8 @@ Shader::Shader(const char* vert_src, const char* frag_src) {
     int ok = 0;
     glGetProgramiv(program_id_, GL_LINK_STATUS, &ok);
     if (!ok) {
-        char log[512];
-        glGetProgramInfoLog(program_id_, 512, nullptr, log);
+        char log[1024];
+        glGetProgramInfoLog(program_id_, 1024, nullptr, log);
         VNE_LOG_ERROR << "Shader link error: " << log;
         glDeleteProgram(program_id_);
         program_id_ = 0u;

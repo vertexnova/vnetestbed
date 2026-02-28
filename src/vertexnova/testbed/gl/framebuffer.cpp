@@ -63,14 +63,14 @@ Framebuffer::Framebuffer(const FramebufferDescriptor& desc)
     }
 
     if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) {
-        glDeleteFramebuffers(1, &fbo_id_);
         glDeleteTextures(1, &color_texture_id_);
+        color_texture_id_ = 0u;
         if (depth_rbo_id_ != 0u) {
             glDeleteRenderbuffers(1, &depth_rbo_id_);
             depth_rbo_id_ = 0u;
         }
+        glDeleteFramebuffers(1, &fbo_id_);
         fbo_id_ = 0u;
-        color_texture_id_ = 0u;
     }
 
     glBindFramebuffer(GL_FRAMEBUFFER, 0);

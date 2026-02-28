@@ -49,6 +49,8 @@ void draw(const VertexArray& vao, DrawMode mode, std::size_t vertex_count) {
     } else {
         glDrawArrays(gl_mode, 0, static_cast<GLsizei>(vertex_count));
     }
+
+    vao.unbind();
 }
 
 }  // namespace gl
