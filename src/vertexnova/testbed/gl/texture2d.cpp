@@ -103,7 +103,8 @@ bool Texture2D::updateData(uint32_t mip_level, uint32_t array_layer, const void*
         return false;  // Only mip 0 is allocated.
     }
 
-    const std::size_t required = static_cast<std::size_t>(width_) * static_cast<std::size_t>(height_) * bytesPerPixel(format_);
+    const std::size_t required =
+        static_cast<std::size_t>(width_) * static_cast<std::size_t>(height_) * bytesPerPixel(format_);
     if (data_size < required) {
         return false;
     }
@@ -114,7 +115,15 @@ bool Texture2D::updateData(uint32_t mip_level, uint32_t array_layer, const void*
     formatToGL(format_, &internal_format, &pixel_format, &pixel_type);
 
     glBindTexture(GL_TEXTURE_2D, texture_id_);
-    glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, static_cast<GLsizei>(width_), static_cast<GLsizei>(height_), pixel_format, pixel_type, data);
+    glTexSubImage2D(GL_TEXTURE_2D,
+                    0,
+                    0,
+                    0,
+                    static_cast<GLsizei>(width_),
+                    static_cast<GLsizei>(height_),
+                    pixel_format,
+                    pixel_type,
+                    data);
     glBindTexture(GL_TEXTURE_2D, 0);
 
     return true;
