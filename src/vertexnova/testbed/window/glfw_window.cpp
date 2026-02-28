@@ -11,10 +11,10 @@
 
 #include "vertexnova/testbed/window/glfw_window.h"
 #include "vertexnova/testbed/window/glfw_key_mapping.h"
+#include "vertexnova/common/macros.h"
 
 #include <GLFW/glfw3.h>
 
-#include <atomic>
 #include <algorithm>
 #include <climits>
 #include <memory>
@@ -37,34 +37,55 @@ namespace {
 
 // GLFW is not thread-safe: all calls (glfwCreateWindow, glfwDestroyWindow,
 // glfwPollEvents, glfwTerminate) MUST be made from the same thread (the main
-// thread).  The atomics below protect only the counters themselves, not the
-// GLFW library state.  Do not call create() or destroy GlfwWindow objects
-// concurrently from multiple threads.
+// thread).  The mutex below protects the ref-count and the glfwInit /
+// glfwTerminate calls, but does not make GLFW itself thread-safe.
+// Do not call create() or destroy GlfwWindow objects concurrently.
 
-// Init runs exactly once; no thread proceeds to hints/create until complete.
-std::once_flag g_glfw_init_once;
-std::atomic<bool> g_glfw_init_ok{false};
-// Number of GlfwWindow instances; terminate when the last is destroyed.
-std::atomic<int> g_glfw_window_count{0};
+// Ref-count of live GlfwWindow instances.
+// glfwInit() is called when the count goes 0 → 1.
+// glfwTerminate() is called when the count goes 1 → 0.
+std::mutex g_glfw_mutex;
+int        g_glfw_window_count{0};  // guarded by g_glfw_mutex
+bool       g_glfw_init_ok{false};   // guarded by g_glfw_mutex
 
 void glfwErrorCallback(int error, const char* description) {
-    (void)error;
-    (void)description;
+    VNE_UNUSED(error);
+    VNE_UNUSED(description);
     // Can be wired to vne::logging if desired
 }
 
-void ensureGlfwInit() {
-    std::call_once(g_glfw_init_once, []() {
+// Increment the ref-count.  Calls glfwInit() on the first window.
+// Returns false if glfwInit() failed.
+bool glfwAddRef() {
+    std::lock_guard<std::mutex> lock(g_glfw_mutex);
+    if (g_glfw_window_count == 0) {
         glfwSetErrorCallback(glfwErrorCallback);
-        g_glfw_init_ok.store(glfwInit() != 0);
-    });
+        g_glfw_init_ok = (glfwInit() != 0);
+    }
+    if (!g_glfw_init_ok) {
+        return false;
+    }
+    ++g_glfw_window_count;
+    return true;
+}
+
+// Decrement the ref-count.  Calls glfwTerminate() when the last window goes away.
+void glfwReleaseRef() {
+    std::lock_guard<std::mutex> lock(g_glfw_mutex);
+    if (g_glfw_window_count > 0 && --g_glfw_window_count == 0) {
+        glfwTerminate();
+        g_glfw_init_ok = false;
+    }
 }
 
 /** Clamp uint32_t to int range [1, INT_MAX] for GLFW size parameters. */
 int clampGlfwSize(uint32_t v) {
     constexpr int kMax = INT_MAX;
-    if (v == 0 || v > static_cast<uint32_t>(kMax)) {
+    if (v == 0) {
         return 1;
+    }
+    if (v > static_cast<uint32_t>(kMax)) {
+        return kMax;
     }
     return static_cast<int>(v);
 }
@@ -222,18 +243,13 @@ GlfwWindow::~GlfwWindow() {
     glfwDestroyWindow(window_);
     window_ = nullptr;
 
-    if (g_glfw_window_count.fetch_sub(1) == 1) {
-        glfwTerminate();
-    }
+    glfwReleaseRef();
 }
 
 std::unique_ptr<GlfwWindow> GlfwWindow::create(const GlfwWindowDescriptor& descriptor) {
-    ensureGlfwInit();
-    if (!g_glfw_init_ok.load()) {
+    if (!glfwAddRef()) {
         return nullptr;
     }
-
-    g_glfw_window_count.fetch_add(1);
 
     glfwWindowHint(GLFW_VISIBLE, descriptor.visible ? GLFW_TRUE : GLFW_FALSE);
     glfwWindowHint(GLFW_RESIZABLE, descriptor.resizable ? GLFW_TRUE : GLFW_FALSE);
@@ -245,9 +261,7 @@ std::unique_ptr<GlfwWindow> GlfwWindow::create(const GlfwWindowDescriptor& descr
     const int h = clampGlfwSize(descriptor.height);
     GLFWwindow* raw = glfwCreateWindow(w, h, descriptor.title.c_str(), nullptr, nullptr);
     if (!raw) {
-        if (g_glfw_window_count.fetch_sub(1) == 1) {
-            glfwTerminate();
-        }
+        glfwReleaseRef();
         return nullptr;
     }
 
@@ -281,7 +295,8 @@ int GlfwWindow::getHeight() const {
 }
 
 void GlfwWindow::pollEvents() {
-    if (g_glfw_init_ok.load()) {
+    std::lock_guard<std::mutex> lock(g_glfw_mutex);
+    if (g_glfw_init_ok) {
         glfwPollEvents();
     }
 }
