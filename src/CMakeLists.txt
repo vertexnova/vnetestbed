@@ -10,6 +10,7 @@
 
 set(SOURCE_FILES
     vertexnova/testbed/app/application.cpp
+    vertexnova/testbed/app/demo_application.cpp
     vertexnova/testbed/logging_guard.cpp
     vertexnova/testbed/layer.cpp
     vertexnova/testbed/layer_stack.cpp

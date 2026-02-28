@@ -22,8 +22,6 @@
 #include "vertexnova/testbed/app/application_descriptor.h"
 #include "vertexnova/testbed/app/demo_factory.h"
 
-#include <cstdlib>
-
 namespace vne {
 namespace testbed {
 
@@ -42,35 +40,7 @@ class DemoApplication : public Application {
      *         no demo could be installed (e.g. none registered or requested id not found).
      *         On false, shutdown() is called so the backend is cleaned up.
      */
-    bool initialize(const ApplicationDescriptor& descriptor) {
-        if (!Application::initialize(descriptor)) {
-            return false;
-        }
-        const char* id = getDemoId();
-        if (id && id[0] != '\0') {
-            if (DemoFactory::createDemo(*this, id)) {
-                return true;
-            }
-        }
-        if (DemoFactory::createDemo(*this)) {
-            return true;
-        }
-        if (DemoFactory::createDefault(*this)) {
-            return true;
-        }
-        shutdown();
-        return false;
-    }
-
-   private:
-    static const char* getDemoId() {
-#ifdef VNE_DEMO_ID
-        return VNE_DEMO_ID;  // CMake passes -DVNE_DEMO_ID="triangle" etc.
-#else
-        const char* env = std::getenv("VNE_DEMO");
-        return env ? env : "";
-#endif
-    }
+    bool initialize(const ApplicationDescriptor& descriptor);
 };
 
 /**
