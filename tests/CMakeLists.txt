@@ -53,6 +53,7 @@ endif()
 #   plugin_registry_test.cpp    PluginRegistry registration and layer creation
 #   scene_inspector_test.cpp    SceneInspectorLayer and SceneInspectorPlugin
 #   context_test.cpp    AppContext, RenderContext, FrameInfo, interface traits
+#   window_test.cpp     GlfwWindowDescriptor, key mapping, MockWindow, GlfwWindow (GL-only)
 #==============================================================================
 set(TEST_SOURCES
     smoke_test.cpp
@@ -65,6 +66,7 @@ set(TEST_SOURCES
 
 if(VNE_TESTBED_OPENGL OR VNE_TESTBED_OPENGLES)
     list(APPEND TEST_SOURCES gl_buffer_layout_test.cpp)
+    list(APPEND TEST_SOURCES window_test.cpp)
 endif()
 
 #==============================================================================
