@@ -33,6 +33,6 @@ drawio -x -f png -o . .
 
 | Source | Output | Used in testbed.md | Contents |
 |--------|--------|---------------------|----------|
-| context.drawio | context.png | Overview | C4 system context: Application → VneTestbed (get_version, hello) |
-| api.drawio | api.png | API usage | API flow: get_version(), hello() |
-| architecture.drawio | architecture.png | Project layout | Folder structure and build flow |
+| context.drawio | context.png | Overview | C4 system context: Application → VneTestbed (AppContext, LayerStack, IPlugin, ILayer, Registry) |
+| api.drawio | api.png | API usage | Runner flow: Build AppContext → LayerStack + createAndPushLayers → loop (onUpdate, onRender, onGui*) |
+| architecture.drawio | architecture.png | Project layout | Folder structure and build flow (examples: 01_hello_testbed, 02_plugin_runner) |

@@ -132,7 +132,7 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for build, test, and style. We follow the
 
 ## Releases
 
-Releases are manual. The **VERSION** file at the repo root is the source of truth; CMake reads it at configure time and exposes it as `get_version()`.
+Releases are manual. The **VERSION** file at the repo root is the source of truth; CMake reads it at configure time for project versioning.
 
 To cut a release: update **VERSION**, add a dated entry to **CHANGELOG.md**, commit, create and push a tag (e.g. `git tag v1.0.0 && git push origin v1.0.0`), then create a GitHub Release from that tag and paste the CHANGELOG section.
 

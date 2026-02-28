@@ -9,19 +9,30 @@
 #==============================================================================
 
 set(SOURCE_FILES
-    vertexnova/testbed/testbed.cpp
+    vertexnova/testbed/plugin_registry.cpp
+    vertexnova/testbed/layer.cpp
+    vertexnova/testbed/layer_stack.cpp
+    vertexnova/testbed/plugins/scene_inspector_plugin.cpp
 )
 
 set(HEADER_FILES
-    ${VNE_INCLUDE_DIR}/vertexnova/testbed/testbed.h
+    ${VNE_INCLUDE_DIR}/vertexnova/testbed/layer.h
+    ${VNE_INCLUDE_DIR}/vertexnova/testbed/layer_stack.h
+    ${VNE_INCLUDE_DIR}/vertexnova/testbed/render_context.h
+    ${VNE_INCLUDE_DIR}/vertexnova/testbed/app_context.h
+    ${VNE_INCLUDE_DIR}/vertexnova/testbed/plugin.h
+    ${VNE_INCLUDE_DIR}/vertexnova/testbed/plugin_registry.h
+    ${VNE_INCLUDE_DIR}/vertexnova/testbed/render_adapter.h
+    ${VNE_INCLUDE_DIR}/vertexnova/testbed/debug_draw.h
+    ${VNE_INCLUDE_DIR}/vertexnova/testbed/plugins/scene_inspector_plugin.h
+    ${VNE_INCLUDE_DIR}/vertexnova/testbed/plugins/scene_inspector_layer.h
 )
 
 add_library(vnetestbed STATIC ${SOURCE_FILES} ${HEADER_FILES})
+add_library(vne::testbed ALIAS vnetestbed)
 
 source_group("Sources" FILES ${SOURCE_FILES})
 source_group(TREE ${VNE_INCLUDE_DIR} PREFIX "Headers" FILES ${HEADER_FILES})
-
-add_library(vne::testbed ALIAS vnetestbed)
 
 target_include_directories(vnetestbed
     PUBLIC
@@ -51,9 +62,11 @@ endif()
 if(TARGET vne::events)
     target_link_libraries(vnetestbed PUBLIC vne::events)
 endif()
-if(TARGET vne::math)
-    target_link_libraries(vnetestbed PUBLIC vne::math)
+# vne::math is required: debug_draw.h uses vne::math::Vec3f
+if(NOT TARGET vne::math)
+    message(FATAL_ERROR "vnetestbed requires vne::math. Add vne::math before vnetestbed.")
 endif()
+target_link_libraries(vnetestbed PUBLIC vne::math)
 if(TARGET vne::scene)
     target_link_libraries(vnetestbed PUBLIC vne::scene)
 endif()

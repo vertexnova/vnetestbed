@@ -10,15 +10,11 @@
  */
 
 #include "common/logging_guard.h"
-#include "vertexnova/testbed/testbed.h"
 
 int main() {
-    vne::testbed_ns::examples::LoggingGuard logging_guard;
+    vne::testbed::examples::LoggingGuard logging_guard;
 
-    using namespace vne::testbed_ns;
-
-    VNE_LOG_INFO << hello();
-    VNE_LOG_INFO << "Version: " << get_version();
+    VNE_LOG_INFO << "Hello from vnetestbed";
 
     return 0;
 }

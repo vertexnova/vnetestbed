@@ -10,16 +10,7 @@
  */
 
 #include <gtest/gtest.h>
-#include "vertexnova/testbed/testbed.h"
 
-TEST(VneTestbed, GetVersion) {
-    const char* ver = vne::testbed_ns::get_version();
-    ASSERT_NE(ver, nullptr);
-    EXPECT_STRNE(ver, "");
-}
-
-TEST(VneTestbed, Hello) {
-    const char* msg = vne::testbed_ns::hello();
-    ASSERT_NE(msg, nullptr);
-    EXPECT_STREQ(msg, "Hello from VneTestbed");
+TEST(VneTestbed, Smoke) {
+    EXPECT_TRUE(true);
 }

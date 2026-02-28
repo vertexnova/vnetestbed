@@ -9,19 +9,24 @@
  * ----------------------------------------------------------------------
  */
 
-#include "vertexnova/testbed/testbed.h"
-#include "config.h"
+#include "vertexnova/testbed/layer.h"
 
 namespace vne {
-namespace testbed_ns {
+namespace testbed {
 
-const char* get_version() {
-    return PROJECT_VERSION;
+ILayer::ILayer(const std::string& name)
+    : name_{name} {}
+
+void ILayer::setEnabled(bool enabled) {
+    if (is_enabled_ != enabled) {
+        is_enabled_ = enabled;
+        if (is_enabled_) {
+            onEnable();
+        } else {
+            onDisable();
+        }
+    }
 }
 
-const char* hello() {
-    return "Hello from VneTestbed";
-}
-
-}  // namespace testbed_ns
+}  // namespace testbed
 }  // namespace vne

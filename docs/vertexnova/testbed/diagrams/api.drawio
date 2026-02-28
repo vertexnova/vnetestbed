@@ -4,19 +4,28 @@
             <root>
                 <mxCell id="0"/>
                 <mxCell id="1" parent="0"/>
-                <mxCell id="step1" value="1. get_version()" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e3f2fd;strokeColor=#1565c0;strokeWidth=2;fontSize=14;fontStyle=1;fontColor=#1a1a1a;" vertex="1" parent="1">
-                    <mxGeometry x="80" y="80" width="140" height="36" as="geometry"/>
+                <mxCell id="step1" value="1. Build AppContext" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e3f2fd;strokeColor=#1565c0;strokeWidth=2;fontSize=14;fontStyle=1;fontColor=#1a1a1a;" vertex="1" parent="1">
+                    <mxGeometry x="80" y="60" width="160" height="36" as="geometry"/>
                 </mxCell>
-                <mxCell id="code1" value="const char* ver = vne::testbed_ns::get_version();&#10;// e.g. &quot;1.0.0&quot;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#1565c0;align=left;verticalAlign=middle;spacingLeft=10;fontSize=11;fontFamily=Courier New;fontColor=#1a1a1a;" vertex="1" parent="1">
-                    <mxGeometry x="80" y="130" width="280" height="50" as="geometry"/>
+                <mxCell id="code1" value="AppContext ctx; ctx.window = &amp;win;&#10;ctx.renderer = &amp;adapter; ctx.debugDraw = nullptr;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#1565c0;align=left;verticalAlign=middle;spacingLeft=10;fontSize=11;fontFamily=Courier New;fontColor=#1a1a1a;" vertex="1" parent="1">
+                    <mxGeometry x="80" y="100" width="320" height="44" as="geometry"/>
                 </mxCell>
-                <mxCell id="step2" value="2. hello()" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff3e0;strokeColor=#e65100;strokeWidth=2;fontSize=14;fontStyle=1;fontColor=#1a1a1a;" vertex="1" parent="1">
-                    <mxGeometry x="480" y="80" width="120" height="36" as="geometry"/>
+                <mxCell id="step2" value="2. LayerStack + plugins" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff3e0;strokeColor=#e65100;strokeWidth=2;fontSize=14;fontStyle=1;fontColor=#1a1a1a;" vertex="1" parent="1">
+                    <mxGeometry x="480" y="60" width="180" height="36" as="geometry"/>
                 </mxCell>
-                <mxCell id="code2" value="const char* msg = vne::testbed_ns::hello();&#10;// e.g. &quot;Hello from VneTestbed&quot;" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#e65100;align=left;verticalAlign=middle;spacingLeft=10;fontSize=11;fontFamily=Courier New;fontColor=#1a1a1a;" vertex="1" parent="1">
-                    <mxGeometry x="480" y="130" width="320" height="50" as="geometry"/>
+                <mxCell id="code2" value="LayerStack stack;&#10;PluginRegistry::instance().createAndPushLayers(stack, ctx);" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#e65100;align=left;verticalAlign=middle;spacingLeft=10;fontSize=11;fontFamily=Courier New;fontColor=#1a1a1a;" vertex="1" parent="1">
+                    <mxGeometry x="480" y="100" width="340" height="44" as="geometry"/>
+                </mxCell>
+                <mxCell id="step3" value="3. Loop: onUpdate, onRender, onGui*" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e8f5e9;strokeColor=#2e7d32;strokeWidth=2;fontSize=14;fontStyle=1;fontColor=#1a1a1a;" vertex="1" parent="1">
+                    <mxGeometry x="80" y="180" width="260" height="36" as="geometry"/>
+                </mxCell>
+                <mxCell id="code3" value="stack.onUpdate(dt); stack.onRender(render_ctx);&#10;stack.onGuiBegin/GuiRender/GuiEnd(render_ctx);" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#2e7d32;align=left;verticalAlign=middle;spacingLeft=10;fontSize=11;fontFamily=Courier New;fontColor=#1a1a1a;" vertex="1" parent="1">
+                    <mxGeometry x="80" y="220" width="400" height="44" as="geometry"/>
                 </mxCell>
                 <mxCell id="arr1" style="endArrow=blockThin;endFill=1;html=1;strokeWidth=2;strokeColor=#1565c0;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" edge="1" parent="1" source="code1" target="code2">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="arr2" style="endArrow=blockThin;endFill=1;html=1;strokeWidth=2;strokeColor=#e65100;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="code2" target="code3">
                     <mxGeometry relative="1" as="geometry"/>
                 </mxCell>
             </root>
