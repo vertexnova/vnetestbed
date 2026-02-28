@@ -236,8 +236,7 @@ class IRenderDevice {
      * @param frag_path  Path to fragment shader source file.
      * @return Valid ShaderHandle on success; {0} on failure.
      */
-    ShaderHandle createShaderFromFile(const std::filesystem::path& vert_path,
-                                      const std::filesystem::path& frag_path) {
+    ShaderHandle createShaderFromFile(const std::filesystem::path& vert_path, const std::filesystem::path& frag_path) {
         auto readFile = [](const std::filesystem::path& p) -> std::string {
             std::ifstream f(p);
             if (!f.is_open()) {

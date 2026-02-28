@@ -65,8 +65,7 @@ class Shader {
      * @param frag_path Path to fragment shader source file.
      * @return Shader instance (check isValid()).
      */
-    static Shader fromFile(const std::filesystem::path& vert_path,
-                           const std::filesystem::path& frag_path);
+    static Shader fromFile(const std::filesystem::path& vert_path, const std::filesystem::path& frag_path);
 
     Shader(const Shader&) = delete;
     Shader& operator=(const Shader&) = delete;
