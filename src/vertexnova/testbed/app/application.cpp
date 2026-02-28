@@ -19,8 +19,9 @@
 #include "vertexnova/testbed/gl/opengl_debug_draw.h"
 #include "vertexnova/testbed/gl/opengl_render_adapter.h"
 #include "vertexnova/testbed/gl/opengl_render_device.h"
-#include "vertexnova/testbed/gl/texture2d.h"  // full type for OpenGLRenderDevice destruction
+#include "vertexnova/testbed/gl/texture2d.h"  // complete type for TextureSlot destruction when impl_ is destroyed in this TU
 #include "vertexnova/testbed/window/glfw_window.h"
+#include "vertexnova/testbed/window/glfw_window_descriptor.h"
 #endif
 
 #if defined(VNE_TESTBED_EVENTS)
@@ -54,10 +55,15 @@ bool Application::initialize(const ApplicationDescriptor& descriptor) {
         return false;
     }
 
-    auto window = window::GlfwWindow::create(static_cast<int>(descriptor.width),
-                                             static_cast<int>(descriptor.height),
-                                             descriptor.title.c_str(),
-                                             descriptor.use_opengl_es);
+    window::GlfwWindowDescriptor glfw_desc;
+    glfw_desc.title = descriptor.title;
+    glfw_desc.width = descriptor.width;
+    glfw_desc.height = descriptor.height;
+    glfw_desc.vsync_enabled = descriptor.vsync_enabled;
+    glfw_desc.graphics_backend =
+        descriptor.use_opengl_es ? window::GlfwGraphicsBackend::eOpenGLES : window::GlfwGraphicsBackend::eOpenGL;
+
+    auto window = window::GlfwWindow::create(glfw_desc);
     if (!window) {
         return false;
     }
@@ -207,6 +213,10 @@ int runDemoApplication(int /*argc*/, char** /*argv*/, const ApplicationDescripto
 }
 
 #endif
+
+// Test-only: create/destroy Application so test TUs don't need the complete Impl type.
+Application* createApplicationForTest() { return new Application(); }
+void destroyApplicationForTest(Application* p) { delete p; }
 
 }  // namespace testbed
 }  // namespace vne

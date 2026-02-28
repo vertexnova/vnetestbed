@@ -38,7 +38,9 @@ class DemoApplication : public Application {
     /**
      * @brief Initialize base (window + renderer), then install the demo via DemoFactory.
      * Demo selection: VNE_DEMO env, VNE_DEMO_ID define, else CreateDefault().
-     * @return true if base init and demo install succeeded.
+     * @return true if base init and demo install succeeded; false if base init failed or
+     *         no demo could be installed (e.g. none registered or requested id not found).
+     *         On false, shutdown() is called so the backend is cleaned up.
      */
     bool initialize(const ApplicationDescriptor& descriptor) {
         if (!Application::initialize(descriptor)) {
@@ -53,8 +55,11 @@ class DemoApplication : public Application {
         if (DemoFactory::createDemo(*this)) {
             return true;
         }
-        DemoFactory::createDefault(*this);
-        return true;
+        if (DemoFactory::createDefault(*this)) {
+            return true;
+        }
+        shutdown();
+        return false;
     }
 
    private:

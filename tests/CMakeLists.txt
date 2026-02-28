@@ -51,6 +51,7 @@ endif()
 #   layer_test.cpp      ILayer state machine (standalone, no LayerStack)
 #   layer_stack_test.cpp    LayerStack lifecycle, dispatch, ordering
 #   context_test.cpp    AppContext, RenderContext, FrameInfo, interface traits
+#   demo_factory_test.cpp  DemoFactory registration, id lookup, single/default selection
 #   window_test.cpp     GlfwWindowDescriptor, key mapping, MockWindow, GlfwWindow (GL-only)
 #==============================================================================
 set(TEST_SOURCES
@@ -58,6 +59,7 @@ set(TEST_SOURCES
     layer_test.cpp
     layer_stack_test.cpp
     context_test.cpp
+    demo_factory_test.cpp
 )
 
 if(VNE_TESTBED_OPENGL OR VNE_TESTBED_OPENGLES)

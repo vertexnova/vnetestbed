@@ -43,8 +43,8 @@ class Application {
 
     Application(const Application&) = delete;
     Application& operator=(const Application&) = delete;
-    Application(Application&&) noexcept = default;
-    Application& operator=(Application&&) noexcept = default;
+    Application(Application&&) = delete;
+    Application& operator=(Application&&) = delete;
 
     /**
      * @brief Create window and renderer from descriptor; build AppContext and LayerStack.
@@ -89,6 +89,10 @@ class Application {
     struct Impl;
     std::unique_ptr<Impl> impl_;
 };
+
+/** Test-only: create/destroy Application so test TUs don't need the complete Impl type. Do not use in production. */
+Application* createApplicationForTest();
+void destroyApplicationForTest(Application* p);
 
 }  // namespace testbed
 }  // namespace vne

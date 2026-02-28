@@ -26,6 +26,7 @@
 
 #include "vertexnova/testbed/app/application.h"
 
+#include <algorithm>
 #include <functional>
 #include <string>
 #include <unordered_map>
@@ -44,8 +45,15 @@ using DemoInstallFn = std::function<void(Application&)>;
  */
 class DemoFactory {
    public:
-    /// Register a demo by id and installer.
-    static void registerDemo(const std::string& id, DemoInstallFn fn) { getMap()[id] = std::move(fn); }
+    /// Register a demo by id and installer. Order of first registration is preserved for createDefault().
+    static void registerDemo(const std::string& id, DemoInstallFn fn) {
+        auto& map = getMap();
+        const bool was_new = (map.find(id) == map.end());
+        map[id] = std::move(fn);
+        if (was_new) {
+            getOrder().push_back(id);
+        }
+    }
 
     /// Install the demo with the given id. Returns false if id not found.
     static bool createDemo(Application& app, const std::string& id) {
@@ -62,45 +70,48 @@ class DemoFactory {
      * @brief Install the only registered demo. Succeeds only if exactly one demo is registered.
      */
     static bool createDemo(Application& app) {
-        auto& map = getMap();
-        if (map.size() != 1) {
+        const auto& order = getOrder();
+        if (order.size() != 1) {
             return false;
         }
-        map.begin()->second(app);
-        return true;
+        return createDemo(app, order[0]);
     }
 
     /**
-     * @brief Default: install "window" if present, otherwise the first registered demo.
+     * @brief Default: install "window" if present (in registration order), otherwise the first registered demo.
+     * Selection is deterministic and matches registration order.
      */
     static bool createDefault(Application& app) {
-        auto& map = getMap();
-        if (map.empty()) {
+        const auto& order = getOrder();
+        if (order.empty()) {
             return false;
         }
-        auto it = map.find("window");
-        if (it != map.end()) {
-            it->second(app);
-            return true;
-        }
-        map.begin()->second(app);
-        return true;
+        const auto it = std::find(order.begin(), order.end(), "window");
+        const std::string& id = (it != order.end()) ? "window" : order[0];
+        return createDemo(app, id);
     }
 
-    /// List all registered demo ids.
-    static std::vector<std::string> list() {
-        std::vector<std::string> out;
-        out.reserve(getMap().size());
-        for (const auto& kv : getMap()) {
-            out.push_back(kv.first);
-        }
-        return out;
+    /// List all registered demo ids in registration order.
+    static std::vector<std::string> list() { return getOrder(); }
+
+    /**
+     * @brief Clear all registered demos. For unit-test isolation only.
+     * Production code must not call this; statically registered demos
+     * (VNETESTBED_REGISTER_DEMO) will not re-register after reset.
+     */
+    static void reset() {
+        getMap().clear();
+        getOrder().clear();
     }
 
    private:
     static std::unordered_map<std::string, DemoInstallFn>& getMap() {
         static std::unordered_map<std::string, DemoInstallFn> map;
         return map;
+    }
+    static std::vector<std::string>& getOrder() {
+        static std::vector<std::string> order;
+        return order;
     }
 };
 
