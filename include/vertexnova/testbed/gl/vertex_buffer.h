@@ -23,6 +23,7 @@
 #endif
 
 #include <cstddef>
+#include <cstdint>
 
 namespace vne {
 namespace testbed {
