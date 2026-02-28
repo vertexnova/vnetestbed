@@ -30,6 +30,7 @@
 namespace vne {
 namespace testbed {
 
+
 namespace {
 // EventManager::registerListener requires shared_ptr<EventListener>.
 // The layer's lifetime is managed by LayerStack (unique_ptr), so we create
@@ -38,7 +39,12 @@ namespace {
 vne::events::EventManager::ListenerPtr asListenerPtr(vne::events::EventListener* raw) {
     return {raw, [](vne::events::EventListener*) {}};
 }
-}  // namespace
+
+// Fixed timestep for event-driven controller input.
+// This value is chosen to approximate a 60Hz update rate (1/60 ≈ 0.0167).
+// If you want frame-rate independent input, consider passing the real delta time from onUpdate/render context instead.
+constexpr double kEventFixedDeltaTime = 0.016;
+}
 
 InteractionDemoLayer::InteractionDemoLayer()
     : ILayer("InteractionDemoLayer")
@@ -102,7 +108,7 @@ void InteractionDemoLayer::onEvent(const vne::events::Event& event) {
                                          static_cast<float>(e.y()),
                                          static_cast<float>(dx),
                                          static_cast<float>(dy),
-                                         0.016);
+                                         kEventFixedDeltaTime);
             break;
         }
         case ET::eMouseButtonPressed: {
@@ -111,7 +117,7 @@ void InteractionDemoLayer::onEvent(const vne::events::Event& event) {
                                            true,
                                            static_cast<float>(last_mouse_x_),
                                            static_cast<float>(last_mouse_y_),
-                                           0.016);
+                                           kEventFixedDeltaTime);
             break;
         }
         case ET::eMouseButtonReleased: {
@@ -120,22 +126,22 @@ void InteractionDemoLayer::onEvent(const vne::events::Event& event) {
                                            false,
                                            static_cast<float>(last_mouse_x_),
                                            static_cast<float>(last_mouse_y_),
-                                           0.016);
+                                           kEventFixedDeltaTime);
             break;
         }
         case ET::eMouseScrolled: {
             const auto& e = static_cast<const vne::events::MouseScrolledEvent&>(event);
-            controller_->handleMouseScroll(static_cast<float>(e.xOffset()), static_cast<float>(e.yOffset()), 0.016);
+            controller_->handleMouseScroll(static_cast<float>(e.xOffset()), static_cast<float>(e.yOffset()), kEventFixedDeltaTime);
             break;
         }
         case ET::eKeyPressed: {
             const auto& e = static_cast<const vne::events::KeyEvent&>(event);
-            controller_->handleKeyboard(static_cast<int>(e.keyCode()), true, 0.016);
+            controller_->handleKeyboard(static_cast<int>(e.keyCode()), true, kEventFixedDeltaTime);
             break;
         }
         case ET::eKeyReleased: {
             const auto& e = static_cast<const vne::events::KeyEvent&>(event);
-            controller_->handleKeyboard(static_cast<int>(e.keyCode()), false, 0.016);
+            controller_->handleKeyboard(static_cast<int>(e.keyCode()), false, kEventFixedDeltaTime);
             break;
         }
         default:

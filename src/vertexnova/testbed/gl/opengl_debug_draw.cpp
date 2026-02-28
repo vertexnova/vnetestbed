@@ -124,6 +124,10 @@ void OpenGLDebugDraw::setViewProjectionMatrix(const vne::math::Mat4f& vp) {
 // ---------------------------------------------------------------------------
 
 void OpenGLDebugDraw::line(vne::math::Vec3f from, vne::math::Vec3f to, vne::math::Vec3f color) {
+    // Drop the line silently if the buffer is already full.
+    if (vertex_data_.size() + 2 * kFloatsPerVertex > kMaxLineVertices * kFloatsPerVertex) {
+        return;
+    }
     // Vertex 1
     vertex_data_.push_back(from[0]);
     vertex_data_.push_back(from[1]);

@@ -38,7 +38,8 @@ GLenum shaderDataTypeToGL(ShaderDataType type) {
         case ShaderDataType::Int4:
             return GL_INT;
         case ShaderDataType::Bool:
-            return GL_BOOL;
+            // GL_BOOL is not valid for glVertexAttribIPointer; use GL_UNSIGNED_BYTE (1 byte, 0/1).
+            return GL_UNSIGNED_BYTE;
         case ShaderDataType::None:
         default:
             return GL_FLOAT;
@@ -84,7 +85,7 @@ void VertexArray::addVertexBuffer(VertexBuffer& vb, const BufferLayout& layout) 
         if (elem.type == ShaderDataType::Mat3) {
             for (unsigned int col = 0; col < 3; ++col) {
                 glEnableVertexAttribArray(location);
-                const void* offset_ptr = reinterpret_cast<const void*>(elem.offset + col * 4 * sizeof(float));
+                const void* offset_ptr = reinterpret_cast<const void*>(elem.offset + col * 3 * sizeof(float));
                 glVertexAttribPointer(location, 3, GL_FLOAT, normalized, gl_stride, offset_ptr);
                 ++location;
             }

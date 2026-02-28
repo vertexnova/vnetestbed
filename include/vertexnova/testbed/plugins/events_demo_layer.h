@@ -12,15 +12,17 @@
 
 /**
  * @file plugins/events_demo_layer.h
- * @brief Demo layer integrating vneevents: logs and displays input events.
+ * @brief Demo layer integrating vneevents: logs input events to stdout.
  *
  * Implements vne::events::EventListener to receive events from
  * vne::events::EventManager.  The runner is responsible for converting GLFW
  * callbacks into vne events and pushing them to the EventManager.
  *
- * Displays the last N event strings via IDebugDraw::text() (no-op in the
- * current OpenGL debug draw; will be useful once ImGui is integrated).
- * Also prints each event to stdout for immediate feedback.
+ * Each event is printed to stdout via std::printf.  The last kMaxEvents
+ * descriptions are also kept in recent_events_ so a future ImGui overlay
+ * can display them without needing a separate listener.
+ *
+ * This layer has no onRender() override; IDebugDraw::text() is not called.
  */
 
 #include "vertexnova/testbed/layer.h"
@@ -35,10 +37,11 @@ namespace testbed {
 
 /**
  * @class EventsDemoLayer
- * @brief ILayer + EventListener that records and displays recent input events.
+ * @brief ILayer + EventListener that records recent input events.
  *
  * Registers itself with EventManager on onAttach() and unregisters on onDetach().
- * Stores the last kMaxEvents event description strings for display.
+ * Stores the last kMaxEvents event description strings in recent_events_ for
+ * future use (e.g. an ImGui overlay).
  */
 class EventsDemoLayer : public ILayer, public vne::events::EventListener {
    public:
