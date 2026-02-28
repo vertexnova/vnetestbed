@@ -71,8 +71,11 @@ class DemoApplication : public Application {
 /**
  * @brief Run the registered demo app (constructs DemoApplication, init, run, shutdown).
  * Use this from the shared main so the main TU does not need the complete Application type.
+ * @param argc  Pass-through from main (unused; demo id from VNE_DEMO env or VNE_DEMO_ID).
+ * @param argv  Pass-through from main.
+ * @param descriptor  If non-null, used for initialize(); otherwise a default descriptor is used.
  */
-int runDemoApplication(int argc, char** argv);
+int runDemoApplication(int argc, char** argv, const ApplicationDescriptor* descriptor = nullptr);
 
 }  // namespace testbed
 }  // namespace vne

@@ -79,6 +79,8 @@ class Application {
     [[nodiscard]] bool isRunning() const { return running_; }
 
    private:
+    /** @brief One frame: events, update, GUI, render, swap. Called repeatedly by run(). */
+    void mainLoop();
     AppContext app_ctx_{};
     LayerStack layer_stack_;
     bool running_{false};

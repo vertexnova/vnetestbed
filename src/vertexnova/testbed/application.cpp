@@ -39,6 +39,7 @@ struct Application::Impl {
     std::unique_ptr<gl::OpenGLRenderAdapter> render_adapter;
     std::unique_ptr<gl::OpenGLRenderDevice> render_device;
     std::unique_ptr<gl::OpenGLDebugDraw> debug_draw;
+    std::chrono::steady_clock::time_point last_frame_time{std::chrono::steady_clock::now()};
 };
 
 Application::~Application() {
@@ -93,37 +94,49 @@ void Application::run() {
         return;
     }
 
-    auto prev = std::chrono::steady_clock::now();
+    while (running_ && !app_ctx_.window->shouldClose()) {
+        mainLoop();
+    }
+}
 
-    while (!app_ctx_.window->shouldClose()) {
-        app_ctx_.window->pollEvents();
+void Application::mainLoop() {
+    // Pump OS events first (same order as vertexnova Application_C::MainLoop)
+    app_ctx_.window->pollEvents();
 
 #if defined(VNE_TESTBED_EVENTS)
-        vne::events::EventManager::instance().processEvents();
+    vne::events::EventManager::instance().processEvents();
 #endif
 
-        auto now = std::chrono::steady_clock::now();
-        const float dt = static_cast<float>(std::chrono::duration<double>(now - prev).count());
-        prev = now;
-
-        RenderContext render_ctx{};
-        render_ctx.frame_info.width = app_ctx_.window->getWidth();
-        render_ctx.frame_info.height = app_ctx_.window->getHeight();
-        render_ctx.frame_info.dt = dt;
-        render_ctx.debug_draw = app_ctx_.debugDraw;
-
-        layer_stack_.onUpdate(dt);
-        layer_stack_.onGuiBegin(render_ctx);
-        layer_stack_.onGuiRender(render_ctx);
-        layer_stack_.onGuiEnd(render_ctx);
-
-        app_ctx_.renderer->beginFrame();
-        layer_stack_.onBeginRender(render_ctx);
-        layer_stack_.onRender(render_ctx);
-        app_ctx_.renderer->endFrame();
-
-        impl_->window->swapBuffers();
+    // Check exit conditions after processing events
+    if (!running_ || (app_ctx_.window && app_ctx_.window->shouldClose())) {
+        return;
     }
+
+    // Frame timing
+    const auto now = std::chrono::steady_clock::now();
+    const float dt =
+        static_cast<float>(std::chrono::duration<double>(now - impl_->last_frame_time).count());
+    impl_->last_frame_time = now;
+
+    RenderContext render_ctx{};
+    render_ctx.frame_info.width = app_ctx_.window->getWidth();
+    render_ctx.frame_info.height = app_ctx_.window->getHeight();
+    render_ctx.frame_info.dt = dt;
+    render_ctx.debug_draw = app_ctx_.debugDraw;
+
+    // Layer update and GUI (CPU phase)
+    layer_stack_.onUpdate(dt);
+    layer_stack_.onGuiBegin(render_ctx);
+    layer_stack_.onGuiRender(render_ctx);
+    layer_stack_.onGuiEnd(render_ctx);
+
+    // GPU phase: begin frame, layers render, end frame, swap
+    app_ctx_.renderer->beginFrame();
+    layer_stack_.onBeginRender(render_ctx);
+    layer_stack_.onRender(render_ctx);
+    app_ctx_.renderer->endFrame();
+
+    impl_->window->swapBuffers();
 }
 
 void Application::shutdown() {
@@ -147,16 +160,20 @@ void Application::shutdown() {
     running_ = false;
 }
 
-int runDemoApplication(int argc, char** argv) {
+int runDemoApplication(int argc, char** argv, const ApplicationDescriptor* descriptor) {
     (void)argc;
     (void)argv;
     LoggingGuard guard;
     ApplicationDescriptor desc;
-    desc.title = "VneTestbed — GLFW OpenGL sample";
-    desc.width = 1280;
-    desc.height = 720;
-    desc.window_backend = WindowBackend::eGLFW;
-    desc.render_backend = RenderBackend::eOpenGL;
+    if (descriptor) {
+        desc = *descriptor;
+    } else {
+        desc.title = "VneTestbed — GLFW OpenGL sample";
+        desc.width = 1280;
+        desc.height = 720;
+        desc.window_backend = WindowBackend::eGLFW;
+        desc.render_backend = RenderBackend::eOpenGL;
+    }
     DemoApplication app;
     if (!app.initialize(desc)) {
         return 1;
@@ -186,7 +203,7 @@ void Application::shutdown() {
     running_ = false;
 }
 
-int runDemoApplication(int /*argc*/, char** /*argv*/) {
+int runDemoApplication(int /*argc*/, char** /*argv*/, const ApplicationDescriptor* /*descriptor*/) {
     return 1;  // No backend in this build
 }
 
