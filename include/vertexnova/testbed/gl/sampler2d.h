@@ -19,7 +19,9 @@
  * Only available when VNE_TESTBED_OPENGL is defined.
  */
 
-#ifdef VNE_TESTBED_OPENGL
+#ifndef VNE_TESTBED_OPENGL
+#error "sampler2d.h requires VNE_TESTBED_OPENGL to be defined. Build with OpenGL enabled (glad)."
+#endif
 
 #include <cstdint>
 
@@ -89,5 +91,3 @@ class Sampler2D {
 }  // namespace gl
 }  // namespace testbed
 }  // namespace vne
-
-#endif  // VNE_TESTBED_OPENGL

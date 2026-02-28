@@ -22,7 +22,9 @@
  * Only compiled when VNE_TESTBED_OPENGL is defined.
  */
 
-#ifdef VNE_TESTBED_OPENGL
+#ifndef VNE_TESTBED_OPENGL
+#error "triangle_demo_layer.h requires VNE_TESTBED_OPENGL to be defined. Build with OpenGL enabled (glad)."
+#endif
 
 #include "vertexnova/testbed/layer.h"
 #include "vertexnova/testbed/gl/shader.h"
@@ -58,5 +60,3 @@ class TriangleDemoLayer : public ILayer {
 
 }  // namespace testbed
 }  // namespace vne
-
-#endif  // VNE_TESTBED_OPENGL
