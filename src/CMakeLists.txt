@@ -120,6 +120,8 @@ if(VNE_TESTBED_OPENGL OR VNE_TESTBED_OPENGLES)
     endif()
 
     target_sources(vnetestbed PRIVATE
+        # window/ — GLFW window (xwin-style)
+        vertexnova/testbed/window/glfw_window.cpp
         # gl/ — RAII OpenGL primitives (implementation details)
         vertexnova/testbed/gl/shader.cpp
         vertexnova/testbed/gl/vertex_buffer.cpp
