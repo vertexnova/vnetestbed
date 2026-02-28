@@ -308,6 +308,7 @@ struct MockWindow : IWindow {
     void pollEvents() override { ++poll_count; }
     bool shouldClose() const override { return close_flag; }
     void* getNativeHandle() const override { return handle; }
+    void swapBuffers() override {}
 };
 
 TEST(MockWindow, DefaultGetWidth) {

@@ -23,6 +23,7 @@ namespace testbed {
 #if __has_include("vertexnova/logging/logging.h")
 
 LoggingGuard::LoggingGuard() {
+    (void)VNE_LOGGER_CATEGORY;  // use category (macro may define it)
     vne::log::LoggerConfig config;
     config.name = vne::log::kDefaultLoggerName;
     config.sink = vne::log::LogSinkType::eConsole;

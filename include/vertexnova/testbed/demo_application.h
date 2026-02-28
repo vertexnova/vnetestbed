@@ -60,7 +60,7 @@ class DemoApplication : public Application {
    private:
     static const char* getDemoId() {
 #ifdef VNE_DEMO_ID
-        return VNE_STRINGIFY(VNE_DEMO_ID);
+        return VNE_DEMO_ID;  // CMake passes -DVNE_DEMO_ID="triangle" etc.
 #else
         const char* env = std::getenv("VNE_DEMO");
         return env ? env : "";
@@ -68,10 +68,11 @@ class DemoApplication : public Application {
     }
 };
 
-#ifndef VNE_STRINGIFY
-#define VNE_STRINGIFY_IMPL(x) #x
-#define VNE_STRINGIFY(x) VNE_STRINGIFY_IMPL(x)
-#endif
+/**
+ * @brief Run the registered demo app (constructs DemoApplication, init, run, shutdown).
+ * Use this from the shared main so the main TU does not need the complete Application type.
+ */
+int runDemoApplication(int argc, char** argv);
 
 }  // namespace testbed
 }  // namespace vne

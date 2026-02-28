@@ -12,6 +12,8 @@
 #include "vertexnova/testbed/application.h"
 
 #include "vertexnova/testbed/application_descriptor.h"
+#include "vertexnova/testbed/demo_application.h"
+#include "vertexnova/testbed/logging_guard.h"
 
 #if defined(VNE_TESTBED_OPENGL) || defined(VNE_TESTBED_OPENGLES)
 #include "vertexnova/testbed/gl/opengl_debug_draw.h"
@@ -19,17 +21,10 @@
 #include "vertexnova/testbed/gl/opengl_render_device.h"
 #include "vertexnova/testbed/gl/texture2d.h"  // full type for OpenGLRenderDevice destruction
 #include "vertexnova/testbed/window/glfw_window.h"
-#define GLFW_INCLUDE_NONE
-#include <GLFW/glfw3.h>
 #endif
 
-#if defined(VNE_TESTBED_OPENGL) || defined(VNE_TESTBED_OPENGLES)
-#include <glad/glad.h>
-#endif
-
-#if __has_include("vertexnova/events/event_manager.h")
+#if defined(VNE_TESTBED_EVENTS)
 #include "vertexnova/events/event_manager.h"
-#define VNETESTBED_HAS_EVENTS 1
 #endif
 
 #include <chrono>
@@ -44,15 +39,6 @@ struct Application::Impl {
     std::unique_ptr<gl::OpenGLRenderAdapter> render_adapter;
     std::unique_ptr<gl::OpenGLRenderDevice> render_device;
     std::unique_ptr<gl::OpenGLDebugDraw> debug_draw;
-
-    void swapBuffers() {
-        if (window) {
-            GLFWwindow* glfw_win = static_cast<GLFWwindow*>(window->getNativeHandle());
-            if (glfw_win) {
-                glfwSwapBuffers(glfw_win);
-            }
-        }
-    }
 };
 
 Application::~Application() {
@@ -112,7 +98,7 @@ void Application::run() {
     while (!app_ctx_.window->shouldClose()) {
         app_ctx_.window->pollEvents();
 
-#if defined(VNETESTBED_HAS_EVENTS)
+#if defined(VNE_TESTBED_EVENTS)
         vne::events::EventManager::instance().processEvents();
 #endif
 
@@ -136,7 +122,7 @@ void Application::run() {
         layer_stack_.onRender(render_ctx);
         app_ctx_.renderer->endFrame();
 
-        impl_->swapBuffers();
+        impl_->window->swapBuffers();
     }
 }
 
@@ -161,6 +147,25 @@ void Application::shutdown() {
     running_ = false;
 }
 
+int runDemoApplication(int argc, char** argv) {
+    (void)argc;
+    (void)argv;
+    LoggingGuard guard;
+    ApplicationDescriptor desc;
+    desc.title = "VneTestbed — GLFW OpenGL sample";
+    desc.width = 1280;
+    desc.height = 720;
+    desc.window_backend = WindowBackend::GLFW;
+    desc.render_backend = RenderBackend::OpenGL;
+    DemoApplication app;
+    if (!app.initialize(desc)) {
+        return 1;
+    }
+    app.run();
+    app.shutdown();
+    return 0;
+}
+
 #else
 
 struct Application::Impl {};
@@ -179,6 +184,10 @@ void Application::shutdown() {
     layer_stack_.clear();
     app_ctx_ = AppContext{};
     running_ = false;
+}
+
+int runDemoApplication(int /*argc*/, char** /*argv*/) {
+    return 1;  // No backend in this build
 }
 
 #endif
