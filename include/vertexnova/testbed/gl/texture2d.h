@@ -65,13 +65,16 @@ class Texture2D {
     Texture2D& operator=(Texture2D&&) = delete;
 
     /**
-     * @brief Upload pixel data for a mip level and array layer.
+     * @brief Upload pixel data for mip level 0 (base level).
      *
-     * @param mip_level   Mip level (0 = base).
+     * Only mip 0 is supported; storage for higher mips is not allocated.
+     * data_size must be at least width * height * bytesPerPixel(format).
+     *
+     * @param mip_level   Must be 0 (higher mips not allocated).
      * @param array_layer Array layer (0 for non-array 2D).
      * @param data        Raw pixel data (layout must match format).
-     * @param data_size   Size in bytes.
-     * @return true on success.
+     * @param data_size   Size in bytes; validated against required payload.
+     * @return true on success; false if mip_level != 0, data_size too small, or invalid args.
      */
     bool updateData(uint32_t mip_level, uint32_t array_layer, const void* data, std::size_t data_size);
 

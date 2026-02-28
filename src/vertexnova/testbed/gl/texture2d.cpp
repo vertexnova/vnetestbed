@@ -23,6 +23,18 @@ namespace gl {
 
 namespace {
 
+std::size_t bytesPerPixel(Texture2DFormat format) {
+    switch (format) {
+        case Texture2DFormat::RGBA8:
+            return 4u;
+        case Texture2DFormat::RGB8:
+            return 3u;
+        case Texture2DFormat::R8:
+            return 1u;
+    }
+    return 4u;
+}
+
 void formatToGL(Texture2DFormat format, GLenum* out_internal, GLenum* out_format, GLenum* out_type) {
     switch (format) {
         case Texture2DFormat::RGBA8:
@@ -87,27 +99,24 @@ bool Texture2D::updateData(uint32_t mip_level, uint32_t array_layer, const void*
     if (texture_id_ == 0u || data == nullptr) {
         return false;
     }
+    if (mip_level != 0u) {
+        return false;  // Only mip 0 is allocated.
+    }
+
+    const std::size_t required = static_cast<std::size_t>(width_) * static_cast<std::size_t>(height_) * bytesPerPixel(format_);
+    if (data_size < required) {
+        return false;
+    }
 
     GLenum internal_format = GL_RGBA8;
     GLenum pixel_format = GL_RGBA;
     GLenum pixel_type = GL_UNSIGNED_BYTE;
     formatToGL(format_, &internal_format, &pixel_format, &pixel_type);
 
-    // For mip 0, dimensions are width_ x height_; for higher mips we could compute.
-    GLsizei w = static_cast<GLsizei>(width_);
-    GLsizei h = static_cast<GLsizei>(height_);
-    if (mip_level > 0u) {
-        for (uint32_t i = 0; i < mip_level && (w > 1 || h > 1); ++i) {
-            w = (w > 1) ? (w / 2) : 1;
-            h = (h > 1) ? (h / 2) : 1;
-        }
-    }
-
     glBindTexture(GL_TEXTURE_2D, texture_id_);
-    glTexSubImage2D(GL_TEXTURE_2D, static_cast<GLint>(mip_level), 0, 0, w, h, pixel_format, pixel_type, data);
+    glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, static_cast<GLsizei>(width_), static_cast<GLsizei>(height_), pixel_format, pixel_type, data);
     glBindTexture(GL_TEXTURE_2D, 0);
 
-    (void)data_size;  // Caller responsible for correct size
     return true;
 }
 
