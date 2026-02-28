@@ -63,6 +63,10 @@ set(TEST_SOURCES
     context_test.cpp
 )
 
+if(VNE_TESTBED_OPENGL OR VNE_TESTBED_OPENGLES)
+    list(APPEND TEST_SOURCES gl_buffer_layout_test.cpp)
+endif()
+
 #==============================================================================
 # Build test executable
 #==============================================================================
