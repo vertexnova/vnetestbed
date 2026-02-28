@@ -67,6 +67,9 @@ _deps/
 .claude
 .copilot
 
+# Cursor
+.cursor/
+
 # macOS
 .DS_Store
 ._*

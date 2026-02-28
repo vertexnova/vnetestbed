@@ -32,6 +32,7 @@
 #include "vertexnova/testbed/gl/opengl_render_adapter.h"
 #include "vertexnova/testbed/gl/opengl_render_device.h"
 #include "vertexnova/testbed/gl/opengl_debug_draw.h"
+#include "vertexnova/testbed/gl/texture2d.h"  // complete type for OpenGLRenderDevice destruction
 
 // Demo layers — no gl/ headers inside.
 #include "vertexnova/testbed/plugins/triangle_demo_layer.h"
