@@ -16,6 +16,7 @@
 
 #include <atomic>
 #include <algorithm>
+#include <climits>
 #include <memory>
 #include <mutex>
 
@@ -34,11 +35,17 @@ namespace window {
 
 namespace {
 
-// GLFW init runs exactly once; no thread proceeds to hints/create until init has completed.
-static std::once_flag g_glfw_init_once;
-static std::atomic<bool> g_glfw_init_ok{false};
+// GLFW is not thread-safe: all calls (glfwCreateWindow, glfwDestroyWindow,
+// glfwPollEvents, glfwTerminate) MUST be made from the same thread (the main
+// thread).  The atomics below protect only the counters themselves, not the
+// GLFW library state.  Do not call create() or destroy GlfwWindow objects
+// concurrently from multiple threads.
+
+// Init runs exactly once; no thread proceeds to hints/create until complete.
+std::once_flag g_glfw_init_once;
+std::atomic<bool> g_glfw_init_ok{false};
 // Number of GlfwWindow instances; terminate when the last is destroyed.
-static std::atomic<int> g_glfw_window_count{0};
+std::atomic<int> g_glfw_window_count{0};
 
 void glfwErrorCallback(int error, const char* description) {
     (void)error;
@@ -51,6 +58,15 @@ void ensureGlfwInit() {
         glfwSetErrorCallback(glfwErrorCallback);
         g_glfw_init_ok.store(glfwInit() != 0);
     });
+}
+
+/** Clamp uint32_t to int range [1, INT_MAX] for GLFW size parameters. */
+int clampGlfwSize(uint32_t v) {
+    constexpr int kMax = INT_MAX;
+    if (v == 0 || v > static_cast<uint32_t>(kMax)) {
+        return 1;
+    }
+    return static_cast<int>(v);
 }
 
 void setOpenGLHints(GlfwGraphicsBackend backend) {
@@ -68,15 +84,23 @@ void setOpenGLHints(GlfwGraphicsBackend backend) {
     }
 }
 
+}  // namespace
+
 #if defined(VNE_TESTBED_OPENGL) || defined(VNE_TESTBED_OPENGLES)
-void onGlfwClose(GLFWwindow* w) {
+
+// ---------------------------------------------------------------------------
+// Private static GLFW callbacks — defined in the enclosing named namespace
+// so the compiler recognises them as GlfwWindow member definitions.
+// ---------------------------------------------------------------------------
+
+void GlfwWindow::cbClose(GLFWwindow* w) {
     auto* self = static_cast<GlfwWindow*>(glfwGetWindowUserPointer(w));
     if (self) {
         vne::events::EventManager::instance().pushEvent(std::make_unique<vne::events::WindowCloseEvent>());
     }
 }
 
-void onGlfwFramebufferSize(GLFWwindow* w, int width, int height) {
+void GlfwWindow::cbFramebufferSize(GLFWwindow* w, int width, int height) {
     auto* self = static_cast<GlfwWindow*>(glfwGetWindowUserPointer(w));
     if (self) {
         vne::events::EventManager::instance().pushEvent(
@@ -86,7 +110,7 @@ void onGlfwFramebufferSize(GLFWwindow* w, int width, int height) {
     }
 }
 
-void onGlfwKey(GLFWwindow* w, int key, int /*scan*/, int action, int mods) {
+void GlfwWindow::cbKey(GLFWwindow* w, int key, int /*scan*/, int action, int mods) {
     auto* self = static_cast<GlfwWindow*>(glfwGetWindowUserPointer(w));
     if (!self || !self->isEventForwarding()) {
         return;
@@ -94,22 +118,21 @@ void onGlfwKey(GLFWwindow* w, int key, int /*scan*/, int action, int mods) {
     const vne::events::KeyCode k = mapGlfwToKeyCode(key);
     const uint8_t modifiers = mapGlfwToModifiers(mods);
     auto& mgr = vne::events::EventManager::instance();
-    static int s_repeat_count = 0;
     if (action == GLFW_PRESS) {
-        s_repeat_count = 0;
+        self->key_repeat_count_ = 0;
         mgr.pushEvent(std::make_unique<vne::events::KeyPressedEvent>(k, modifiers));
         vne::events::Input::updateKeyState(static_cast<int>(k), true);
     } else if (action == GLFW_RELEASE) {
-        s_repeat_count = 0;
+        self->key_repeat_count_ = 0;
         mgr.pushEvent(std::make_unique<vne::events::KeyReleasedEvent>(k, modifiers));
         vne::events::Input::updateKeyState(static_cast<int>(k), false);
     } else if (action == GLFW_REPEAT) {
-        ++s_repeat_count;
-        mgr.pushEvent(std::make_unique<vne::events::KeyRepeatEvent>(k, static_cast<uint32_t>(s_repeat_count)));
+        ++self->key_repeat_count_;
+        mgr.pushEvent(std::make_unique<vne::events::KeyRepeatEvent>(k, self->key_repeat_count_));
     }
 }
 
-void onGlfwChar(GLFWwindow* w, unsigned int codepoint) {
+void GlfwWindow::cbChar(GLFWwindow* w, unsigned int codepoint) {
     auto* self = static_cast<GlfwWindow*>(glfwGetWindowUserPointer(w));
     if (!self || !self->isEventForwarding()) {
         return;
@@ -118,7 +141,7 @@ void onGlfwChar(GLFWwindow* w, unsigned int codepoint) {
         std::make_unique<vne::events::KeyTypedEvent>(static_cast<vne::events::KeyCode>(codepoint)));
 }
 
-void onGlfwMouseButton(GLFWwindow* w, int button, int action, int mods) {
+void GlfwWindow::cbMouseButton(GLFWwindow* w, int button, int action, int mods) {
     auto* self = static_cast<GlfwWindow*>(glfwGetWindowUserPointer(w));
     if (!self || !self->isEventForwarding()) {
         return;
@@ -134,6 +157,8 @@ void onGlfwMouseButton(GLFWwindow* w, int button, int action, int mods) {
         vne::events::Input::updateMouseButtonState(static_cast<int>(b), false);
     }
 }
+
+namespace {
 
 uint8_t queryGlfwModifiers(GLFWwindow* w) {
     int mods = 0;
@@ -152,7 +177,9 @@ uint8_t queryGlfwModifiers(GLFWwindow* w) {
     return mapGlfwToModifiers(mods);
 }
 
-void onGlfwCursorPos(GLFWwindow* w, double x, double y) {
+}  // namespace
+
+void GlfwWindow::cbCursorPos(GLFWwindow* w, double x, double y) {
     auto* self = static_cast<GlfwWindow*>(glfwGetWindowUserPointer(w));
     if (!self || !self->isEventForwarding()) {
         return;
@@ -162,7 +189,7 @@ void onGlfwCursorPos(GLFWwindow* w, double x, double y) {
     vne::events::Input::updateMousePosition(static_cast<int>(x), static_cast<int>(y));
 }
 
-void onGlfwScroll(GLFWwindow* w, double xoff, double yoff) {
+void GlfwWindow::cbScroll(GLFWwindow* w, double xoff, double yoff) {
     auto* self = static_cast<GlfwWindow*>(glfwGetWindowUserPointer(w));
     if (!self || !self->isEventForwarding()) {
         return;
@@ -170,9 +197,8 @@ void onGlfwScroll(GLFWwindow* w, double xoff, double yoff) {
     vne::events::EventManager::instance().pushEvent(std::make_unique<vne::events::MouseScrolledEvent>(xoff, yoff));
     vne::events::Input::updateMouseScroll(static_cast<float>(xoff), static_cast<float>(yoff));
 }
-#endif
 
-}  // namespace
+#endif  // VNE_TESTBED_OPENGL || VNE_TESTBED_OPENGLES
 
 GlfwWindow::GlfwWindow(GLFWwindow* window)
     : window_(window) {}
@@ -190,6 +216,7 @@ GlfwWindow::~GlfwWindow() {
     glfwSetCursorPosCallback(window_, nullptr);
     glfwSetScrollCallback(window_, nullptr);
 #endif
+    key_repeat_count_ = 0;
     glfwSetWindowUserPointer(window_, nullptr);
     glfwDestroyWindow(window_);
     window_ = nullptr;
@@ -213,11 +240,9 @@ std::unique_ptr<GlfwWindow> GlfwWindow::create(const GlfwWindowDescriptor& descr
     glfwWindowHint(GLFW_TRANSPARENT_FRAMEBUFFER, descriptor.transparent ? GLFW_TRUE : GLFW_FALSE);
     setOpenGLHints(descriptor.graphics_backend);
 
-    GLFWwindow* raw = glfwCreateWindow(static_cast<int>(descriptor.width),
-                                       static_cast<int>(descriptor.height),
-                                       descriptor.title.c_str(),
-                                       nullptr,
-                                       nullptr);
+    const int w = clampGlfwSize(descriptor.width);
+    const int h = clampGlfwSize(descriptor.height);
+    GLFWwindow* raw = glfwCreateWindow(w, h, descriptor.title.c_str(), nullptr, nullptr);
     if (!raw) {
         if (g_glfw_window_count.fetch_sub(1) == 1) {
             glfwTerminate();
@@ -352,7 +377,7 @@ void GlfwWindow::restore() {
 
 void GlfwWindow::resize(uint32_t width, uint32_t height) {
     if (window_) {
-        glfwSetWindowSize(window_, static_cast<int>(width), static_cast<int>(height));
+        glfwSetWindowSize(window_, clampGlfwSize(width), clampGlfwSize(height));
     }
 }
 
@@ -373,11 +398,11 @@ void GlfwWindow::setEventForwarding(bool enable) {
     }
 #if defined(VNE_TESTBED_OPENGL) || defined(VNE_TESTBED_OPENGLES)
     if (enable) {
-        glfwSetKeyCallback(window_, onGlfwKey);
-        glfwSetCharCallback(window_, onGlfwChar);
-        glfwSetMouseButtonCallback(window_, onGlfwMouseButton);
-        glfwSetCursorPosCallback(window_, onGlfwCursorPos);
-        glfwSetScrollCallback(window_, onGlfwScroll);
+        glfwSetKeyCallback(window_, GlfwWindow::cbKey);
+        glfwSetCharCallback(window_, GlfwWindow::cbChar);
+        glfwSetMouseButtonCallback(window_, GlfwWindow::cbMouseButton);
+        glfwSetCursorPosCallback(window_, GlfwWindow::cbCursorPos);
+        glfwSetScrollCallback(window_, GlfwWindow::cbScroll);
     } else {
         glfwSetKeyCallback(window_, nullptr);
         glfwSetCharCallback(window_, nullptr);
@@ -393,8 +418,8 @@ void GlfwWindow::setupCallbacks() {
         return;
     }
 #if defined(VNE_TESTBED_OPENGL) || defined(VNE_TESTBED_OPENGLES)
-    glfwSetWindowCloseCallback(window_, onGlfwClose);
-    glfwSetFramebufferSizeCallback(window_, onGlfwFramebufferSize);
+    glfwSetWindowCloseCallback(window_, GlfwWindow::cbClose);
+    glfwSetFramebufferSizeCallback(window_, GlfwWindow::cbFramebufferSize);
 #endif
 }
 

@@ -105,10 +105,25 @@ class GlfwWindow : public IWindow {
 
     void setupCallbacks();
 
+#if defined(VNE_TESTBED_OPENGL) || defined(VNE_TESTBED_OPENGLES)
+    // GLFW callback stubs — registered via glfwSet*Callback().
+    // Declared as private statics so they can access per-window members
+    // (e.g. key_repeat_count_) without exposing them publicly.
+    static void cbClose(GLFWwindow* w);
+    static void cbFramebufferSize(GLFWwindow* w, int width, int height);
+    static void cbKey(GLFWwindow* w, int key, int scan, int action, int mods);
+    static void cbChar(GLFWwindow* w, unsigned int codepoint);
+    static void cbMouseButton(GLFWwindow* w, int button, int action, int mods);
+    static void cbCursorPos(GLFWwindow* w, double x, double y);
+    static void cbScroll(GLFWwindow* w, double xoff, double yoff);
+#endif
+
     GLFWwindow* window_{nullptr};
     bool event_forwarding_{false};
     bool vsync_enabled_{true};
     float dpi_scale_{1.0f};
+    // Per-window key repeat counter; avoids sharing state across multiple windows.
+    uint32_t key_repeat_count_{0};
 };
 
 }  // namespace window
