@@ -11,7 +11,11 @@
 
 #include "vertexnova/testbed/gl/opengl_context.h"
 
-#include <glad/glad.h>
+#if defined(VNE_TESTBED_OPENGL)
+#  include <glad/glad.h>
+#elif defined(VNE_TESTBED_OPENGLES)
+#  include <glad/glad_es3.h>
+#endif
 #include <GLFW/glfw3.h>
 
 #include <cstdio>
@@ -38,11 +42,19 @@ bool OpenGLContext::create(void* window_handle) {
         return false;
     }
 
+#if defined(VNE_TESTBED_OPENGL)
     if (!gladLoadGLLoader(reinterpret_cast<GLADloadproc>(glfwGetProcAddress))) {
         std::fprintf(stderr, "[OpenGLContext] glad failed to load OpenGL.\n");
         window_handle_ = nullptr;
         return false;
     }
+#elif defined(VNE_TESTBED_OPENGLES)
+    if (!gladLoadGLES2Loader(reinterpret_cast<GLADloadproc>(glfwGetProcAddress))) {
+        std::fprintf(stderr, "[OpenGLContext] glad failed to load OpenGL ES.\n");
+        window_handle_ = nullptr;
+        return false;
+    }
+#endif
     glad_loaded_ = true;
     return true;
 }

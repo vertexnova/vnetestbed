@@ -75,19 +75,42 @@ endif()
 #==============================================================================
 # OpenGL renderer + demo layers (compiled only when glad is available)
 #
-# VNE_TESTBED_OPENGL: ON  = compile gl/ primitives and demo layer plugins
-#                     OFF = core-only library; examples requiring OpenGL are skipped
+# VNE_TESTBED_OPENGL and VNE_TESTBED_OPENGLES are mutually exclusive.
+# Default is chosen from VNE_TARGET_PLATFORM: desktop (macOS, Windows, Linux)
+# -> OpenGL 3.3; mobile/embedded/Web (iOS, Android, visionOS, Web) -> OpenGL ES 3.0.
+# Override with -DVNE_TESTBED_OPENGL=ON or -DVNE_TESTBED_OPENGLES=ON.
 #==============================================================================
 if(TARGET glad::glad)
-    option(VNE_TESTBED_OPENGL "Build the OpenGL render adapter, debug draw, and demo layers" ON)
+    if(VNE_TARGET_PLATFORM STREQUAL "iOS" OR VNE_TARGET_PLATFORM STREQUAL "Android"
+       OR VNE_TARGET_PLATFORM STREQUAL "visionOS" OR VNE_TARGET_PLATFORM STREQUAL "Web")
+        set(_vne_testbed_gl_default_es ON)
+    else()
+        set(_vne_testbed_gl_default_es OFF)
+    endif()
+    if(_vne_testbed_gl_default_es)
+        set(_vne_testbed_gl_default_opengl OFF)
+    else()
+        set(_vne_testbed_gl_default_opengl ON)
+    endif()
+    option(VNE_TESTBED_OPENGL "Build the OpenGL 3.3 render adapter, debug draw, and demo layers" ${_vne_testbed_gl_default_opengl})
+    option(VNE_TESTBED_OPENGLES "Build OpenGL ES 3.0 backend" ${_vne_testbed_gl_default_es})
 else()
+    set(VNE_TESTBED_OPENGL OFF)
+    set(VNE_TESTBED_OPENGLES OFF)
+endif()
+
+if(VNE_TESTBED_OPENGLES)
     set(VNE_TESTBED_OPENGL OFF)
 endif()
 
-if(VNE_TESTBED_OPENGL)
-    message(STATUS "VNE_TESTBED_OPENGL: ON — adding gl/ primitives and demo layers")
-
-    target_compile_definitions(vnetestbed PUBLIC VNE_TESTBED_OPENGL)
+if(VNE_TESTBED_OPENGL OR VNE_TESTBED_OPENGLES)
+    if(VNE_TESTBED_OPENGL)
+        message(STATUS "VNE_TESTBED_OPENGL: ON — adding gl/ primitives and demo layers")
+        target_compile_definitions(vnetestbed PUBLIC VNE_TESTBED_OPENGL)
+    else()
+        message(STATUS "VNE_TESTBED_OPENGLES: ON — adding gl/ primitives and demo layers (ES 3.0)")
+        target_compile_definitions(vnetestbed PUBLIC VNE_TESTBED_OPENGLES)
+    endif()
 
     target_sources(vnetestbed PRIVATE
         # gl/ — RAII OpenGL primitives
@@ -113,7 +136,7 @@ if(VNE_TESTBED_OPENGL)
 
     target_link_libraries(vnetestbed PUBLIC glad::glad)
 else()
-    message(STATUS "VNE_TESTBED_OPENGL: OFF — glad not found; skipping gl/ and demo layers")
+    message(STATUS "VNE_TESTBED_OPENGL / VNE_TESTBED_OPENGLES: OFF — glad not found or both disabled; skipping gl/ and demo layers")
 endif()
 
 target_compile_features(vnetestbed PUBLIC cxx_std_20)

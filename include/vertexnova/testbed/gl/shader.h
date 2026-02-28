@@ -21,8 +21,8 @@
  * Only available when VNE_TESTBED_OPENGL is defined (i.e. glad is present).
  */
 
-#ifndef VNE_TESTBED_OPENGL
-#error "shader.h requires VNE_TESTBED_OPENGL to be defined. Build with OpenGL enabled (glad)."
+#if !defined(VNE_TESTBED_OPENGL) && !defined(VNE_TESTBED_OPENGLES)
+#error "shader.h requires VNE_TESTBED_OPENGL or VNE_TESTBED_OPENGLES. Build with OpenGL or OpenGL ES enabled."
 #endif
 
 #include "vertexnova/math/core/core.h"

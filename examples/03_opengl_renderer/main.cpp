@@ -125,12 +125,19 @@ int main() {
         return 1;
     }
 
+#if defined(VNE_TESTBED_OPENGLES)
+    // OpenGL ES 3.0 — required when building with VNE_TESTBED_OPENGLES.
+    glfwWindowHint(GLFW_CLIENT_API, GLFW_OPENGL_ES_API);
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 0);
+#else
     // OpenGL 4.1 Core — highest supported on macOS.
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 1);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 #ifdef __APPLE__
     glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GLFW_TRUE);
+#endif
 #endif
 
     GLFWwindow* window = glfwCreateWindow(1280, 720, "vnetestbed — OpenGL renderer demo", nullptr, nullptr);

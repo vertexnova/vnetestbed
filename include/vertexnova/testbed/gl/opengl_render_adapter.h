@@ -20,8 +20,8 @@
  * Only available when VNE_TESTBED_OPENGL is defined.
  */
 
-#ifndef VNE_TESTBED_OPENGL
-#error "opengl_render_adapter.h requires VNE_TESTBED_OPENGL to be defined. Build with OpenGL enabled (glad)."
+#if !defined(VNE_TESTBED_OPENGL) && !defined(VNE_TESTBED_OPENGLES)
+#error "opengl_render_adapter.h requires VNE_TESTBED_OPENGL or VNE_TESTBED_OPENGLES. Build with OpenGL or OpenGL ES enabled."
 #endif
 
 #include "vertexnova/testbed/gl/opengl_context.h"

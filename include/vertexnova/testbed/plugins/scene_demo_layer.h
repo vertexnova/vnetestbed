@@ -25,8 +25,8 @@
  * Only compiled when VNE_TESTBED_OPENGL is defined (depends on gl/ utilities).
  */
 
-#ifndef VNE_TESTBED_OPENGL
-#error "scene_demo_layer.h requires VNE_TESTBED_OPENGL to be defined. Build with OpenGL enabled (glad)."
+#if !defined(VNE_TESTBED_OPENGL) && !defined(VNE_TESTBED_OPENGLES)
+#error "scene_demo_layer.h requires VNE_TESTBED_OPENGL or VNE_TESTBED_OPENGLES. Build with OpenGL or OpenGL ES enabled."
 #endif
 
 #include "vertexnova/testbed/layer.h"
