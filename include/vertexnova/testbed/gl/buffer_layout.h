@@ -12,7 +12,7 @@
 
 /**
  * @file gl/buffer_layout.h
- * @brief Hazel-style vertex buffer layout: ShaderDataType, BufferElement, BufferLayout.
+ * @brief Vertex buffer layout: ShaderDataType, BufferElement, BufferLayout.
  *
  * Used with VertexArray::addVertexBuffer(vb, layout) to describe how vertex
  * buffer bytes map to shader attribute locations (stride, offsets, types).
