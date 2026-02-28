@@ -71,12 +71,17 @@ class VertexBuffer {
     /**
      * @brief Upload new data to a dynamic buffer (GL_DYNAMIC_DRAW).
      * @param data      Pointer to new vertex data.
-     * @param byte_size Number of bytes to upload (must not exceed capacity).
+     * @param byte_size Number of bytes to upload (must not exceed getCapacity()).
+     *                  No-op if byte_size > capacity; asserts in debug builds.
      */
     void setData(const void* data, std::size_t byte_size);
 
+    /** @brief Allocated buffer capacity in bytes (for setData validation). */
+    [[nodiscard]] std::size_t getCapacity() const { return capacity_; }
+
    private:
     uint32_t vbo_id_{0u};
+    std::size_t capacity_{0u};
 };
 
 }  // namespace gl

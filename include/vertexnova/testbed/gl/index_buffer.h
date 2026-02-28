@@ -72,7 +72,8 @@ class IndexBuffer {
     /**
      * @brief Upload new data to a dynamic buffer.
      * @param data      Pointer to index data.
-     * @param byte_size Number of bytes to upload (must not exceed capacity).
+     * @param byte_size Number of bytes to upload (must not exceed getCount() * sizeof(uint32_t)).
+     *                  No-op if byte_size exceeds capacity; asserts in debug builds.
      */
     void setData(const void* data, std::size_t byte_size);
 

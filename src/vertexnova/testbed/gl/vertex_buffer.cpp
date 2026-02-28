@@ -17,18 +17,22 @@
 #include <glad/glad_es3.h>
 #endif
 
+#include "vertexnova/common/macros.h"
+
 namespace vne {
 namespace testbed {
 namespace gl {
 
-VertexBuffer::VertexBuffer(const void* data, std::size_t byte_size) {
+VertexBuffer::VertexBuffer(const void* data, std::size_t byte_size)
+    : capacity_(byte_size) {
     glGenBuffers(1, &vbo_id_);
     glBindBuffer(GL_ARRAY_BUFFER, vbo_id_);
     glBufferData(GL_ARRAY_BUFFER, static_cast<GLsizeiptr>(byte_size), data, GL_STATIC_DRAW);
     glBindBuffer(GL_ARRAY_BUFFER, 0);
 }
 
-VertexBuffer::VertexBuffer(std::size_t byte_size) {
+VertexBuffer::VertexBuffer(std::size_t byte_size)
+    : capacity_(byte_size) {
     glGenBuffers(1, &vbo_id_);
     glBindBuffer(GL_ARRAY_BUFFER, vbo_id_);
     glBufferData(GL_ARRAY_BUFFER, static_cast<GLsizeiptr>(byte_size), nullptr, GL_DYNAMIC_DRAW);
@@ -50,6 +54,10 @@ void VertexBuffer::unbind() const {
 }
 
 void VertexBuffer::setData(const void* data, std::size_t byte_size) {
+    if (byte_size > capacity_) {
+        VNE_ASSERT_MSG(byte_size <= capacity_, "setData: byte_size must not exceed buffer capacity");
+        return;
+    }
     glBindBuffer(GL_ARRAY_BUFFER, vbo_id_);
     glBufferSubData(GL_ARRAY_BUFFER, 0, static_cast<GLsizeiptr>(byte_size), data);
     glBindBuffer(GL_ARRAY_BUFFER, 0);

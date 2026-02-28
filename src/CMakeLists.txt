@@ -74,14 +74,15 @@ if(TARGET vne::interaction)
 endif()
 
 #==============================================================================
-# OpenGL renderer + demo layers (compiled only when glad is available)
+# OpenGL renderer + demo layers (compiled only when glad and glfw are available)
 #
+# The gl/ backend (opengl_context, opengl_render_adapter) uses GLFW APIs;
+# both glad and glfw must be present or the OpenGL sources are not added.
 # VNE_TESTBED_OPENGL and VNE_TESTBED_OPENGLES are mutually exclusive.
-# Default is chosen from VNE_TARGET_PLATFORM: desktop (macOS, Windows, Linux)
-# -> OpenGL 4.1; mobile/embedded/Web (iOS, Android, visionOS, Web) -> OpenGL ES 3.0.
+# Default is chosen from VNE_TARGET_PLATFORM: desktop -> OpenGL 4.1; mobile/Web -> ES 3.0.
 # Override with -DVNE_TESTBED_OPENGL=ON or -DVNE_TESTBED_OPENGLES=ON.
 #==============================================================================
-if(TARGET glad::glad)
+if(TARGET glad::glad AND TARGET glfw)
     if(VNE_TARGET_PLATFORM STREQUAL "iOS" OR VNE_TARGET_PLATFORM STREQUAL "Android"
        OR VNE_TARGET_PLATFORM STREQUAL "visionOS" OR VNE_TARGET_PLATFORM STREQUAL "Web")
         set(_vne_testbed_gl_default_es ON)
@@ -96,8 +97,13 @@ if(TARGET glad::glad)
     option(VNE_TESTBED_OPENGL "Build the OpenGL 4.1 render adapter, debug draw, and demo layers" ${_vne_testbed_gl_default_opengl})
     option(VNE_TESTBED_OPENGLES "Build OpenGL ES 3.0 backend" ${_vne_testbed_gl_default_es})
 else()
-    set(VNE_TESTBED_OPENGL OFF)
-    set(VNE_TESTBED_OPENGLES OFF)
+    set(VNE_TESTBED_OPENGL OFF CACHE BOOL "Build OpenGL 4.1 backend (requires glad and glfw)" FORCE)
+    set(VNE_TESTBED_OPENGLES OFF CACHE BOOL "Build OpenGL ES 3.0 backend (requires glad and glfw)" FORCE)
+    if(TARGET glad::glad AND NOT TARGET glfw)
+        message(STATUS "VNE_TESTBED_OPENGL/OPENGLES: OFF — GLFW required for OpenGL backend (glad found, glfw missing)")
+    else()
+        message(STATUS "VNE_TESTBED_OPENGL / VNE_TESTBED_OPENGLES: OFF — glad or glfw not found; skipping gl/ and demo layers")
+    endif()
 endif()
 
 if(VNE_TESTBED_OPENGLES)
@@ -140,7 +146,7 @@ if(VNE_TESTBED_OPENGL OR VNE_TESTBED_OPENGLES)
 
     target_link_libraries(vnetestbed PUBLIC glad::glad)
 else()
-    message(STATUS "VNE_TESTBED_OPENGL / VNE_TESTBED_OPENGLES: OFF — glad not found or both disabled; skipping gl/ and demo layers")
+    message(STATUS "VNE_TESTBED_OPENGL / VNE_TESTBED_OPENGLES: OFF — skipping gl/ and demo layers")
 endif()
 
 target_compile_features(vnetestbed PUBLIC cxx_std_20)

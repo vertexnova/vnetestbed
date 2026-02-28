@@ -17,6 +17,8 @@
 #include <glad/glad_es3.h>
 #endif
 
+#include "vertexnova/common/macros.h"
+
 namespace vne {
 namespace testbed {
 namespace gl {
@@ -52,6 +54,11 @@ void IndexBuffer::unbind() const {
 }
 
 void IndexBuffer::setData(const void* data, std::size_t byte_size) {
+    const std::size_t capacity_bytes = count_ * sizeof(uint32_t);
+    if (byte_size > capacity_bytes) {
+        VNE_ASSERT_MSG(byte_size <= capacity_bytes, "setData: byte_size must not exceed getCount() * sizeof(uint32_t)");
+        return;
+    }
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo_id_);
     glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, 0, static_cast<GLsizeiptr>(byte_size), data);
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
