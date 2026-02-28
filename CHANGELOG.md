@@ -20,29 +20,3 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Features
 
 * Rename project from VneTemplate to VneTestbed, update configuration files, documentation, and examples accordingly. Adjust versioning in release manifest and changelog. Introduce new testbed-specific examples and update build scripts for consistency. ([#1](https://github.com/vertexnova/vnetestbed/issues/1)) ([122776d](https://github.com/vertexnova/vnetestbed/commit/122776d98da2553a0381a5132aed6ce36346d2c3))
-
-## [Unreleased]
-
-### Added
-
-- (Entries added automatically from conventional commits.)
-
-### Changed
-
-- (None.)
-
-### Deprecated
-
-- (None.)
-
-### Removed
-
-- (None.)
-
-### Fixed
-
-- (None.)
-
-### Security
-
-- (None.)
