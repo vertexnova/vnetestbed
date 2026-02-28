@@ -26,6 +26,7 @@
 
 #include "vertexnova/testbed/debug_draw.h"
 #include "vertexnova/testbed/render_adapter.h"
+#include "vertexnova/testbed/render_device.h"
 #include "vertexnova/testbed/window.h"
 
 namespace vne {
@@ -42,6 +43,7 @@ namespace testbed {
 struct AppContext {
     IWindow* window{nullptr};
     IRenderAdapter* renderer{nullptr};
+    IRenderDevice* device{nullptr};  ///< Backend-agnostic resource factory + draw.
     IDebugDraw* debugDraw{nullptr};
 };
 

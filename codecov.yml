@@ -1,0 +1,34 @@
+# Codecov configuration for vnetestbed
+# https://docs.codecov.com/docs/codecov-yaml
+#
+# As a testbed (playground for vne libs), we do not enforce coverage thresholds;
+# reports are informational only.
+
+coverage:
+  precision: 2
+  round: down
+  range: "70...100"
+
+  status:
+    project:
+      default:
+        threshold: 0%
+        target: 0%
+        informational: true
+    patch:
+      default:
+        target: 0%
+        informational: true
+
+# Ignore files that are not part of library coverage
+ignore:
+  - "tests/**/*"
+  - "examples/**/*"
+  - "deps/external/**/*"
+  - "deps/internal/**/*"
+  - "cmake/**/*"
+
+comment:
+  layout: "reach,diff,flags,files"
+  behavior: default
+  require_changes: true

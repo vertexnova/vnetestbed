@@ -40,7 +40,7 @@
                 <mxCell id="e5" style="endArrow=blockThin;endFill=1;html=1;strokeWidth=2;strokeColor=#2e7d32;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;dashed=1;" parent="1" source="src" target="build" edge="1">
                     <mxGeometry relative="1" as="geometry"/>
                 </mxCell>
-                <mxCell id="e5label" value="builds" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];fontSize=10;fontColor=#1a1a1a;backgroundColor=#ffffff;" parent="e5" connectable="0" vertex="1">
+                <mxCell id="e5label" value="builds" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];fontSize=10;fontColor=#ffffff;backgroundColor=#424242;" parent="e5" connectable="0" vertex="1">
                     <mxGeometry x="-0.2" y="1" relative="1" as="geometry">
                         <mxPoint as="offset"/>
                     </mxGeometry>
