@@ -1,5 +1,8 @@
 # Codecov configuration for vnetestbed
 # https://docs.codecov.com/docs/codecov-yaml
+#
+# As a testbed (playground for vne libs), we do not enforce coverage thresholds;
+# reports are informational only.
 
 coverage:
   precision: 2
@@ -9,14 +12,11 @@ coverage:
   status:
     project:
       default:
-        # Allow coverage to drop by up to 5% before failing
-        threshold: 5%
-        # Minimum coverage required (fail status if below)
-        target: 80%
+        threshold: 0%
+        target: 0%
     patch:
       default:
-        # New code should have at least 50% coverage
-        target: 50%
+        target: 0%
 
 # Ignore files that are not part of library coverage
 ignore:
