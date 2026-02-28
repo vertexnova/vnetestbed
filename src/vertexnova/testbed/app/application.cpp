@@ -114,8 +114,7 @@ void Application::mainLoop() {
 
     // Frame timing
     const auto now = std::chrono::steady_clock::now();
-    const float dt =
-        static_cast<float>(std::chrono::duration<double>(now - impl_->last_frame_time).count());
+    const float dt = static_cast<float>(std::chrono::duration<double>(now - impl_->last_frame_time).count());
     impl_->last_frame_time = now;
 
     RenderContext render_ctx{};

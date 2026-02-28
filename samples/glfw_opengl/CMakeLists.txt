@@ -10,3 +10,6 @@ if(NOT VNE_TESTBED_OPENGL AND NOT VNE_TESTBED_OPENGLES)
 endif()
 
 add_subdirectory(01_triangle)
+add_subdirectory(02_events)
+add_subdirectory(03_scene)
+add_subdirectory(04_scene_interaction)
