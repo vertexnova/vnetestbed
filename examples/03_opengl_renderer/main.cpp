@@ -28,6 +28,7 @@
 #include "vertexnova/testbed/render_context.h"
 
 // Backend-specific — only in this runner file.
+#include "vertexnova/testbed/window/glfw_window.h"
 #include "vertexnova/testbed/gl/opengl_render_adapter.h"
 #include "vertexnova/testbed/gl/opengl_render_device.h"
 #include "vertexnova/testbed/gl/opengl_debug_draw.h"
@@ -41,80 +42,10 @@
 #endif
 
 #include "vertexnova/events/event_manager.h"
-#include "vertexnova/events/mouse_event.h"
-#include "vertexnova/events/key_event.h"
-#include "vertexnova/events/types.h"
 #include "common/logging_guard.h"
-
-#include <GLFW/glfw3.h>
 
 #include <chrono>
 #include <memory>
-
-// ---------------------------------------------------------------------------
-// GlfwWindow — IWindow concrete implementation (runner-local, not in lib)
-// ---------------------------------------------------------------------------
-
-namespace vne {
-namespace testbed {
-
-class GlfwWindow : public IWindow {
-   public:
-    explicit GlfwWindow(GLFWwindow* w)
-        : window_(w) {}
-
-    int getWidth() const override {
-        int w = 0;
-        glfwGetWindowSize(window_, &w, nullptr);
-        return w;
-    }
-    int getHeight() const override {
-        int h = 0;
-        glfwGetWindowSize(window_, nullptr, &h);
-        return h;
-    }
-    void pollEvents() override { glfwPollEvents(); }
-    bool shouldClose() const override { return glfwWindowShouldClose(window_) != 0; }
-    void* getNativeHandle() const override { return window_; }
-
-   private:
-    GLFWwindow* window_;
-};
-
-}  // namespace testbed
-}  // namespace vne
-
-// ---------------------------------------------------------------------------
-// GLFW → vne::events bridge callbacks
-// ---------------------------------------------------------------------------
-
-static void onGlfwKey(GLFWwindow* /*w*/, int key, int /*scan*/, int action, int /*mods*/) {
-    auto& mgr = vne::events::EventManager::instance();
-    if (action == GLFW_PRESS) {
-        mgr.pushEvent(std::make_unique<vne::events::KeyPressedEvent>(static_cast<vne::events::KeyCode>(key)));
-    } else if (action == GLFW_RELEASE) {
-        mgr.pushEvent(std::make_unique<vne::events::KeyReleasedEvent>(static_cast<vne::events::KeyCode>(key)));
-    }
-}
-
-static void onGlfwMouseButton(GLFWwindow* /*w*/, int button, int action, int /*mods*/) {
-    auto& mgr = vne::events::EventManager::instance();
-    if (action == GLFW_PRESS) {
-        mgr.pushEvent(
-            std::make_unique<vne::events::MouseButtonPressedEvent>(static_cast<vne::events::MouseButton>(button)));
-    } else {
-        mgr.pushEvent(
-            std::make_unique<vne::events::MouseButtonReleasedEvent>(static_cast<vne::events::MouseButton>(button)));
-    }
-}
-
-static void onGlfwCursorPos(GLFWwindow* /*w*/, double x, double y) {
-    vne::events::EventManager::instance().pushEvent(std::make_unique<vne::events::MouseMovedEvent>(x, y));
-}
-
-static void onGlfwScroll(GLFWwindow* /*w*/, double xoff, double yoff) {
-    vne::events::EventManager::instance().pushEvent(std::make_unique<vne::events::MouseScrolledEvent>(xoff, yoff));
-}
 
 // ---------------------------------------------------------------------------
 // main
@@ -123,59 +54,33 @@ static void onGlfwScroll(GLFWwindow* /*w*/, double xoff, double yoff) {
 int main() {
     vne::testbed::examples::LoggingGuard logging_guard;
 
-    if (!glfwInit()) {
-        VNE_LOG_ERROR << "glfwInit failed";
-        return 1;
-    }
-
 #if defined(VNE_TESTBED_OPENGLES)
-    glfwWindowHint(GLFW_CLIENT_API, GLFW_OPENGL_ES_API);
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 0);
+    const bool use_opengl_es = true;
 #else
-    // OpenGL 4.1 Core — highest supported on macOS.
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 1);
-    glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
-#ifdef __APPLE__
-    glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GLFW_TRUE);
+    const bool use_opengl_es = false;
 #endif
-#endif
-
-    GLFWwindow* window = glfwCreateWindow(1280, 720, "vnetestbed — OpenGL renderer demo", nullptr, nullptr);
-    if (!window) {
-        VNE_LOG_ERROR << "glfwCreateWindow failed";
-        glfwTerminate();
+    auto glfwWin =
+        vne::testbed::window::GlfwWindow::create(1280, 720, "vnetestbed — OpenGL renderer demo", use_opengl_es);
+    if (!glfwWin) {
+        VNE_LOG_ERROR << "GlfwWindow::create failed";
         return 1;
     }
-    glfwMakeContextCurrent(window);
-    glfwSwapInterval(1);  // vsync
-
-    // Register GLFW → vne event bridge.
-    glfwSetKeyCallback(window, onGlfwKey);
-    glfwSetMouseButtonCallback(window, onGlfwMouseButton);
-    glfwSetCursorPosCallback(window, onGlfwCursorPos);
-    glfwSetScrollCallback(window, onGlfwScroll);
+    glfwWin->setEventForwarding(true);
 
     // -----------------------------------------------------------------------
     // Backend objects (only these lines change when swapping backends)
     // -----------------------------------------------------------------------
 
-    vne::testbed::GlfwWindow glfwWin(window);
     vne::testbed::gl::OpenGLRenderAdapter renderer;
     vne::testbed::gl::OpenGLRenderDevice device;
     vne::testbed::gl::OpenGLDebugDraw debugDraw;
 
-    if (!renderer.init(glfwWin.getNativeHandle())) {
+    if (!renderer.init(glfwWin->getNativeHandle())) {
         VNE_LOG_ERROR << "OpenGLRenderAdapter::init failed";
-        glfwDestroyWindow(window);
-        glfwTerminate();
         return 1;
     }
     if (!debugDraw.init()) {
         VNE_LOG_ERROR << "OpenGLDebugDraw::init failed";
-        glfwDestroyWindow(window);
-        glfwTerminate();
         return 1;
     }
 
@@ -184,7 +89,7 @@ int main() {
     // -----------------------------------------------------------------------
 
     vne::testbed::AppContext app_ctx;
-    app_ctx.window = &glfwWin;
+    app_ctx.window = glfwWin.get();
     app_ctx.renderer = &renderer;
     app_ctx.device = &device;
     app_ctx.debugDraw = &debugDraw;
@@ -239,7 +144,7 @@ int main() {
         layer_stack.onRender(render_ctx);
         renderer.endFrame();
 
-        glfwSwapBuffers(window);
+        glfwWin->swapBuffers();
     }
 
     // -----------------------------------------------------------------------
@@ -250,8 +155,6 @@ int main() {
     device.shutdown();
     debugDraw.shutdown();
     renderer.shutdown();
-
-    glfwDestroyWindow(window);
-    glfwTerminate();
+    glfwWin.reset();
     return 0;
 }

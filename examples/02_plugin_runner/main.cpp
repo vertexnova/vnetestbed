@@ -15,36 +15,15 @@
 #include "vertexnova/testbed/render_context.h"
 #include "stub_layer.h"
 
+#include "vertexnova/testbed/window/glfw_window.h"
+
 #include <glad/glad.h>
-#include <GLFW/glfw3.h>
 
 #include <chrono>
 #include <memory>
 
 namespace vne {
 namespace testbed {
-
-class GlfwWindow : public IWindow {
-   public:
-    explicit GlfwWindow(GLFWwindow* w)
-        : window_(w) {}
-    int getWidth() const override {
-        int w = 0;
-        glfwGetWindowSize(window_, &w, nullptr);
-        return w;
-    }
-    int getHeight() const override {
-        int h = 0;
-        glfwGetWindowSize(window_, nullptr, &h);
-        return h;
-    }
-    void pollEvents() override { glfwPollEvents(); }
-    bool shouldClose() const override { return glfwWindowShouldClose(window_) != 0; }
-    void* getNativeHandle() const override { return window_; }
-
-   private:
-    GLFWwindow* window_;
-};
 
 class StubRendererAdapter : public IRenderAdapter {
    public:
@@ -61,34 +40,18 @@ class StubRendererAdapter : public IRenderAdapter {
 }  // namespace vne
 
 int main() {
-    if (!glfwInit()) {
+    auto glfwWin = vne::testbed::window::GlfwWindow::create(800, 600, "vnetestbed layer runner", false);
+    if (!glfwWin) {
         return 1;
     }
-
-    // Desktop backend targets OpenGL 4.1 (see VNE_TESTBED_OPENGL).
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 1);
-    glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
-#ifdef __APPLE__
-    glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GLFW_TRUE);
-#endif
-    GLFWwindow* window = glfwCreateWindow(800, 600, "vnetestbed layer runner", nullptr, nullptr);
-    if (!window) {
-        glfwTerminate();
-        return 1;
-    }
-    glfwMakeContextCurrent(window);
     if (!gladLoadGLLoader(reinterpret_cast<GLADloadproc>(glfwGetProcAddress))) {
-        glfwDestroyWindow(window);
-        glfwTerminate();
         return 1;
     }
 
-    vne::testbed::GlfwWindow glfwWindow(window);
     vne::testbed::StubRendererAdapter stubRenderer;
 
     vne::testbed::AppContext app_ctx;
-    app_ctx.window = &glfwWindow;
+    app_ctx.window = glfwWin.get();
     app_ctx.renderer = &stubRenderer;
     app_ctx.debugDraw = nullptr;
 
@@ -122,12 +85,10 @@ int main() {
         if (app_ctx.renderer)
             app_ctx.renderer->endFrame();
 
-        glfwSwapBuffers(window);
+        glfwWin->swapBuffers();
     }
 
     layer_stack.clear();
-
-    glfwDestroyWindow(window);
-    glfwTerminate();
+    glfwWin.reset();
     return 0;
 }

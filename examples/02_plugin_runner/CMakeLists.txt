@@ -1,8 +1,11 @@
 #==============================================================================
 # 02_plugin_runner Example: GLFW window + layer lifecycle (LayerStack)
 #==============================================================================
-
+# Uses window::GlfwWindow from the library; only build when OpenGL backend is enabled.
 if(NOT TARGET glfw OR NOT TARGET glad::glad)
+    return()
+endif()
+if(NOT VNE_TESTBED_OPENGL AND NOT VNE_TESTBED_OPENGLES)
     return()
 endif()
 
