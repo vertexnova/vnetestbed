@@ -221,13 +221,11 @@ TEST(GlfwKeyMapping, MouseButton_Middle) {
 }
 
 TEST(GlfwKeyMapping, MouseButton_Button4) {
-    EXPECT_EQ(mapGlfwToMouseButton(GLFW_MOUSE_BUTTON_4),
-              static_cast<MouseButton>(GLFW_MOUSE_BUTTON_4));
+    EXPECT_EQ(mapGlfwToMouseButton(GLFW_MOUSE_BUTTON_4), static_cast<MouseButton>(GLFW_MOUSE_BUTTON_4));
 }
 
 TEST(GlfwKeyMapping, MouseButton_Button8_Boundary) {
-    EXPECT_EQ(mapGlfwToMouseButton(GLFW_MOUSE_BUTTON_8),
-              static_cast<MouseButton>(GLFW_MOUSE_BUTTON_8));
+    EXPECT_EQ(mapGlfwToMouseButton(GLFW_MOUSE_BUTTON_8), static_cast<MouseButton>(GLFW_MOUSE_BUTTON_8));
 }
 
 TEST(GlfwKeyMapping, MouseButton_InvalidHigh_FallsBackToLeft) {
@@ -299,16 +297,16 @@ TEST(GlfwKeyMapping, ModAllFour) {
  * Follows the same pattern as RecordingLayer in recording_layer.h.
  */
 struct MockWindow : IWindow {
-    int   w{800};
-    int   h{600};
-    bool  close_flag{false};
-    int   poll_count{0};
+    int w{800};
+    int h{600};
+    bool close_flag{false};
+    int poll_count{0};
     void* handle{nullptr};
 
-    int   getWidth()        const override { return w; }
-    int   getHeight()       const override { return h; }
-    void  pollEvents()            override { ++poll_count; }
-    bool  shouldClose()     const override { return close_flag; }
+    int getWidth() const override { return w; }
+    int getHeight() const override { return h; }
+    void pollEvents() override { ++poll_count; }
+    bool shouldClose() const override { return close_flag; }
     void* getNativeHandle() const override { return handle; }
 };
 
@@ -413,7 +411,8 @@ class GlfwWindowTest : public ::testing::Test {
      * GTEST_SKIP() cannot be called inside a non-void helper function.
      * Each test that calls this must check for nullptr and skip itself.
      */
-    static std::unique_ptr<GlfwWindow> makeHiddenWindow(uint32_t w = 200, uint32_t h = 100,
+    static std::unique_ptr<GlfwWindow> makeHiddenWindow(uint32_t w = 200,
+                                                        uint32_t h = 100,
                                                         const char* title = "Test") {
         GlfwWindowDescriptor d{title, w, h};
         d.visible = false;
@@ -422,8 +421,10 @@ class GlfwWindowTest : public ::testing::Test {
 };
 
 // Convenience macro: skip the current test if makeHiddenWindow() returned nullptr.
-#define SKIP_IF_HEADLESS(win) \
-    if (!(win)) { GTEST_SKIP() << "glfwCreateWindow returned nullptr (headless)"; }
+#define SKIP_IF_HEADLESS(win)                                           \
+    if (!(win)) {                                                       \
+        GTEST_SKIP() << "glfwCreateWindow returned nullptr (headless)"; \
+    }
 
 TEST_F(GlfwWindowTest, CreateHiddenWindowReturnsNonNull) {
     auto win = makeHiddenWindow();

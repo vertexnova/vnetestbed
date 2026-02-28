@@ -104,7 +104,8 @@ void GlfwWindow::cbFramebufferSize(GLFWwindow* w, int width, int height) {
     auto* self = static_cast<GlfwWindow*>(glfwGetWindowUserPointer(w));
     if (self) {
         vne::events::EventManager::instance().pushEvent(
-            std::make_unique<vne::events::WindowResizeEvent>(static_cast<uint32_t>(width), static_cast<uint32_t>(height)));
+            std::make_unique<vne::events::WindowResizeEvent>(static_cast<uint32_t>(width),
+                                                             static_cast<uint32_t>(height)));
         vne::events::Input::updateWindowSize(width, height);
         self->updateDPIScale();
     }
