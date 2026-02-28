@@ -98,7 +98,7 @@ See **examples/02_plugin_runner** for a full runner with GLFW and a stub render 
 ## Plugins and layers
 
 - **Plugins** (IPlugin) are registered at static init via **REGISTER_PLUGIN(PluginClass)** in a .cpp. They do not receive per-frame calls; they only provide **getName()** and **createLayers()**.
-- **Layers** (ILayer) are the runtime unit: they receive **onAttach(AppContext&)** once so they can store window/renderer/debugDraw, then per-frame **onUpdate**, **onBeginRender**, **onRender**, **onGuiBegin**/ **onGuiRender**/ **onGuiEnd**, and **onDetach** when removed.
+- **Layers** (ILayer) are the runtime unit: they receive **onAttach(AppContext&)** once so they can store window/renderer/debugDraw; if the layer is enabled at push time (the default), **onEnable()** is called immediately after. Then per-frame: **onUpdate**, **onBeginRender**, **onRender**, **onGuiBegin**/ **onGuiRender**/ **onGuiEnd**, and **onDetach** when removed (with **onDisable()** first if the layer was enabled).
 - **PluginRegistry::createAndPushLayers(stack, ctx)** iterates all registered plugins, calls createLayers(), and pushLayer() for each non-null layer.
 
 ## CMake options

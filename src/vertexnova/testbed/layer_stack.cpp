@@ -36,6 +36,7 @@ void LayerStack::pushOverlay(std::unique_ptr<ILayer> overlay, AppContext& ctx) {
         return;
     }
     overlay->onAttach(ctx);
+    // New overlays default to enabled; call onEnable() so enabled state is consistent.
     if (overlay->isEnabled()) {
         overlay->onEnable();
     }
@@ -66,11 +67,10 @@ std::unique_ptr<ILayer> LayerStack::popOverlay() {
 
 void LayerStack::clear() {
     // Tear down in reverse push order: overlays (LIFO) then layers (LIFO).
+    // Use setEnabled(false) so is_enabled_ is updated (consistent with popLayer/popOverlay).
     for (auto it = overlays_.rbegin(); it != overlays_.rend(); ++it) {
         if (*it) {
-            if ((*it)->isEnabled()) {
-                (*it)->onDisable();
-            }
+            (*it)->setEnabled(false);
             (*it)->onDetach();
         }
     }
@@ -78,9 +78,7 @@ void LayerStack::clear() {
 
     for (auto it = layers_.rbegin(); it != layers_.rend(); ++it) {
         if (*it) {
-            if ((*it)->isEnabled()) {
-                (*it)->onDisable();
-            }
+            (*it)->setEnabled(false);
             (*it)->onDetach();
         }
     }

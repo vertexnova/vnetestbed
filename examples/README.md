@@ -36,4 +36,4 @@ Full testbed runner: creates a window (GLFW), OpenGL context, and a **LayerStack
 | 01_hello_testbed  | Minimal bootstrap  | Logging guard, build verification                 |
 | 02_plugin_runner  | Layer/plugin runner| AppContext, LayerStack, IPlugin, ILayer, IRenderAdapter |
 
-For the full API, see [docs/vertexnova/testbed/testbed.md](docs/vertexnova/testbed/testbed.md).
+For the full API, see [docs/vertexnova/testbed/testbed.md](../docs/vertexnova/testbed/testbed.md).
