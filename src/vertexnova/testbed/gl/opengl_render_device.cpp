@@ -117,7 +117,7 @@ BufferHandle OpenGLRenderDevice::createVertexBuffer(const void* data, uint32_t b
             slot->vbo->setData(data, bytes);
         }
     } else {
-        slot->vbo = std::make_unique<VertexBuffer>(static_cast<const float*>(data), static_cast<std::size_t>(bytes));
+        slot->vbo = std::make_unique<VertexBuffer>(data, static_cast<std::size_t>(bytes));
     }
     const uint32_t id = allocSlot(buffers_, std::move(slot));
     return {id};

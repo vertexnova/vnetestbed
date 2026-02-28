@@ -8,8 +8,12 @@
 # Autodoc:   yes
 #==============================================================================
 
-# Requires GLFW, glad, and the OpenGL adapter (VNE_TESTBED_OPENGL).
+# Requires GLFW, glad, and the OpenGL adapter (VNE_TESTBED_OPENGL or VNE_TESTBED_OPENGLES).
+# The main.cpp includes gl/ headers that hard-error unless one of these is enabled.
 if(NOT TARGET glfw OR NOT TARGET glad::glad)
+    return()
+endif()
+if(NOT VNE_TESTBED_OPENGL AND NOT VNE_TESTBED_OPENGLES)
     return()
 endif()
 

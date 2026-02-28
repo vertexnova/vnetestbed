@@ -40,10 +40,10 @@ class VertexBuffer {
    public:
     /**
      * @brief Create a static buffer and upload initial data.
-     * @param data      Pointer to float vertex data.
+     * @param data      Pointer to raw vertex data (bytes).
      * @param byte_size Number of bytes to upload.
      */
-    VertexBuffer(const float* data, std::size_t byte_size);
+    VertexBuffer(const void* data, std::size_t byte_size);
 
     /**
      * @brief Create an empty dynamic buffer of a given capacity.

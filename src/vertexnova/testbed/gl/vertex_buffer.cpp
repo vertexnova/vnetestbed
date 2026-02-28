@@ -21,7 +21,7 @@ namespace vne {
 namespace testbed {
 namespace gl {
 
-VertexBuffer::VertexBuffer(const float* data, std::size_t byte_size) {
+VertexBuffer::VertexBuffer(const void* data, std::size_t byte_size) {
     glGenBuffers(1, &vbo_id_);
     glBindBuffer(GL_ARRAY_BUFFER, vbo_id_);
     glBufferData(GL_ARRAY_BUFFER, static_cast<GLsizeiptr>(byte_size), data, GL_STATIC_DRAW);
