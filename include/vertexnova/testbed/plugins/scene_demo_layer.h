@@ -16,21 +16,17 @@
  *
  * Owns a PerspectiveCamera and a SceneState.  Each frame it:
  *   - Updates the camera aspect ratio on resize.
- *   - Uploads the view-projection matrix to a shared debug draw instance.
+ *   - Uploads the view-projection matrix to the IDebugDraw from AppContext.
  *   - Draws a world-space XZ grid and axis cross via IDebugDraw.
  *
  * Other layers that need the camera (e.g. InteractionDemoLayer) can call
  * getCamera() after onAttach().
  *
- * Only compiled when VNE_TESTBED_OPENGL is defined (depends on gl/ utilities).
+ * Uses only backend-agnostic interfaces — no gl/ headers included.
  */
 
-#if !defined(VNE_TESTBED_OPENGL) && !defined(VNE_TESTBED_OPENGLES)
-#error "scene_demo_layer.h requires VNE_TESTBED_OPENGL or VNE_TESTBED_OPENGLES. Build with OpenGL or OpenGL ES enabled."
-#endif
-
+#include "vertexnova/testbed/debug_draw.h"
 #include "vertexnova/testbed/layer.h"
-#include "vertexnova/testbed/gl/opengl_debug_draw.h"
 
 #include "vertexnova/scene/camera/perspective_camera.h"
 #include "vertexnova/scene/scene_state.h"
@@ -66,7 +62,7 @@ class SceneDemoLayer : public ILayer {
    private:
     std::shared_ptr<vne::scene::PerspectiveCamera> camera_;
     vne::scene::SceneState scene_state_;
-    gl::OpenGLDebugDraw* debug_draw_{nullptr};
+    IDebugDraw* debug_draw_{nullptr};  ///< Obtained from AppContext; not owned.
 
     // Grid configuration
     static constexpr int kGridLines = 20;

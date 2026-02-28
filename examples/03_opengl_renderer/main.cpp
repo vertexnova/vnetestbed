@@ -11,33 +11,34 @@
 
 /**
  * @file examples/03_opengl_renderer/main.cpp
- * @brief Interactive demo: OpenGL renderer + vnescene camera + vneinteraction + vneevents.
+ * @brief Interactive demo: OpenGL renderer + vnescene camera + vneevents.
  *
- * Demonstrates the full vnetestbed stack:
- *   - OpenGLRenderAdapter   (real GPU clear + depth test)
- *   - OpenGLDebugDraw       (world-space line rendering)
- *   - SceneDemoLayer        (perspective camera + grid + axes)
- *   - InteractionDemoLayer  (orbit camera via CameraSystemController)
- *   - EventsDemoLayer       (logs input events to stdout)
- *   - TriangleDemoLayer     (coloured triangle to validate pipeline)
+ * Demonstrates the full vnetestbed stack with the backend-agnostic
+ * IRenderDevice interface.  Demo layers include NO gl/ headers.
  *
- * Swap points:
- *   - Replace GlfwWindow        with vnecrosswindow adapter
+ *   Swap points:
+ *   - Replace GlfwWindow          with a vnecrosswindow adapter
  *   - Replace OpenGLRenderAdapter with CrossGLRenderAdapter
- *   - Replace OpenGLDebugDraw   with CrossGLDebugDraw
+ *   - Replace OpenGLRenderDevice  with CrossGLRenderDevice
+ *   - Replace OpenGLDebugDraw     with CrossGLDebugDraw
  */
 
 #include "vertexnova/testbed/app_context.h"
 #include "vertexnova/testbed/layer_stack.h"
 #include "vertexnova/testbed/render_context.h"
 
+// Backend-specific — only in this runner file.
 #include "vertexnova/testbed/gl/opengl_render_adapter.h"
+#include "vertexnova/testbed/gl/opengl_render_device.h"
 #include "vertexnova/testbed/gl/opengl_debug_draw.h"
 
+// Demo layers — no gl/ headers inside.
 #include "vertexnova/testbed/plugins/triangle_demo_layer.h"
 #include "vertexnova/testbed/plugins/scene_demo_layer.h"
 #include "vertexnova/testbed/plugins/events_demo_layer.h"
+#ifdef VNE_TESTBED_INTERACTION
 #include "vertexnova/testbed/plugins/interaction_demo_layer.h"
+#endif
 
 #include "vertexnova/events/event_manager.h"
 #include "vertexnova/events/mouse_event.h"
@@ -51,7 +52,7 @@
 #include <memory>
 
 // ---------------------------------------------------------------------------
-// GlfwWindow — IWindow concrete implementation
+// GlfwWindow — IWindow concrete implementation (runner-local, not in lib)
 // ---------------------------------------------------------------------------
 
 namespace vne {
@@ -126,7 +127,6 @@ int main() {
     }
 
 #if defined(VNE_TESTBED_OPENGLES)
-    // OpenGL ES 3.0 — required when building with VNE_TESTBED_OPENGLES.
     glfwWindowHint(GLFW_CLIENT_API, GLFW_OPENGL_ES_API);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 0);
@@ -156,11 +156,13 @@ int main() {
     glfwSetScrollCallback(window, onGlfwScroll);
 
     // -----------------------------------------------------------------------
-    // Renderer and debug draw
+    // Backend objects (only these lines change when swapping backends)
     // -----------------------------------------------------------------------
 
     vne::testbed::GlfwWindow glfwWin(window);
     vne::testbed::gl::OpenGLRenderAdapter renderer;
+    vne::testbed::gl::OpenGLRenderDevice device;
+    vne::testbed::gl::OpenGLDebugDraw debugDraw;
 
     if (!renderer.init(glfwWin.getNativeHandle())) {
         std::fprintf(stderr, "OpenGLRenderAdapter::init failed\n");
@@ -168,8 +170,6 @@ int main() {
         glfwTerminate();
         return 1;
     }
-
-    vne::testbed::gl::OpenGLDebugDraw debugDraw;
     if (!debugDraw.init()) {
         std::fprintf(stderr, "OpenGLDebugDraw::init failed\n");
         glfwDestroyWindow(window);
@@ -178,16 +178,17 @@ int main() {
     }
 
     // -----------------------------------------------------------------------
-    // AppContext
+    // AppContext — purely interface pointers; no backend types visible here
     // -----------------------------------------------------------------------
 
     vne::testbed::AppContext app_ctx;
     app_ctx.window = &glfwWin;
     app_ctx.renderer = &renderer;
+    app_ctx.device = &device;
     app_ctx.debugDraw = &debugDraw;
 
     // -----------------------------------------------------------------------
-    // Layer stack
+    // Layer stack — layers use only IRenderDevice, IDebugDraw, IWindow
     // -----------------------------------------------------------------------
 
     vne::testbed::LayerStack layer_stack;
@@ -196,12 +197,14 @@ int main() {
     auto* scene = new vne::testbed::SceneDemoLayer();
     layer_stack.pushLayer(std::unique_ptr<vne::testbed::SceneDemoLayer>(scene), app_ctx);
 
+#ifdef VNE_TESTBED_INTERACTION
     // Interaction layer — drives the scene camera with mouse/keyboard.
     auto* interaction = new vne::testbed::InteractionDemoLayer();
     interaction->setCamera(scene->getCamera());
     layer_stack.pushLayer(std::unique_ptr<vne::testbed::InteractionDemoLayer>(interaction), app_ctx);
+#endif
 
-    // Triangle layer — validates the basic render pipeline.
+    // Triangle layer — validates the pipeline end-to-end.
     layer_stack.pushLayer(std::make_unique<vne::testbed::TriangleDemoLayer>(), app_ctx);
 
     // Events layer — logs input events to stdout.
@@ -215,8 +218,6 @@ int main() {
 
     while (!app_ctx.window->shouldClose()) {
         app_ctx.window->pollEvents();
-
-        // Dispatch all queued vne events to registered listeners.
         vne::events::EventManager::instance().processEvents();
 
         auto now = std::chrono::steady_clock::now();
@@ -229,10 +230,8 @@ int main() {
         render_ctx.frame_info.dt = dt;
         render_ctx.debug_draw = &debugDraw;
 
-        // Update
         layer_stack.onUpdate(dt);
 
-        // Render
         renderer.beginFrame();
         layer_stack.onBeginRender(render_ctx);
         layer_stack.onRender(render_ctx);
@@ -246,6 +245,7 @@ int main() {
     // -----------------------------------------------------------------------
 
     layer_stack.clear();
+    device.shutdown();
     debugDraw.shutdown();
     renderer.shutdown();
 

@@ -12,9 +12,9 @@
 #include "vertexnova/testbed/gl/sampler2d.h"
 
 #if defined(VNE_TESTBED_OPENGL)
-#  include <glad/glad.h>
+#include <glad/glad.h>
 #elif defined(VNE_TESTBED_OPENGLES)
-#  include <glad/glad_es3.h>
+#include <glad/glad_es3.h>
 #endif
 
 namespace vne {
@@ -46,19 +46,16 @@ GLenum filterToGL(SamplerFilter f) {
 }
 
 void setSamplerParams(unsigned int sampler_id, const Sampler2DDescriptor& desc) {
-    glSamplerParameteri(sampler_id, GL_TEXTURE_WRAP_S,
-                        static_cast<GLint>(wrapToGL(desc.wrap_s)));
-    glSamplerParameteri(sampler_id, GL_TEXTURE_WRAP_T,
-                        static_cast<GLint>(wrapToGL(desc.wrap_t)));
-    glSamplerParameteri(sampler_id, GL_TEXTURE_MIN_FILTER,
-                        static_cast<GLint>(filterToGL(desc.min_filter)));
-    glSamplerParameteri(sampler_id, GL_TEXTURE_MAG_FILTER,
-                        static_cast<GLint>(filterToGL(desc.mag_filter)));
+    glSamplerParameteri(sampler_id, GL_TEXTURE_WRAP_S, static_cast<GLint>(wrapToGL(desc.wrap_s)));
+    glSamplerParameteri(sampler_id, GL_TEXTURE_WRAP_T, static_cast<GLint>(wrapToGL(desc.wrap_t)));
+    glSamplerParameteri(sampler_id, GL_TEXTURE_MIN_FILTER, static_cast<GLint>(filterToGL(desc.min_filter)));
+    glSamplerParameteri(sampler_id, GL_TEXTURE_MAG_FILTER, static_cast<GLint>(filterToGL(desc.mag_filter)));
 }
 
 }  // namespace
 
-Sampler2D::Sampler2D() : Sampler2D(Sampler2DDescriptor{}) {}
+Sampler2D::Sampler2D()
+    : Sampler2D(Sampler2DDescriptor{}) {}
 
 Sampler2D::Sampler2D(const Sampler2DDescriptor& desc) {
     glGenSamplers(1, &sampler_id_);

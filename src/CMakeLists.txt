@@ -23,6 +23,7 @@ set(HEADER_FILES
     ${VNE_INCLUDE_DIR}/vertexnova/testbed/plugin.h
     ${VNE_INCLUDE_DIR}/vertexnova/testbed/plugin_registry.h
     ${VNE_INCLUDE_DIR}/vertexnova/testbed/render_adapter.h
+    ${VNE_INCLUDE_DIR}/vertexnova/testbed/render_device.h
     ${VNE_INCLUDE_DIR}/vertexnova/testbed/debug_draw.h
     ${VNE_INCLUDE_DIR}/vertexnova/testbed/window.h
     ${VNE_INCLUDE_DIR}/vertexnova/testbed/plugins/scene_inspector_plugin.h
@@ -113,7 +114,7 @@ if(VNE_TESTBED_OPENGL OR VNE_TESTBED_OPENGLES)
     endif()
 
     target_sources(vnetestbed PRIVATE
-        # gl/ — RAII OpenGL primitives
+        # gl/ — RAII OpenGL primitives (implementation details)
         vertexnova/testbed/gl/shader.cpp
         vertexnova/testbed/gl/vertex_buffer.cpp
         vertexnova/testbed/gl/vertex_array.cpp
@@ -124,14 +125,17 @@ if(VNE_TESTBED_OPENGL OR VNE_TESTBED_OPENGLES)
         vertexnova/testbed/gl/framebuffer.cpp
         vertexnova/testbed/gl/draw.cpp
         vertexnova/testbed/gl/opengl_render_adapter.cpp
+        vertexnova/testbed/gl/opengl_render_device.cpp
         vertexnova/testbed/gl/opengl_debug_draw.cpp
-        # Demo layer plugins
+        # Demo layer plugins (use only IRenderDevice / IDebugDraw — no gl/ includes)
         vertexnova/testbed/plugins/triangle_demo_layer.cpp
         vertexnova/testbed/plugins/scene_demo_layer.cpp
         vertexnova/testbed/plugins/events_demo_layer.cpp
     )
     if(TARGET vne::interaction)
+        target_compile_definitions(vnetestbed PUBLIC VNE_TESTBED_INTERACTION)
         target_sources(vnetestbed PRIVATE vertexnova/testbed/plugins/interaction_demo_layer.cpp)
+        message(STATUS "VNE_TESTBED_INTERACTION: ON — building InteractionDemoLayer")
     endif()
 
     target_link_libraries(vnetestbed PUBLIC glad::glad)

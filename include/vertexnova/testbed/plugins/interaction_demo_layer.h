@@ -14,14 +14,16 @@
  * @file plugins/interaction_demo_layer.h
  * @brief Demo layer integrating vneinteraction: orbit camera with mouse drag.
  *
- * Wraps a vneinteraction::CameraSystemController and routes vne events to it.
+ * Only compiled when vneinteraction is enabled in the build
+ * (VNE_TESTBED_INTERACTION is defined by CMake when TARGET vne::interaction
+ * is present).
  *
  * Usage in a runner:
  * @code
  *   auto* scene       = new SceneDemoLayer();
  *   auto* interaction = new InteractionDemoLayer();
  *   stack.pushLayer(unique_ptr(scene),       ctx);
- *   interaction->setCamera(scene->getCamera());   // wire before push
+ *   interaction->setCamera(scene->getCamera());  // wire before push
  *   stack.pushLayer(unique_ptr(interaction), ctx);
  * @endcode
  *
@@ -31,6 +33,8 @@
  *   - MouseScrolledEvent → handleMouseScroll()
  *   - KeyPressedEvent    → handleKeyboard()
  */
+
+#ifdef VNE_TESTBED_INTERACTION
 
 #include "vertexnova/testbed/layer.h"
 #include "vertexnova/events/event_listener.h"
@@ -79,3 +83,5 @@ class InteractionDemoLayer : public ILayer, public vne::events::EventListener {
 
 }  // namespace testbed
 }  // namespace vne
+
+#endif  // VNE_TESTBED_INTERACTION

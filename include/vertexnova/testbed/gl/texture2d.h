@@ -34,11 +34,7 @@ namespace gl {
 /**
  * @brief Texture format for 2D textures (maps to GL internal/format/type).
  */
-enum class Texture2DFormat {
-    RGBA8,
-    RGB8,
-    R8
-};
+enum class Texture2DFormat { RGBA8, RGB8, R8 };
 
 /**
  * @struct Texture2DDescriptor

@@ -12,9 +12,9 @@
 #include "vertexnova/testbed/gl/vertex_array.h"
 
 #if defined(VNE_TESTBED_OPENGL)
-#  include <glad/glad.h>
+#include <glad/glad.h>
 #elif defined(VNE_TESTBED_OPENGLES)
-#  include <glad/glad_es3.h>
+#include <glad/glad_es3.h>
 #endif
 
 namespace vne {
@@ -46,8 +46,8 @@ GLenum shaderDataTypeToGL(ShaderDataType type) {
 }
 
 bool isIntegerType(ShaderDataType type) {
-    return type == ShaderDataType::Int || type == ShaderDataType::Int2 ||
-           type == ShaderDataType::Int3 || type == ShaderDataType::Int4 || type == ShaderDataType::Bool;
+    return type == ShaderDataType::Int || type == ShaderDataType::Int2 || type == ShaderDataType::Int3
+           || type == ShaderDataType::Int4 || type == ShaderDataType::Bool;
 }
 
 }  // namespace
@@ -84,16 +84,14 @@ void VertexArray::addVertexBuffer(VertexBuffer& vb, const BufferLayout& layout) 
         if (elem.type == ShaderDataType::Mat3) {
             for (unsigned int col = 0; col < 3; ++col) {
                 glEnableVertexAttribArray(location);
-                const void* offset_ptr =
-                    reinterpret_cast<const void*>(elem.offset + col * 4 * sizeof(float));
+                const void* offset_ptr = reinterpret_cast<const void*>(elem.offset + col * 4 * sizeof(float));
                 glVertexAttribPointer(location, 3, GL_FLOAT, normalized, gl_stride, offset_ptr);
                 ++location;
             }
         } else if (elem.type == ShaderDataType::Mat4) {
             for (unsigned int col = 0; col < 4; ++col) {
                 glEnableVertexAttribArray(location);
-                const void* offset_ptr =
-                    reinterpret_cast<const void*>(elem.offset + col * 4 * sizeof(float));
+                const void* offset_ptr = reinterpret_cast<const void*>(elem.offset + col * 4 * sizeof(float));
                 glVertexAttribPointer(location, 4, GL_FLOAT, normalized, gl_stride, offset_ptr);
                 ++location;
             }
@@ -102,10 +100,10 @@ void VertexArray::addVertexBuffer(VertexBuffer& vb, const BufferLayout& layout) 
             const void* offset_ptr = reinterpret_cast<const void*>(elem.offset);
             if (isIntegerType(elem.type)) {
                 glVertexAttribIPointer(location,
-                                      static_cast<GLint>(elem.getComponentCount()),
-                                      gl_type,
-                                      gl_stride,
-                                      offset_ptr);
+                                       static_cast<GLint>(elem.getComponentCount()),
+                                       gl_type,
+                                       gl_stride,
+                                       offset_ptr);
             } else {
                 glVertexAttribPointer(location,
                                       static_cast<GLint>(elem.getComponentCount()),

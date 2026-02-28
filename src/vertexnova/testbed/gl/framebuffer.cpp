@@ -12,9 +12,9 @@
 #include "vertexnova/testbed/gl/framebuffer.h"
 
 #if defined(VNE_TESTBED_OPENGL)
-#  include <glad/glad.h>
+#include <glad/glad.h>
 #elif defined(VNE_TESTBED_OPENGLES)
-#  include <glad/glad_es3.h>
+#include <glad/glad_es3.h>
 #endif
 
 namespace vne {
@@ -22,7 +22,8 @@ namespace testbed {
 namespace gl {
 
 Framebuffer::Framebuffer(const FramebufferDescriptor& desc)
-    : width_(desc.width), height_(desc.height) {
+    : width_(desc.width)
+    , height_(desc.height) {
     if (width_ == 0u || height_ == 0u) {
         return;
     }
@@ -46,11 +47,7 @@ Framebuffer::Framebuffer(const FramebufferDescriptor& desc)
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-    glFramebufferTexture2D(GL_FRAMEBUFFER,
-                           GL_COLOR_ATTACHMENT0,
-                           GL_TEXTURE_2D,
-                           color_texture_id_,
-                           0);
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, color_texture_id_, 0);
     glBindTexture(GL_TEXTURE_2D, 0);
 
     // Optional depth attachment (renderbuffer)
@@ -61,10 +58,7 @@ Framebuffer::Framebuffer(const FramebufferDescriptor& desc)
                               GL_DEPTH_COMPONENT24,
                               static_cast<GLsizei>(width_),
                               static_cast<GLsizei>(height_));
-        glFramebufferRenderbuffer(GL_FRAMEBUFFER,
-                                  GL_DEPTH_ATTACHMENT,
-                                  GL_RENDERBUFFER,
-                                  depth_rbo_id_);
+        glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, depth_rbo_id_);
         glBindRenderbuffer(GL_RENDERBUFFER, 0);
     }
 

@@ -12,9 +12,9 @@
 #include "vertexnova/testbed/gl/texture2d.h"
 
 #if defined(VNE_TESTBED_OPENGL)
-#  include <glad/glad.h>
+#include <glad/glad.h>
 #elif defined(VNE_TESTBED_OPENGLES)
-#  include <glad/glad_es3.h>
+#include <glad/glad_es3.h>
 #endif
 
 namespace vne {
@@ -23,10 +23,7 @@ namespace gl {
 
 namespace {
 
-void formatToGL(Texture2DFormat format,
-                GLenum* out_internal,
-                GLenum* out_format,
-                GLenum* out_type) {
+void formatToGL(Texture2DFormat format, GLenum* out_internal, GLenum* out_format, GLenum* out_type) {
     switch (format) {
         case Texture2DFormat::RGBA8:
             *out_internal = GL_RGBA8;
@@ -49,7 +46,9 @@ void formatToGL(Texture2DFormat format,
 }  // namespace
 
 Texture2D::Texture2D(const Texture2DDescriptor& desc)
-    : width_(desc.width), height_(desc.height), format_(desc.format) {
+    : width_(desc.width)
+    , height_(desc.height)
+    , format_(desc.format) {
     if (width_ == 0u || height_ == 0u) {
         return;
     }
@@ -83,10 +82,7 @@ Texture2D::~Texture2D() {
     }
 }
 
-bool Texture2D::updateData(uint32_t mip_level,
-                           uint32_t array_layer,
-                           const void* data,
-                           std::size_t data_size) {
+bool Texture2D::updateData(uint32_t mip_level, uint32_t array_layer, const void* data, std::size_t data_size) {
     (void)array_layer;  // 2D non-array: only layer 0
     if (texture_id_ == 0u || data == nullptr) {
         return false;
@@ -108,15 +104,7 @@ bool Texture2D::updateData(uint32_t mip_level,
     }
 
     glBindTexture(GL_TEXTURE_2D, texture_id_);
-    glTexSubImage2D(GL_TEXTURE_2D,
-                    static_cast<GLint>(mip_level),
-                    0,
-                    0,
-                    w,
-                    h,
-                    pixel_format,
-                    pixel_type,
-                    data);
+    glTexSubImage2D(GL_TEXTURE_2D, static_cast<GLint>(mip_level), 0, 0, w, h, pixel_format, pixel_type, data);
     glBindTexture(GL_TEXTURE_2D, 0);
 
     (void)data_size;  // Caller responsible for correct size

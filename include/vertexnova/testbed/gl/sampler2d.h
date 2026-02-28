@@ -32,19 +32,12 @@ namespace gl {
 /**
  * @brief Texture wrap mode (S/T).
  */
-enum class SamplerWrap {
-    Repeat,
-    ClampToEdge,
-    MirroredRepeat
-};
+enum class SamplerWrap { Repeat, ClampToEdge, MirroredRepeat };
 
 /**
  * @brief Texture filter (min/mag).
  */
-enum class SamplerFilter {
-    Nearest,
-    Linear
-};
+enum class SamplerFilter { Nearest, Linear };
 
 /**
  * @struct Sampler2DDescriptor

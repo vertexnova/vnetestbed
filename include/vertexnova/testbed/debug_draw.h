@@ -66,6 +66,19 @@ class IDebugDraw {
      */
     virtual void text(vne::math::Vec3f pos, std::string_view label) = 0;
 
+    /**
+     * @brief Set the view-projection matrix used to transform world-space
+     *        primitives into clip space.
+     *
+     * Must be called once per frame, before flush(), after the camera
+     * matrices have been updated.  Implementations that do not need an
+     * explicit VP matrix (e.g. a CPU-side recorder) may implement this as
+     * a no-op.
+     *
+     * @param vp Column-major view-projection matrix.
+     */
+    virtual void setViewProjectionMatrix(const vne::math::Mat4f& vp) = 0;
+
     /** @brief Upload all queued primitives and issue draw calls. */
     virtual void flush() = 0;
 };

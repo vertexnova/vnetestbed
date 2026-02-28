@@ -31,7 +31,7 @@ void SceneDemoLayer::onAttach(AppContext& ctx) {
     scene_state_.setActiveCamera(camera_);
 
     // Grab the debug draw from AppContext (set by the runner).
-    debug_draw_ = dynamic_cast<gl::OpenGLDebugDraw*>(ctx.debugDraw);
+    debug_draw_ = ctx.debugDraw;
 }
 
 void SceneDemoLayer::onDetach() {

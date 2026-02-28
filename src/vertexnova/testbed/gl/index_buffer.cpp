@@ -12,32 +12,28 @@
 #include "vertexnova/testbed/gl/index_buffer.h"
 
 #if defined(VNE_TESTBED_OPENGL)
-#  include <glad/glad.h>
+#include <glad/glad.h>
 #elif defined(VNE_TESTBED_OPENGLES)
-#  include <glad/glad_es3.h>
+#include <glad/glad_es3.h>
 #endif
 
 namespace vne {
 namespace testbed {
 namespace gl {
 
-IndexBuffer::IndexBuffer(const uint32_t* indices, std::size_t count) : count_(count) {
+IndexBuffer::IndexBuffer(const uint32_t* indices, std::size_t count)
+    : count_(count) {
     glGenBuffers(1, &ebo_id_);
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo_id_);
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER,
-                 static_cast<GLsizeiptr>(count * sizeof(uint32_t)),
-                 indices,
-                 GL_STATIC_DRAW);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, static_cast<GLsizeiptr>(count * sizeof(uint32_t)), indices, GL_STATIC_DRAW);
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
 }
 
-IndexBuffer::IndexBuffer(std::size_t count) : count_(count) {
+IndexBuffer::IndexBuffer(std::size_t count)
+    : count_(count) {
     glGenBuffers(1, &ebo_id_);
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo_id_);
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER,
-                 static_cast<GLsizeiptr>(count * sizeof(uint32_t)),
-                 nullptr,
-                 GL_DYNAMIC_DRAW);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, static_cast<GLsizeiptr>(count * sizeof(uint32_t)), nullptr, GL_DYNAMIC_DRAW);
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
 }
 

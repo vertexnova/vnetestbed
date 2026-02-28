@@ -37,20 +37,7 @@ namespace gl {
  * @enum ShaderDataType
  * @brief GLSL-compatible data types for vertex attributes.
  */
-enum class ShaderDataType {
-    None = 0,
-    Float,
-    Float2,
-    Float3,
-    Float4,
-    Mat3,
-    Mat4,
-    Int,
-    Int2,
-    Int3,
-    Int4,
-    Bool
-};
+enum class ShaderDataType { None = 0, Float, Float2, Float3, Float4, Mat3, Mat4, Int, Int2, Int3, Int4, Bool };
 
 /**
  * @brief Size in bytes for a ShaderDataType.
@@ -99,11 +86,11 @@ struct BufferElement {
     BufferElement() = default;
 
     BufferElement(ShaderDataType type_in, const std::string& name_in, bool normalized_in = false)
-        : name(name_in),
-          type(type_in),
-          size(shaderDataTypeSize(type_in)),
-          offset(0),
-          normalized(normalized_in) {}
+        : name(name_in)
+        , type(type_in)
+        , size(shaderDataTypeSize(type_in))
+        , offset(0)
+        , normalized(normalized_in) {}
 
     /**
      * @brief Number of components (e.g. 3 for Float3, 4 for Mat4 as 4*float4).
@@ -147,7 +134,8 @@ class BufferLayout {
    public:
     BufferLayout() = default;
 
-    BufferLayout(std::initializer_list<BufferElement> elements) : elements_(elements) {
+    BufferLayout(std::initializer_list<BufferElement> elements)
+        : elements_(elements) {
         calculateOffsetsAndStride();
     }
 

@@ -21,7 +21,8 @@
  */
 
 #if !defined(VNE_TESTBED_OPENGL) && !defined(VNE_TESTBED_OPENGLES)
-#error "opengl_render_adapter.h requires VNE_TESTBED_OPENGL or VNE_TESTBED_OPENGLES. Build with OpenGL or OpenGL ES enabled."
+#error \
+    "opengl_render_adapter.h requires VNE_TESTBED_OPENGL or VNE_TESTBED_OPENGLES. Build with OpenGL or OpenGL ES enabled."
 #endif
 
 #include "vertexnova/testbed/gl/opengl_context.h"

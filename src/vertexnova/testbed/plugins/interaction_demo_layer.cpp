@@ -9,6 +9,13 @@
  * ----------------------------------------------------------------------
  */
 
+// This translation unit is only added to the build when vne::interaction is
+// available (CMake gates it with if(TARGET vne::interaction)).
+// The #ifdef mirrors the header guard so the file is a no-op if included
+// unexpectedly without the flag.
+
+#ifdef VNE_TESTBED_INTERACTION
+
 #include "vertexnova/testbed/plugins/interaction_demo_layer.h"
 
 #include "vertexnova/testbed/app_context.h"
@@ -18,8 +25,20 @@
 #include "vertexnova/events/key_event.h"
 #include "vertexnova/events/types.h"
 
+#include <memory>
+
 namespace vne {
 namespace testbed {
+
+namespace {
+// EventManager::registerListener requires shared_ptr<EventListener>.
+// The layer's lifetime is managed by LayerStack (unique_ptr), so we create
+// a non-owning shared_ptr with a no-op deleter.  Safe because onDetach()
+// always unregisters before the object is destroyed.
+vne::events::EventManager::ListenerPtr asListenerPtr(vne::events::EventListener* raw) {
+    return {raw, [](vne::events::EventListener*) {}};
+}
+}  // namespace
 
 InteractionDemoLayer::InteractionDemoLayer()
     : ILayer("InteractionDemoLayer")
@@ -33,14 +52,14 @@ void InteractionDemoLayer::setCamera(std::shared_ptr<vne::scene::ICamera> camera
 }
 
 void InteractionDemoLayer::onAttach(AppContext& ctx) {
-    // Register for mouse/keyboard events from EventManager.
     auto& mgr = vne::events::EventManager::instance();
-    mgr.registerListener(vne::events::EventType::eMouseMoved, this);
-    mgr.registerListener(vne::events::EventType::eMouseButtonPressed, this);
-    mgr.registerListener(vne::events::EventType::eMouseButtonReleased, this);
-    mgr.registerListener(vne::events::EventType::eMouseScrolled, this);
-    mgr.registerListener(vne::events::EventType::eKeyPressed, this);
-    mgr.registerListener(vne::events::EventType::eKeyReleased, this);
+    auto self = asListenerPtr(this);
+    mgr.registerListener(vne::events::EventType::eMouseMoved, self);
+    mgr.registerListener(vne::events::EventType::eMouseButtonPressed, self);
+    mgr.registerListener(vne::events::EventType::eMouseButtonReleased, self);
+    mgr.registerListener(vne::events::EventType::eMouseScrolled, self);
+    mgr.registerListener(vne::events::EventType::eKeyPressed, self);
+    mgr.registerListener(vne::events::EventType::eKeyReleased, self);
 
     if (ctx.window && controller_) {
         controller_->setViewportSize(static_cast<float>(ctx.window->getWidth()),
@@ -126,3 +145,5 @@ void InteractionDemoLayer::onEvent(const vne::events::Event& event) {
 
 }  // namespace testbed
 }  // namespace vne
+
+#endif  // VNE_TESTBED_INTERACTION

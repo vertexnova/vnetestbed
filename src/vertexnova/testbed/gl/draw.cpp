@@ -13,9 +13,9 @@
 #include "vertexnova/testbed/gl/vertex_array.h"
 
 #if defined(VNE_TESTBED_OPENGL)
-#  include <glad/glad.h>
+#include <glad/glad.h>
 #elif defined(VNE_TESTBED_OPENGLES)
-#  include <glad/glad_es3.h>
+#include <glad/glad_es3.h>
 #endif
 
 namespace vne {
@@ -45,10 +45,7 @@ void draw(const VertexArray& vao, DrawMode mode, std::size_t vertex_count) {
     const GLenum gl_mode = drawModeToGL(mode);
 
     if (vao.getIndexCount() > 0u) {
-        glDrawElements(gl_mode,
-                      static_cast<GLsizei>(vao.getIndexCount()),
-                      GL_UNSIGNED_INT,
-                      nullptr);
+        glDrawElements(gl_mode, static_cast<GLsizei>(vao.getIndexCount()), GL_UNSIGNED_INT, nullptr);
     } else {
         glDrawArrays(gl_mode, 0, static_cast<GLsizei>(vertex_count));
     }

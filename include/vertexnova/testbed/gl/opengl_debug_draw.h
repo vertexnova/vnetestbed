@@ -26,7 +26,8 @@
  */
 
 #if !defined(VNE_TESTBED_OPENGL) && !defined(VNE_TESTBED_OPENGLES)
-#error "opengl_debug_draw.h requires VNE_TESTBED_OPENGL or VNE_TESTBED_OPENGLES. Build with OpenGL or OpenGL ES enabled."
+#error \
+    "opengl_debug_draw.h requires VNE_TESTBED_OPENGL or VNE_TESTBED_OPENGLES. Build with OpenGL or OpenGL ES enabled."
 #endif
 
 #include "vertexnova/testbed/debug_draw.h"
@@ -76,7 +77,7 @@ class OpenGLDebugDraw : public IDebugDraw {
      * Typically called once per frame from the scene layer after updating
      * the camera.  Takes effect on the next flush().
      */
-    void setViewProjectionMatrix(const vne::math::Mat4f& vp);
+    void setViewProjectionMatrix(const vne::math::Mat4f& vp) override;
 
     // -----------------------------------------------------------------------
     // IDebugDraw

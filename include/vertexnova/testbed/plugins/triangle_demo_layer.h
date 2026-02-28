@@ -14,34 +14,28 @@
  * @file plugins/triangle_demo_layer.h
  * @brief Minimal demo layer: draws a single coloured triangle.
  *
- * Validates the full OpenGL render pipeline inside vnetestbed:
- *   onAttach  → compile shader, upload VBO/VAO
- *   onRender  → bind + draw
- *   onDetach  → destroy GPU resources (RAII, automatic)
+ * Validates the full render pipeline inside vnetestbed via the backend-agnostic
+ * IRenderDevice interface.  No gl/ headers are included here; the concrete
+ * backend is selected by the runner.
  *
- * Only compiled when VNE_TESTBED_OPENGL is defined.
+ *   onAttach  → createShader + createVertexBuffer + createPipeline
+ *   onRender  → DebugGroupScope + draw
+ *   onDetach  → destroy pipeline, buffer, shader
  */
 
-#if !defined(VNE_TESTBED_OPENGL) && !defined(VNE_TESTBED_OPENGLES)
-#error "triangle_demo_layer.h requires VNE_TESTBED_OPENGL or VNE_TESTBED_OPENGLES. Build with OpenGL or OpenGL ES enabled."
-#endif
-
 #include "vertexnova/testbed/layer.h"
-#include "vertexnova/testbed/gl/shader.h"
-#include "vertexnova/testbed/gl/vertex_buffer.h"
-#include "vertexnova/testbed/gl/vertex_array.h"
-
-#include <memory>
+#include "vertexnova/testbed/render_device.h"
 
 namespace vne {
 namespace testbed {
 
 /**
  * @class TriangleDemoLayer
- * @brief ILayer that draws a static coloured triangle using the gl/ primitives.
+ * @brief ILayer that draws a static coloured triangle via IRenderDevice.
  *
  * No camera: the triangle is defined in NDC space so it is always centred.
- * Purpose: confirm that Shader, VertexBuffer, and VertexArray work end-to-end.
+ * Purpose: confirm that pipeline creation, vertex layout, and draw work
+ * end-to-end for any backend.
  */
 class TriangleDemoLayer : public ILayer {
    public:
@@ -53,9 +47,10 @@ class TriangleDemoLayer : public ILayer {
     void onRender(const RenderContext& ctx) override;
 
    private:
-    std::unique_ptr<gl::Shader> shader_;
-    std::unique_ptr<gl::VertexBuffer> vbo_;
-    std::unique_ptr<gl::VertexArray> vao_;
+    IRenderDevice* device_{nullptr};  ///< Non-owning; obtained from AppContext.
+    ShaderHandle shader_;
+    BufferHandle vbo_;
+    PipelineHandle pipeline_;
 };
 
 }  // namespace testbed

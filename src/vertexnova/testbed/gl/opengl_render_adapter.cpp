@@ -12,9 +12,9 @@
 #include "vertexnova/testbed/gl/opengl_render_adapter.h"
 
 #if defined(VNE_TESTBED_OPENGL)
-#  include <glad/glad.h>
+#include <glad/glad.h>
 #elif defined(VNE_TESTBED_OPENGLES)
-#  include <glad/glad_es3.h>
+#include <glad/glad_es3.h>
 #endif
 #include <GLFW/glfw3.h>
 
