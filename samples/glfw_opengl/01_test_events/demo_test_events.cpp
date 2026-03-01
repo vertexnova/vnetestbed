@@ -54,7 +54,11 @@ namespace {
 
 constexpr int kRenderSortKey = 999;  //!< layer sorting order number
 
-enum class EventLogCategory { Keyboard, Mouse, Window, Touch };
+enum class EventLogCategory { eKeyboard = 0, eMouse = 1, eWindow = 2, eTouch = 3 };
+
+enum class LastKeyAction { eNone = 0, ePressed = 1, eReleased = 2, eRepeat = 3 };
+
+enum class LastTouchAction { eNone = 0, ePress = 1, eMove = 2, eRelease = 3 };
 
 struct EventLogEntry {
     EventLogCategory category;
@@ -92,88 +96,88 @@ class EventsLayer : public vne::testbed::ILayer {
         events_total_++;
         events_since_last_update_++;
 
-        EventLogCategory cat = EventLogCategory::Keyboard;
+        EventLogCategory cat = EventLogCategory::eKeyboard;
         std::string line;
         using ET = vne::events::EventType;
         switch (event.type()) {
             case ET::eKeyPressed: {
-                cat = EventLogCategory::Keyboard;
+                cat = EventLogCategory::eKeyboard;
                 const auto& e = static_cast<const vne::events::KeyEvent&>(event);
-                setLastKey(static_cast<int>(e.keyCode()), LastKeyAction::Pressed);
+                setLastKey(static_cast<int>(e.keyCode()), LastKeyAction::ePressed);
                 line = "KeyPressed    key=" + std::to_string(static_cast<int>(e.keyCode()));
                 break;
             }
             case ET::eKeyRepeat: {
-                cat = EventLogCategory::Keyboard;
+                cat = EventLogCategory::eKeyboard;
                 const auto& e = static_cast<const vne::events::KeyRepeatEvent&>(event);
-                setLastKey(static_cast<int>(e.keyCode()), LastKeyAction::Repeat);
+                setLastKey(static_cast<int>(e.keyCode()), LastKeyAction::eRepeat);
                 line = "KeyRepeat     key=" + std::to_string(static_cast<int>(e.keyCode()))
                        + "  count=" + std::to_string(e.repeatCount());
                 break;
             }
             case ET::eKeyReleased: {
-                cat = EventLogCategory::Keyboard;
+                cat = EventLogCategory::eKeyboard;
                 const auto& e = static_cast<const vne::events::KeyEvent&>(event);
-                setLastKey(static_cast<int>(e.keyCode()), LastKeyAction::Released);
+                setLastKey(static_cast<int>(e.keyCode()), LastKeyAction::eReleased);
                 line = "KeyReleased   key=" + std::to_string(static_cast<int>(e.keyCode()));
                 break;
             }
             case ET::eMouseButtonPressed: {
-                cat = EventLogCategory::Mouse;
+                cat = EventLogCategory::eMouse;
                 const auto& e = static_cast<const vne::events::MouseButtonEvent&>(event);
                 line = "MousePressed  btn=" + std::to_string(static_cast<int>(e.button()));
                 break;
             }
             case ET::eMouseButtonReleased: {
-                cat = EventLogCategory::Mouse;
+                cat = EventLogCategory::eMouse;
                 const auto& e = static_cast<const vne::events::MouseButtonEvent&>(event);
                 line = "MouseReleased btn=" + std::to_string(static_cast<int>(e.button()));
                 break;
             }
             case ET::eMouseMoved: {
-                cat = EventLogCategory::Mouse;
+                cat = EventLogCategory::eMouse;
                 const auto& e = static_cast<const vne::events::MouseMovedEvent&>(event);
                 line = "MouseMoved    x=" + std::to_string(static_cast<int>(e.x()))
                        + "  y=" + std::to_string(static_cast<int>(e.y()));
                 break;
             }
             case ET::eMouseScrolled: {
-                cat = EventLogCategory::Mouse;
+                cat = EventLogCategory::eMouse;
                 const auto& e = static_cast<const vne::events::MouseScrolledEvent&>(event);
                 line = "MouseScrolled dx=" + std::to_string(static_cast<int>(e.xOffset()))
                        + "  dy=" + std::to_string(static_cast<int>(e.yOffset()));
                 break;
             }
             case ET::eWindowResize: {
-                cat = EventLogCategory::Window;
+                cat = EventLogCategory::eWindow;
                 const auto& e = static_cast<const vne::events::WindowResizeEvent&>(event);
                 line = "WindowResize  w=" + std::to_string(e.width()) + "  h=" + std::to_string(e.height());
                 break;
             }
             case ET::eWindowClose:
-                cat = EventLogCategory::Window;
+                cat = EventLogCategory::eWindow;
                 line = "WindowClose";
                 break;
             case ET::eTouchPress: {
-                cat = EventLogCategory::Touch;
+                cat = EventLogCategory::eTouch;
                 const auto& e = static_cast<const vne::events::TouchPressEvent&>(event);
-                setLastTouch(e.touchId(), e.x(), e.y(), LastTouchAction::Press);
+                setLastTouch(e.touchId(), e.x(), e.y(), LastTouchAction::ePress);
                 line = "TouchPress   id=" + std::to_string(e.touchId()) + "  x="
                        + std::to_string(static_cast<int>(e.x())) + "  y=" + std::to_string(static_cast<int>(e.y()));
                 break;
             }
             case ET::eTouchRelease: {
-                cat = EventLogCategory::Touch;
+                cat = EventLogCategory::eTouch;
                 const auto& e = static_cast<const vne::events::TouchReleaseEvent&>(event);
-                setLastTouch(e.touchId(), e.x(), e.y(), LastTouchAction::Release);
+                setLastTouch(e.touchId(), e.x(), e.y(), LastTouchAction::eRelease);
                 line = "TouchRelease id=" + std::to_string(e.touchId()) + "  x="
                        + std::to_string(static_cast<int>(e.x())) + "  y=" + std::to_string(static_cast<int>(e.y()));
                 break;
             }
             case ET::eTouchMove: {
-                cat = EventLogCategory::Touch;
+                cat = EventLogCategory::eTouch;
                 const auto& e = static_cast<const vne::events::TouchMoveEvent&>(event);
-                setLastTouch(e.touchId(), e.x(), e.y(), LastTouchAction::Move);
+                setLastTouch(e.touchId(), e.x(), e.y(), LastTouchAction::eMove);
                 line = "TouchMove    id=" + std::to_string(e.touchId()) + "  x="
                        + std::to_string(static_cast<int>(e.x())) + "  y=" + std::to_string(static_cast<int>(e.y()));
                 break;
@@ -195,11 +199,9 @@ class EventsLayer : public vne::testbed::ILayer {
     [[nodiscard]] uint64_t totalEvents() const { return events_total_; }
     [[nodiscard]] uint32_t eventsPerSecond() const { return events_per_second_; }
 
-    enum class LastKeyAction { None, Pressed, Released, Repeat };
     [[nodiscard]] int lastKeyCode() const { return last_key_code_; }
     [[nodiscard]] LastKeyAction lastKeyAction() const { return last_key_action_; }
 
-    enum class LastTouchAction { None, Press, Move, Release };
     [[nodiscard]] uint32_t lastTouchId() const { return last_touch_id_; }
     [[nodiscard]] double lastTouchX() const { return last_touch_x_; }
     [[nodiscard]] double lastTouchY() const { return last_touch_y_; }
@@ -219,11 +221,11 @@ class EventsLayer : public vne::testbed::ILayer {
 
     std::deque<EventLogEntry> log_;
     int last_key_code_{-1};
-    LastKeyAction last_key_action_{LastKeyAction::None};
+    LastKeyAction last_key_action_{LastKeyAction::eNone};
     uint32_t last_touch_id_{0};
     double last_touch_x_{0.0};
     double last_touch_y_{0.0};
-    LastTouchAction last_touch_action_{LastTouchAction::None};
+    LastTouchAction last_touch_action_{LastTouchAction::eNone};
     uint64_t events_total_{0};
     uint32_t events_since_last_update_{0};
     uint32_t events_this_second_{0};
@@ -353,9 +355,9 @@ class EventsSettingsLayer : public vne::testbed::ILayer {
             if (events_layer_) {
                 const int kc = events_layer_->lastKeyCode();
                 const auto ka = events_layer_->lastKeyAction();
-                const char* action_str = (ka == EventsLayer::LastKeyAction::Pressed)    ? "pressed"
-                                         : (ka == EventsLayer::LastKeyAction::Released) ? "released"
-                                         : (ka == EventsLayer::LastKeyAction::Repeat)   ? "repeat"
+                const char* action_str = (ka == LastKeyAction::ePressed)    ? "pressed"
+                                         : (ka == LastKeyAction::eReleased) ? "released"
+                                         : (ka == LastKeyAction::eRepeat)   ? "repeat"
                                                                                         : "";
                 const char* key_label = keyCodeToLabel(kc);
                 if (action_str[0] != '\0' && kc >= 0) {
@@ -395,9 +397,9 @@ class EventsSettingsLayer : public vne::testbed::ILayer {
                     const double tx = events_layer_->lastTouchX();
                     const double ty = events_layer_->lastTouchY();
                     const auto ta = events_layer_->lastTouchAction();
-                    const char* action_str = (ta == EventsLayer::LastTouchAction::Press)     ? "press"
-                                             : (ta == EventsLayer::LastTouchAction::Release) ? "release"
-                                             : (ta == EventsLayer::LastTouchAction::Move)    ? "move"
+                    const char* action_str = (ta == LastTouchAction::ePress)     ? "press"
+                                             : (ta == LastTouchAction::eRelease) ? "release"
+                                             : (ta == LastTouchAction::eMove)    ? "move"
                                                                                              : "";
                     if (action_str[0] != '\0') {
                         ImGui::Text("Last: id %u  %s  (%.0f, %.0f)", tid, action_str, tx, ty);
