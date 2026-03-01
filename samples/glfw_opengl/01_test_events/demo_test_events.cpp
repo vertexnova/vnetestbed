@@ -187,7 +187,7 @@ class EventsLayer : public vne::testbed::ILayer {
                 break;
         }
 
-        line = "[f-" + std::to_string(frame_) + "] " + line;
+        line = "[f" + std::to_string(frame_) + "] " + line;
         log_.push_back(std::move(line));
         if (log_.size() > kMaxLog) {
             log_.pop_front();
