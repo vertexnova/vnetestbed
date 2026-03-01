@@ -2,7 +2,7 @@
 
 ## Overview
 
-VneTestbed is a minimal C++ testbed for the VertexNova ecosystem. It provides a **layer-based** runtime: plugins register at static init and produce **layers**; a **LayerStack** owns layers and drives their lifecycle (onAttach, onUpdate, onRender, onGui*, onDetach). The runner supplies **AppContext** (window, renderer adapter, optional debug draw) and uses **PluginRegistry::createAndPushLayers** to populate the stack from all registered plugins. Use it as a starting point for tools, samples, or applications that need a standard layout (include, src, tests, examples), CMake setup with vnecmake, and optional internal deps (vnecommon, vnelogging, vnemath, vnescene).
+VneTestbed is a minimal C++ testbed for the VertexNova ecosystem. It provides a **layer-based** runtime: plugins register at static init and produce **layers**; a **LayerStack** owns layers and drives their lifecycle (onAttach, onUpdate, onRender, onGui*, onDetach). The runner supplies **AppContext** (window, renderer adapter, optional debug draw) and uses **PluginRegistry::createAndPushLayers** to populate the stack from all registered plugins. Use it as a starting point for tools, samples, or applications that need a standard layout (include, src, tests, samples), CMake setup with vnecmake, and optional internal deps (vnecommon, vnelogging, vnemath, vnescene).
 
 ![System Context](diagrams/context.png)
 
@@ -15,7 +15,7 @@ VneTestbed is a minimal C++ testbed for the VertexNova ecosystem. It provides a 
 
 ## Project layout and build
 
-The testbed follows a standard directory layout and builds a static library, tests, and optional examples:
+The testbed follows a standard directory layout and builds a static library, tests, and optional samples:
 
 ![Project layout](diagrams/architecture.png)
 
@@ -26,7 +26,7 @@ The testbed follows a standard directory layout and builds a static library, tes
 | include/vertexnova/testbed/ | Public API headers: app_context.h, layer.h, layer_stack.h, plugin.h, plugin_registry.h, render_adapter.h, render_context.h, debug_draw.h, plugins/ |
 | src/vertexnova/testbed/ | Implementation (layer.cpp, layer_stack.cpp, plugin_registry.cpp, plugins/scene_inspector_plugin.cpp) |
 | tests/ | Unit tests (Google Test): smoke_test, layer_stack_test |
-| examples/ | Example apps: 01_hello_testbed, 02_plugin_runner |
+| samples/ | Sample apps (e.g. glfw_opengl/00_hello_testbed, 01_test_events) |
 | cmake/vnecmake/ | CMake modules submodule |
 | deps/internal/, deps/external/ | Internal (vnecommon, vnelogging, vnemath, vnescene, etc.) and external (googletest, glfw, glad) deps |
 | CMake configure + build | Produces libvnetestbed.a, tests, and examples |
@@ -108,8 +108,8 @@ The gl/ backend (OpenGL 4.1 or OpenGL ES 3.0) is documented in a separate file: 
 | Option | Default | Description |
 |--------|---------|-------------|
 | VNE_TESTBED_TESTS | ON (dev/CI) | Build unit tests. |
-| VNE_TESTBED_EXAMPLES | ON (dev) / OFF (submodule/CI) | Build examples. |
-| VNE_TESTBED_CI | OFF | When ON, forces tests ON and examples OFF. |
+| VNE_TESTBED_SAMPLES | ON (dev) / OFF (submodule/CI) | Build sample programs (samples/). |
+| VNE_TESTBED_CI | OFF | When ON, forces tests ON and samples OFF. |
 | VNE_TESTBED_OPENGL | ON (if glad present) | Build the OpenGL 4.1 render adapter, debug draw, and demo layers. Mutually exclusive with VNE_TESTBED_OPENGLES. |
 | VNE_TESTBED_OPENGLES | OFF | Build the OpenGL ES 3.0 backend (gl/ primitives and demo layers). Mutually exclusive with VNE_TESTBED_OPENGL. For ES builds the runner must request an OpenGL ES context (e.g. GLFW: `GLFW_CLIENT_API` = `GLFW_OPENGL_ES_API`, version 3.0). |
 | WARNINGS_AS_ERRORS | OFF | Treat compiler warnings as errors. |

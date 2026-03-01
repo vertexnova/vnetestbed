@@ -17,6 +17,7 @@
  * Usage in a sample .cpp:
  *   void RegisterMyDemo(Application& app) {
  *     app.getLayerStack().pushLayer(std::make_unique<MyLayer>(), app.getAppContext());
+ *     // ImGuiLayer is installed as an overlay by CreateDemo/CreateDefault.
  *   }
  *   VNETESTBED_REGISTER_DEMO("my_demo", RegisterMyDemo);
  *
@@ -70,7 +71,7 @@ class DemoFactory {
 #if defined(VNE_TESTBED_IMGUI)
         if (!app.getLayerStack().findLayerByName("ImGuiLayer")) {
             auto& ctx = app.getAppContext();
-            app.getLayerStack().pushLayer(std::make_unique<ImGuiLayer>(), ctx);
+            app.getLayerStack().pushOverlay(std::make_unique<ImGuiLayer>(), ctx);
         }
 #endif
         it->second(app);

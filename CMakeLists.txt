@@ -257,7 +257,7 @@ if(VNE_TESTBED_CI)
 endif()
 
 option(VNE_TESTBED_TESTS "Build vnetestbed test suite (turn OFF when used as submodule)" ON)
-option(VNE_TESTBED_EXAMPLES "Build vnetestbed example programs (turn OFF when used as submodule)" OFF)
+option(VNE_TESTBED_SAMPLES "Build vnetestbed sample programs (samples/; turn OFF when used as submodule)" OFF)
 option(ENABLE_DOXYGEN "Enable Doxygen documentation builds" OFF)
 option(ENABLE_COVERAGE "Enable code coverage reporting" OFF)
 option(WARNINGS_AS_ERRORS "Treat compiler warnings as errors" OFF)
@@ -271,12 +271,12 @@ endif()
 
 if(VNE_TESTBED_CI)
     set(VNE_TESTBED_TESTS ON CACHE BOOL "" FORCE)
-    set(VNE_TESTBED_EXAMPLES OFF CACHE BOOL "" FORCE)
-    message(STATUS "VneTestbed: CI build -> VNE_TESTBED_TESTS=ON, VNE_TESTBED_EXAMPLES=OFF")
+    set(VNE_TESTBED_SAMPLES OFF CACHE BOOL "" FORCE)
+    message(STATUS "VneTestbed: CI build -> VNE_TESTBED_TESTS=ON, VNE_TESTBED_SAMPLES=OFF")
 elseif(VNE_TESTBED_DEV)
     set(VNE_TESTBED_TESTS ON CACHE BOOL "" FORCE)
-    set(VNE_TESTBED_EXAMPLES ON CACHE BOOL "" FORCE)
-    message(STATUS "VneTestbed: DEV build -> VNE_TESTBED_TESTS=ON, VNE_TESTBED_EXAMPLES=ON")
+    set(VNE_TESTBED_SAMPLES ON CACHE BOOL "" FORCE)
+    message(STATUS "VneTestbed: DEV build -> VNE_TESTBED_TESTS=ON, VNE_TESTBED_SAMPLES=ON")
 endif()
 
 #==============================================================================
@@ -334,9 +334,9 @@ if(VNE_TESTBED_TESTS)
 endif()
 
 #==============================================================================
-# Examples and samples
+# Samples
 #==============================================================================
-if(VNE_TESTBED_EXAMPLES)
+if(VNE_TESTBED_SAMPLES)
     add_subdirectory(samples)
 endif()
 
