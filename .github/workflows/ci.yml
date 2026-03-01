@@ -205,7 +205,7 @@ jobs:
       - name: Install dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y build-essential cmake clang clang-tidy \
+          sudo apt-get install -y build-essential cmake clang clang-tidy jq \
             libx11-dev libxrandr-dev libxinerama-dev libxcursor-dev libxi-dev \
             libgl1-mesa-dev libxkbcommon-dev
 
@@ -225,5 +225,9 @@ jobs:
 
       - name: Run clang-tidy
         run: |
-          find src -type f \( -name '*.cpp' -o -name '*.h' \) -print0 \
-            | xargs -0 -r clang-tidy -p build
+          # Only run on vnetestbed sources in compile_commands.json (excludes deps, avoids imgui when disabled)
+          jq -r '.[].file' build/compile_commands.json \
+            | grep -E '/(src|include)/vertexnova/' \
+            | grep -v '/deps/' \
+            | sort -u \
+            | xargs -r clang-tidy -p build

@@ -26,7 +26,8 @@ namespace gl {
 
 OpenGLRenderAdapter::~OpenGLRenderAdapter() {
     if (initialized_) {
-        shutdown();
+        initialized_ = false;
+        context_.destroy();
     }
 }
 
