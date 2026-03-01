@@ -160,6 +160,7 @@ class ImGuiLayer : public ILayer {
     SettingsCallback settings_callback_;
     bool initialized_{false};
     float settings_panel_width_{320.0f};  ///< Fixed pixel width; viewport absorbs remaining space.
+    float font_scale_{1.25f};              ///< Global font scale (style.FontScaleMain); user-adjustable in Settings.
     bool dock_layout_dirty_{false};       ///< True when settings_panel_width_ changed mid-session.
 
 #if defined(VNE_TESTBED_OPENGL) || defined(VNE_TESTBED_OPENGLES)

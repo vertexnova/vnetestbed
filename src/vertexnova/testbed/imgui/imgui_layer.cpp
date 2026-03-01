@@ -164,6 +164,8 @@ void ImGuiLayer::tryInitFromContext() {
     applyVertexNovaStyle();
 
     ImGuiStyle& style = ImGui::GetStyle();
+    style.FontSizeBase = 17.0f;   // Slightly larger default than ImGui's 13
+    style.FontScaleMain = font_scale_;
     if (io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable) {
         style.WindowRounding = 0.0f;
         style.Colors[ImGuiCol_WindowBg].w = 1.0f;
@@ -449,6 +451,11 @@ void ImGuiLayer::renderSettingsPanel(const RenderContext& ctx) {
     if (ImGui::Combo("Viewport Layout", &layout_idx, layout_items, 3)) {
         layout_idx = (layout_idx >= 0 && layout_idx < 3) ? layout_idx : 0;
         viewport_layout_ = LAYOUTS[layout_idx];
+    }
+
+    // Font scale: applies to all ImGui text (same font, larger/smaller)
+    if (ImGui::SliderFloat("Font scale", &font_scale_, 0.8f, 2.0f, "%.2f")) {
+        ImGui::GetStyle().FontScaleMain = font_scale_;
     }
 
 #if defined(VNE_TESTBED_OPENGL)
