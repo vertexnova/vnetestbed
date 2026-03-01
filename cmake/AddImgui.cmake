@@ -28,8 +28,12 @@ target_include_directories(imgui
         $<INSTALL_INTERFACE:include>
 )
 
-# OpenGL ES: imgui_impl_opengl3 needs IMGUI_IMPL_OPENGL_ES3 on iOS/Android
-if(VNE_TARGET_PLATFORM STREQUAL "iOS" OR VNE_TARGET_PLATFORM STREQUAL "Android")
+# OpenGL ES: imgui_impl_opengl3 needs IMGUI_IMPL_OPENGL_ES3 when using ES backend.
+# Key on VNE_TESTBED_OPENGLES (active backend) so Web/visionOS ES builds are correct.
+# Fallback to platform check when option not yet resolved (AddImgui runs before src/).
+if(VNE_TESTBED_OPENGLES OR
+   VNE_TARGET_PLATFORM STREQUAL "iOS" OR VNE_TARGET_PLATFORM STREQUAL "Android"
+   OR VNE_TARGET_PLATFORM STREQUAL "visionOS" OR VNE_TARGET_PLATFORM STREQUAL "Web")
     target_compile_definitions(imgui PRIVATE IMGUI_IMPL_OPENGL_ES3)
 endif()
 
