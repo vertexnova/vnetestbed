@@ -45,7 +45,9 @@ void ImGuiLayer::onAttach(AppContext& ctx) {
     IMGUI_CHECKVERSION();
     ImGui::CreateContext();
     ImGuiIO& io = ImGui::GetIO();
-    (void)io;
+
+    // Use dedicated ini file for layout persistence (saved/restored automatically)
+    io.IniFilename = "vnetestbed_imgui.ini";
 
     io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
     io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;
@@ -142,8 +144,20 @@ void ImGuiLayer::onGuiRender(const RenderContext& ctx) {
     if (ImGui::Begin("DockSpaceWindow", nullptr, flags)) {
         ImGui::PopStyleVar(3);
 
+        // Use stable ImGui ID for dock layout persistence (saved to imgui.ini)
         ImGuiID dockspace_id = ImGui::GetID("MainDockSpace");
         ImGui::DockSpace(dockspace_id, ImVec2(0.0f, 0.0f), ImGuiDockNodeFlags_None);
+
+        // Only rebuild when: (1) dockspace empty (no saved layout from ini), or (2) user changed viewport count
+        ImGuiDockNode* node = ImGui::DockBuilderGetNode(dockspace_id);
+        bool has_saved_layout = (node && node->IsSplitNode());
+        bool layout_changed = (last_dock_layout_ != viewport_layout_);
+
+        if (!has_saved_layout || layout_changed) {
+            ImGuiViewport* vp = ImGui::GetMainViewport();
+            setupDockLayout(dockspace_id, vp->WorkSize);
+            last_dock_layout_ = viewport_layout_;
+        }
 
         renderSettingsPanel(ctx);
         renderViewportWindows(ctx);
