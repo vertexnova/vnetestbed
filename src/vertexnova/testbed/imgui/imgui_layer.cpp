@@ -64,6 +64,11 @@ constexpr float kMutedR = 174.0f / 255.0f;  // #AEAEB2 Muted text
 constexpr float kMutedG = 174.0f / 255.0f;
 constexpr float kMutedB = 178.0f / 255.0f;
 
+// Viewport/screen clear color — mid gray (#4A4A4C), matches OpenGLRenderAdapter
+constexpr float kClearR = 74.0f / 255.0f;
+constexpr float kClearG = 74.0f / 255.0f;
+constexpr float kClearB = 76.0f / 255.0f;
+
 void applyVertexNovaStyle() {
     ImGuiStyle& style = ImGui::GetStyle();
     ImVec4* c = style.Colors;
@@ -248,7 +253,7 @@ void ImGuiLayer::onBeginRender(const RenderContext& ctx) {
             for (int i = 0; i < viewport_count; ++i) {
                 if (viewport_fbos_[static_cast<size_t>(i)] && viewport_fbos_[static_cast<size_t>(i)]->isValid()) {
                     viewport_fbos_[static_cast<size_t>(i)]->bind();
-                    glClearColor(0.12f, 0.12f, 0.16f, 1.0f);
+                    glClearColor(kClearR, kClearG, kClearB, 1.0f);
                     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
                     glViewport(0, 0, w, h);
                     vp_ctx.active_viewport_index = i;
@@ -266,7 +271,7 @@ void ImGuiLayer::onBeginRender(const RenderContext& ctx) {
         ensureSceneFbo(w, h);
         if (scene_fbo_ && scene_fbo_->isValid()) {
             scene_fbo_->bind();
-            glClearColor(0.12f, 0.12f, 0.16f, 1.0f);
+            glClearColor(kClearR, kClearG, kClearB, 1.0f);
             glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
             glViewport(0, 0, w, h);
         }
@@ -377,11 +382,6 @@ void ImGuiLayer::setupDockLayout(ImGuiID dockspace_id, const ImVec2& size) {
     ImGuiID id_right{};
     ImGuiID id_settings{};
     ImGui::DockBuilderSplitNode(dockspace_id, ImGuiDir_Right, ratio_right, &id_right, &id_settings);
-
-    // Lock the Settings node so resizing the main window does not change its width.
-    if (ImGuiDockNode* settings_node = ImGui::DockBuilderGetNode(id_settings)) {
-        settings_node->LocalFlags |= ImGuiDockNodeFlags_NoResize;
-    }
 
     ImGui::DockBuilderDockWindow("Settings", id_settings);
 
