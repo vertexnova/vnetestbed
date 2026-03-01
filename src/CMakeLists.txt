@@ -102,6 +102,7 @@ endif()
 if(TARGET vne::events)
     target_link_libraries(vnetestbed PUBLIC vne::events)
     target_compile_definitions(vnetestbed PUBLIC VNE_TESTBED_EVENTS)
+    target_sources(vnetestbed PRIVATE vertexnova/testbed/app/application_event_listener.cpp)
 endif()
 # vne::math is required: debug_draw.h uses vne::math::Vec3f
 if(NOT TARGET vne::math)

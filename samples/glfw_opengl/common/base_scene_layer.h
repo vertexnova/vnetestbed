@@ -26,8 +26,6 @@
 
 #ifdef VNE_TESTBED_INTERACTION
 #include "vertexnova/events/event.h"
-#include "vertexnova/events/event_listener.h"
-#include "vertexnova/events/event_manager.h"
 #include "vertexnova/events/key_event.h"
 #include "vertexnova/events/mouse_event.h"
 #include "vertexnova/events/types.h"
@@ -41,15 +39,6 @@ namespace vne { namespace testbed { class ImGuiLayer; } }
 #include <memory>
 #include <string>
 #include <vector>
-
-#ifdef VNE_TESTBED_INTERACTION
-// ---------------------------------------------------------------------------
-// Non-owning shared_ptr helper (same pattern as 02_events / 04_scene_interaction)
-// ---------------------------------------------------------------------------
-inline vne::events::EventManager::ListenerPtr asBaseListenerPtr(vne::events::EventListener* raw) {
-    return {raw, [](vne::events::EventListener*) {}};
-}
-#endif
 
 // ---------------------------------------------------------------------------
 // BaseSceneLayer — grid + axes + perspective camera
@@ -164,7 +153,7 @@ class BaseInteractionLayer : public vne::testbed::ILayer, public vne::events::Ev
     explicit BaseInteractionLayer(const char* name = "BaseInteractionLayer")
         : vne::testbed::ILayer(name) {
         controllers_.resize(BaseSceneLayer::kMaxViewports);
-        for (int i = 0; i < BaseSceneLayer::kMaxViewports; ++i) {
+        for (size_t i = 0; i < static_cast<size_t>(BaseSceneLayer::kMaxViewports); ++i) {
             controllers_[i] = std::make_unique<vne::interaction::CameraSystemController>(
                 vne::interaction::CameraManipulatorType::eOrbitArcball);
         }
@@ -197,14 +186,6 @@ class BaseInteractionLayer : public vne::testbed::ILayer, public vne::events::Ev
 #endif
 
     void onAttach(vne::testbed::AppContext& ctx) override {
-        auto& mgr = vne::events::EventManager::instance();
-        auto self = asBaseListenerPtr(this);
-        mgr.registerListener(vne::events::EventType::eMouseMoved, self);
-        mgr.registerListener(vne::events::EventType::eMouseButtonPressed, self);
-        mgr.registerListener(vne::events::EventType::eMouseButtonReleased, self);
-        mgr.registerListener(vne::events::EventType::eMouseScrolled, self);
-        mgr.registerListener(vne::events::EventType::eKeyPressed, self);
-        mgr.registerListener(vne::events::EventType::eKeyReleased, self);
         const float vpw = ctx.window ? static_cast<float>(ctx.window->getWidth()) : 1280.0f;
         const float vph = ctx.window ? static_cast<float>(ctx.window->getHeight()) : 720.0f;
         for (auto& ctrl : controllers_) {
@@ -214,15 +195,7 @@ class BaseInteractionLayer : public vne::testbed::ILayer, public vne::events::Ev
         }
     }
 
-    void onDetach() override {
-        auto& mgr = vne::events::EventManager::instance();
-        mgr.unregisterListener(vne::events::EventType::eMouseMoved, this);
-        mgr.unregisterListener(vne::events::EventType::eMouseButtonPressed, this);
-        mgr.unregisterListener(vne::events::EventType::eMouseButtonReleased, this);
-        mgr.unregisterListener(vne::events::EventType::eMouseScrolled, this);
-        mgr.unregisterListener(vne::events::EventType::eKeyPressed, this);
-        mgr.unregisterListener(vne::events::EventType::eKeyReleased, this);
-    }
+    void onDetach() override {}
 
     void onUpdate(float dt) override {
         for (auto& ctrl : controllers_) {

@@ -32,8 +32,6 @@
 #include "vertexnova/testbed/render_context.h"
 
 #include "vertexnova/events/event.h"
-#include "vertexnova/events/event_listener.h"
-#include "vertexnova/events/event_manager.h"
 #include "vertexnova/events/input/input_manager.h"
 #include "vertexnova/events/key_event.h"
 #include "vertexnova/events/mouse_event.h"
@@ -63,44 +61,19 @@
 
 namespace {
 
-// Non-owning shared_ptr helper
-vne::events::EventManager::ListenerPtr asListenerPtr(vne::events::EventListener* raw) {
-    return {raw, [](vne::events::EventListener*) {}};
-}
-
 // ---------------------------------------------------------------------------
 // EventsLayer — captures every event and exposes stats for the UI
 // ---------------------------------------------------------------------------
-class EventsLayer : public vne::testbed::ILayer, public vne::events::EventListener {
+class EventsLayer : public vne::testbed::ILayer {
    public:
     static constexpr std::size_t kMaxLog = 20u;
 
     EventsLayer()
         : vne::testbed::ILayer("EventsLayer") {}
 
-    void onAttach(vne::testbed::AppContext& /*ctx*/) override {
-        auto& mgr = vne::events::EventManager::instance();
-        auto self = asListenerPtr(this);
-        mgr.registerListener(vne::events::EventType::eKeyPressed, self);
-        mgr.registerListener(vne::events::EventType::eKeyReleased, self);
-        mgr.registerListener(vne::events::EventType::eMouseButtonPressed, self);
-        mgr.registerListener(vne::events::EventType::eMouseButtonReleased, self);
-        mgr.registerListener(vne::events::EventType::eMouseMoved, self);
-        mgr.registerListener(vne::events::EventType::eMouseScrolled, self);
-        mgr.registerListener(vne::events::EventType::eWindowResize, self);
-    }
+    void onAttach(vne::testbed::AppContext& /*ctx*/) override {}
 
-    void onDetach() override {
-        auto& mgr = vne::events::EventManager::instance();
-        mgr.unregisterListener(vne::events::EventType::eKeyPressed, this);
-        mgr.unregisterListener(vne::events::EventType::eKeyReleased, this);
-        mgr.unregisterListener(vne::events::EventType::eMouseButtonPressed, this);
-        mgr.unregisterListener(vne::events::EventType::eMouseButtonReleased, this);
-        mgr.unregisterListener(vne::events::EventType::eMouseMoved, this);
-        mgr.unregisterListener(vne::events::EventType::eMouseScrolled, this);
-        mgr.unregisterListener(vne::events::EventType::eWindowResize, this);
-        log_.clear();
-    }
+    void onDetach() override { log_.clear(); }
 
     void onUpdate(float dt) override {
         // Rolling events-per-second counter

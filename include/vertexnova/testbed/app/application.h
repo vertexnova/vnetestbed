@@ -23,7 +23,15 @@
 #include "vertexnova/testbed/layer_stack.h"
 #include "vertexnova/testbed/render_context.h"
 
+#if defined(VNE_TESTBED_EVENTS)
+#include "vertexnova/events/event_listener.h"
+#endif
+
 #include <memory>
+
+namespace vne::events {
+class Event;
+}
 
 namespace vne {
 namespace testbed {
@@ -78,12 +86,23 @@ class Application {
     /** @brief Whether initialize() succeeded and shutdown() has not been called. */
     [[nodiscard]] bool isRunning() const { return running_; }
 
+    /**
+     * @brief Handle application-level events (ESC, window close, etc.).
+     * Called by ApplicationEventListener; forwards to layer stack for sample handling.
+     */
+    void onEvent(const vne::events::Event& event);
+
    private:
+    void registerAsListener();
     /** @brief One frame: events, update, GUI, render, swap. Called repeatedly by run(). */
     void mainLoop();
     AppContext app_ctx_{};
     LayerStack layer_stack_;
     bool running_{false};
+
+#if defined(VNE_TESTBED_EVENTS)
+    std::shared_ptr<vne::events::EventListener> application_event_listener_;
+#endif
 
     // Opaque backend storage (window, render adapter, device, debug draw); owned in .cpp
     struct Impl;
