@@ -158,24 +158,24 @@ class EventsLayer : public vne::testbed::ILayer {
                 cat = EventLogCategory::Touch;
                 const auto& e = static_cast<const vne::events::TouchPressEvent&>(event);
                 setLastTouch(e.touchId(), e.x(), e.y(), LastTouchAction::Press);
-                line = "TouchPress   id=" + std::to_string(e.touchId())
-                       + "  x=" + std::to_string(static_cast<int>(e.x())) + "  y=" + std::to_string(static_cast<int>(e.y()));
+                line = "TouchPress   id=" + std::to_string(e.touchId()) + "  x="
+                       + std::to_string(static_cast<int>(e.x())) + "  y=" + std::to_string(static_cast<int>(e.y()));
                 break;
             }
             case ET::eTouchRelease: {
                 cat = EventLogCategory::Touch;
                 const auto& e = static_cast<const vne::events::TouchReleaseEvent&>(event);
                 setLastTouch(e.touchId(), e.x(), e.y(), LastTouchAction::Release);
-                line = "TouchRelease id=" + std::to_string(e.touchId())
-                       + "  x=" + std::to_string(static_cast<int>(e.x())) + "  y=" + std::to_string(static_cast<int>(e.y()));
+                line = "TouchRelease id=" + std::to_string(e.touchId()) + "  x="
+                       + std::to_string(static_cast<int>(e.x())) + "  y=" + std::to_string(static_cast<int>(e.y()));
                 break;
             }
             case ET::eTouchMove: {
                 cat = EventLogCategory::Touch;
                 const auto& e = static_cast<const vne::events::TouchMoveEvent&>(event);
                 setLastTouch(e.touchId(), e.x(), e.y(), LastTouchAction::Move);
-                line = "TouchMove    id=" + std::to_string(e.touchId())
-                       + "  x=" + std::to_string(static_cast<int>(e.x())) + "  y=" + std::to_string(static_cast<int>(e.y()));
+                line = "TouchMove    id=" + std::to_string(e.touchId()) + "  x="
+                       + std::to_string(static_cast<int>(e.x())) + "  y=" + std::to_string(static_cast<int>(e.y()));
                 break;
             }
             default:
@@ -264,14 +264,22 @@ class EventsSettingsLayer : public vne::testbed::ILayer {
     static const char* keyCodeToLabel(int key_code) {
         using K = vne::events::KeyCode;
         switch (static_cast<K>(key_code)) {
-            case K::eW: return "W";
-            case K::eA: return "A";
-            case K::eS: return "S";
-            case K::eD: return "D";
-            case K::eSpace: return "Space";
-            case K::eEscape: return "Escape";
-            case K::eLeftShift: return "Shift";
-            default: return nullptr;
+            case K::eW:
+                return "W";
+            case K::eA:
+                return "A";
+            case K::eS:
+                return "S";
+            case K::eD:
+                return "D";
+            case K::eSpace:
+                return "Space";
+            case K::eEscape:
+                return "Escape";
+            case K::eLeftShift:
+                return "Shift";
+            default:
+                return nullptr;
         }
     }
 
@@ -315,7 +323,8 @@ class EventsSettingsLayer : public vne::testbed::ILayer {
                 const int vp_count = imgui_layer_->getViewportCount();
                 ImGui::Text("Viewports: %d", vp_count);
                 auto [mx, my] = vne::events::InputManager::mousePosition();
-                const int hovered = imgui_layer_->getHoveredViewportIndex(static_cast<float>(mx), static_cast<float>(my));
+                const int hovered =
+                    imgui_layer_->getHoveredViewportIndex(static_cast<float>(mx), static_cast<float>(my));
                 const char* active_name = (hovered >= 0) ? imgui_layer_->getViewportName(hovered) : "—";
                 ImGui::Text("Active viewport: %s", active_name);
             }
@@ -344,10 +353,10 @@ class EventsSettingsLayer : public vne::testbed::ILayer {
             if (events_layer_) {
                 const int kc = events_layer_->lastKeyCode();
                 const auto ka = events_layer_->lastKeyAction();
-                const char* action_str = (ka == EventsLayer::LastKeyAction::Pressed)  ? "pressed"
-                                      : (ka == EventsLayer::LastKeyAction::Released) ? "released"
-                                      : (ka == EventsLayer::LastKeyAction::Repeat)   ? "repeat"
-                                                                                     : "";
+                const char* action_str = (ka == EventsLayer::LastKeyAction::Pressed)    ? "pressed"
+                                         : (ka == EventsLayer::LastKeyAction::Released) ? "released"
+                                         : (ka == EventsLayer::LastKeyAction::Repeat)   ? "repeat"
+                                                                                        : "";
                 const char* key_label = keyCodeToLabel(kc);
                 if (action_str[0] != '\0' && kc >= 0) {
                     if (key_label) {
@@ -386,10 +395,10 @@ class EventsSettingsLayer : public vne::testbed::ILayer {
                     const double tx = events_layer_->lastTouchX();
                     const double ty = events_layer_->lastTouchY();
                     const auto ta = events_layer_->lastTouchAction();
-                    const char* action_str = (ta == EventsLayer::LastTouchAction::Press)   ? "press"
-                                           : (ta == EventsLayer::LastTouchAction::Release) ? "release"
-                                           : (ta == EventsLayer::LastTouchAction::Move)    ? "move"
-                                                                                           : "";
+                    const char* action_str = (ta == EventsLayer::LastTouchAction::Press)     ? "press"
+                                             : (ta == EventsLayer::LastTouchAction::Release) ? "release"
+                                             : (ta == EventsLayer::LastTouchAction::Move)    ? "move"
+                                                                                             : "";
                     if (action_str[0] != '\0') {
                         ImGui::Text("Last: id %u  %s  (%.0f, %.0f)", tid, action_str, tx, ty);
                     }
