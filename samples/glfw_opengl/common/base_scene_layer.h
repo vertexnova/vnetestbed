@@ -220,23 +220,24 @@ class BaseInteractionLayer : public vne::testbed::ILayer, public vne::events::Ev
             return;
         }
         using ET = vne::events::EventType;
+        double prev_x = last_x_;
+        double prev_y = last_y_;
         float check_x = static_cast<float>(last_x_);
         float check_y = static_cast<float>(last_y_);
         if (event.type() == ET::eMouseMoved) {
             const auto& e = static_cast<const vne::events::MouseMovedEvent&>(event);
+            prev_x = last_x_;
+            prev_y = last_y_;
             check_x = static_cast<float>(e.x());
             check_y = static_cast<float>(e.y());
-            // Update last position before viewport check so early return (e.g. over Settings panel)
-            // does not leave stale position for the next event (e.g. scroll).
-            last_x_ = e.x();
-            last_y_ = e.y();
-            first_mouse_ = false;
         } else if (event.type() == ET::eMouseScrolled || event.type() == ET::eMouseButtonPressed
                    || event.type() == ET::eMouseButtonReleased) {
-            // Position-less or same-frame position: use current cursor for viewport hit-test.
             const auto [mx, my] = vne::events::Input::mousePosition();
             check_x = static_cast<float>(mx);
             check_y = static_cast<float>(my);
+            // Keep last_x_/last_y_ consistent with the position used for this event.
+            last_x_ = static_cast<double>(mx);
+            last_y_ = static_cast<double>(my);
         }
         int viewport_index = 0;
 #ifdef VNE_TESTBED_IMGUI
@@ -257,11 +258,11 @@ class BaseInteractionLayer : public vne::testbed::ILayer, public vne::events::Ev
         switch (event.type()) {
             case ET::eMouseMoved: {
                 const auto& e = static_cast<const vne::events::MouseMovedEvent&>(event);
-                const double dx = first_mouse_ ? 0.0 : (e.x() - last_x_);
-                const double dy = first_mouse_ ? 0.0 : (e.y() - last_y_);
+                const double dx = first_mouse_ ? 0.0 : (e.x() - prev_x);
+                const double dy = first_mouse_ ? 0.0 : (e.y() - prev_y);
+                first_mouse_ = false;
                 last_x_ = e.x();
                 last_y_ = e.y();
-                first_mouse_ = false;
                 controller->handleMouseMove(static_cast<float>(e.x()),
                                             static_cast<float>(e.y()),
                                             static_cast<float>(dx),
