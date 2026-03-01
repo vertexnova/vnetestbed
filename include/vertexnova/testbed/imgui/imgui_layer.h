@@ -82,6 +82,21 @@ class ImGuiLayer : public ILayer {
     /** @brief Set optional callback for demo-specific settings in the Settings panel. */
     void setSettingsCallback(SettingsCallback cb) { settings_callback_ = std::move(cb); }
 
+    /**
+     * @brief Set the fixed pixel width of the Settings panel (default 320).
+     *
+     * The panel does not resize when the main window grows — only the viewport
+     * area absorbs the extra space.  Call before or after initialization; the
+     * dock layout is rebuilt on the next frame if the width changes.
+     */
+    void setSettingsPanelWidth(float width_px) {
+        if (width_px != settings_panel_width_) {
+            settings_panel_width_ = width_px;
+            dock_layout_dirty_    = true;
+        }
+    }
+    [[nodiscard]] float getSettingsPanelWidth() const { return settings_panel_width_; }
+
     /** @brief Whether to show ImGui demo window. */
     void setShowDemoWindow(bool show) { show_demo_window_ = show; }
     [[nodiscard]] bool getShowDemoWindow() const { return show_demo_window_; }
@@ -110,6 +125,8 @@ class ImGuiLayer : public ILayer {
     bool show_demo_window_{false};
     SettingsCallback settings_callback_;
     bool initialized_{false};
+    float settings_panel_width_{320.0f};  ///< Fixed pixel width; viewport absorbs remaining space.
+    bool  dock_layout_dirty_{false};      ///< True when settings_panel_width_ changed mid-session.
 
 #if defined(VNE_TESTBED_OPENGL) || defined(VNE_TESTBED_OPENGLES)
     std::unique_ptr<gl::Framebuffer> scene_fbo_;

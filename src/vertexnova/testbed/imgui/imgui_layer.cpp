@@ -153,15 +153,16 @@ void ImGuiLayer::onGuiRender(const RenderContext& ctx) {
         ImGuiID dockspace_id = ImGui::GetID("MainDockSpace");
         ImGui::DockSpace(dockspace_id, ImVec2(0.0f, 0.0f), ImGuiDockNodeFlags_None);
 
-        // Only rebuild when: (1) dockspace empty (no saved layout from ini), or (2) user changed viewport count
+        // Rebuild when: (1) no saved layout yet, (2) viewport count changed, (3) panel width changed
         ImGuiDockNode* node = ImGui::DockBuilderGetNode(dockspace_id);
         bool has_saved_layout = (node && node->IsSplitNode());
-        bool layout_changed = (last_dock_layout_ != viewport_layout_);
+        bool layout_changed   = (last_dock_layout_ != viewport_layout_) || dock_layout_dirty_;
 
         if (!has_saved_layout || layout_changed) {
             ImGuiViewport* vp = ImGui::GetMainViewport();
             setupDockLayout(dockspace_id, vp->WorkSize);
-            last_dock_layout_ = viewport_layout_;
+            last_dock_layout_  = viewport_layout_;
+            dock_layout_dirty_ = false;
         }
 
         renderSettingsPanel(ctx);
@@ -197,10 +198,21 @@ void ImGuiLayer::setupDockLayout(ImGuiID dockspace_id, const ImVec2& size) {
     ImGui::DockBuilderRemoveNodeChildNodes(dockspace_id);
     ImGui::DockBuilderSetNodeSize(dockspace_id, size);
 
-    // Split: Settings (left 25%) | Viewport area (right 75%)
+    // Settings panel: fixed pixel width so it does not grow with the window.
+    // Viewport area absorbs all remaining space to the right.
+    const float settings_w = settings_panel_width_;
+    const float total_w    = (size.x > 0.0f) ? size.x : 1.0f;
+    const float ratio_right = (total_w - settings_w) / total_w;  // fraction kept on right
+
     ImGuiID id_right{};
     ImGuiID id_settings{};
-    ImGui::DockBuilderSplitNode(dockspace_id, ImGuiDir_Right, 0.75f, &id_right, &id_settings);
+    ImGui::DockBuilderSplitNode(dockspace_id, ImGuiDir_Right, ratio_right, &id_right, &id_settings);
+
+    // Lock the Settings node so resizing the main window does not change its width.
+    if (ImGuiDockNode* settings_node = ImGui::DockBuilderGetNode(id_settings)) {
+        settings_node->LocalFlags |= ImGuiDockNodeFlags_NoResize;
+    }
+
     ImGui::DockBuilderDockWindow("Settings", id_settings);
 
     ImGuiID id_viewport = id_right;
@@ -239,10 +251,13 @@ void ImGuiLayer::setupDockLayout(ImGuiID dockspace_id, const ImVec2& size) {
 }
 
 void ImGuiLayer::renderSettingsPanel(const RenderContext& ctx) {
-    if (!ImGui::Begin("Settings", nullptr, ImGuiWindowFlags_None)) {
+    // NoScrollbar on the outer window — we manage scrolling ourselves below.
+    if (!ImGui::Begin("Settings", nullptr, ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse)) {
         ImGui::End();
         return;
     }
+
+    // ---- Fixed header (always visible, not scrolled) -------------------------
 
     const char* layout_items[] = {"1 Viewport", "2 Viewports", "4 Viewports"};
     static constexpr ViewportLayout LAYOUTS[] = {ViewportLayout::eOne, ViewportLayout::eTwo, ViewportLayout::eFour};
@@ -273,14 +288,21 @@ void ImGuiLayer::renderSettingsPanel(const RenderContext& ctx) {
     ImGui::Checkbox("Show ImGui Demo", &show_demo_window_);
 
     if (ctx.frame_info.dt > 0.0f) {
-        float fps = 1.0f / ctx.frame_info.dt;
+        const float fps = 1.0f / ctx.frame_info.dt;
         ImGui::Text("FPS: %.1f", static_cast<double>(fps));
         ImGui::Text("Frame: %.3f ms", static_cast<double>(ctx.frame_info.dt * 1000.0f));
     }
 
+    // ---- Scrollable demo content (fills remainder of panel) -----------------
+
     if (settings_callback_) {
         ImGui::Separator();
+        // Height = 0 means "fill to the bottom of the parent window".
+        // The child scrolls independently of the viewport area.
+        ImGui::BeginChild("SettingsScrollArea", ImVec2(0.0f, 0.0f), false,
+                          ImGuiWindowFlags_HorizontalScrollbar);
         settings_callback_();
+        ImGui::EndChild();
     }
 
     ImGui::End();
