@@ -2,7 +2,7 @@
  * Copyright (c) 2026 Ajeet Singh Yadav. All rights reserved.
  * Licensed under the Apache License, Version 2.0 (the "License")
  *
- * Sample 03_test_interaction
+ * Sample test_scene_interaction
  * --------------------------
  * Everything from 00_hello_testbed (grid + axes + camera) plus a full
  * Interaction panel that lets you test every vneinteraction feature live.
@@ -428,6 +428,6 @@ void RegisterTestInteractionDemo(vne::testbed::Application& app) {
 
 }  // namespace
 
-VNETESTBED_REGISTER_DEMO("test_interaction", RegisterTestInteractionDemo)
+VNETESTBED_REGISTER_DEMO("test_scene_interaction", RegisterTestInteractionDemo)
 
 #endif  // VNE_TESTBED_INTERACTION
