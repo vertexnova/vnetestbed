@@ -272,7 +272,13 @@ void ImGuiLayer::onGuiEnd(const RenderContext& ctx) {
 }
 
 void ImGuiLayer::setupDockLayout(ImGuiID dockspace_id, const ImVec2& size) {
-    ImGui::DockBuilderRemoveNodeChildNodes(dockspace_id);
+    // Ensure the dock builder node exists before manipulating it.
+    if (ImGui::DockBuilderGetNode(dockspace_id) == nullptr) {
+        ImGui::DockBuilderRemoveNode(dockspace_id);
+        ImGui::DockBuilderAddNode(dockspace_id, ImGuiDockNodeFlags_DockSpace);
+    } else {
+        ImGui::DockBuilderRemoveNodeChildNodes(dockspace_id);
+    }
     ImGui::DockBuilderSetNodeSize(dockspace_id, size);
 
     // Settings panel: fixed pixel width so it does not grow with the window.
