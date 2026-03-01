@@ -175,7 +175,7 @@ void GlfwWindow::cbMouseButton(GLFWwindow* w, int button, int action, int mods) 
     if (action == GLFW_PRESS) {
         mgr.pushEvent(std::make_unique<vne::events::MouseButtonPressedEvent>(b, modifiers));
         vne::events::Input::updateMouseButtonState(static_cast<int>(b), true);
-        if (button == GLFW_MOUSE_BUTTON_LEFT) {
+        if (self->touch_emulation_enabled_ && button == GLFW_MOUSE_BUTTON_LEFT) {
             double x = 0, y = 0;
             glfwGetCursorPos(w, &x, &y);
             mgr.pushEvent(std::make_unique<vne::events::TouchPressEvent>(0, x, y));
@@ -183,7 +183,7 @@ void GlfwWindow::cbMouseButton(GLFWwindow* w, int button, int action, int mods) 
     } else {
         mgr.pushEvent(std::make_unique<vne::events::MouseButtonReleasedEvent>(b, modifiers));
         vne::events::Input::updateMouseButtonState(static_cast<int>(b), false);
-        if (button == GLFW_MOUSE_BUTTON_LEFT) {
+        if (self->touch_emulation_enabled_ && button == GLFW_MOUSE_BUTTON_LEFT) {
             double x = 0, y = 0;
             glfwGetCursorPos(w, &x, &y);
             mgr.pushEvent(std::make_unique<vne::events::TouchReleaseEvent>(0, x, y));
@@ -221,7 +221,8 @@ void GlfwWindow::cbCursorPos(GLFWwindow* w, double x, double y) {
     auto& mgr = vne::events::EventManager::instance();
     mgr.pushEvent(std::make_unique<vne::events::MouseMovedEvent>(x, y, modifiers));
     vne::events::Input::updateMousePosition(static_cast<int>(x), static_cast<int>(y));
-    if (glfwGetMouseButton(w, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS) {
+    // Touch emulation (opt-in): one TouchMoveEvent per cursor move while LMB is down.
+    if (self->touch_emulation_enabled_ && glfwGetMouseButton(w, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS) {
         mgr.pushEvent(std::make_unique<vne::events::TouchMoveEvent>(0, x, y));
     }
 }

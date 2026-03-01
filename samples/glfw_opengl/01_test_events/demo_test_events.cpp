@@ -30,6 +30,7 @@
 #include "vertexnova/testbed/app/application.h"
 #include "vertexnova/testbed/app/demo_factory.h"
 #include "vertexnova/testbed/layer.h"
+#include "vertexnova/testbed/window/glfw_window.h"
 
 #include "vertexnova/events/event.h"
 #include "vertexnova/events/input/input_manager.h"
@@ -424,6 +425,10 @@ class EventsSettingsLayer : public vne::testbed::ILayer {
 // ---------------------------------------------------------------------------
 
 void registerTestEventsDemo(vne::testbed::Application& app) {
+    // Enable LMB → touch event synthesis for this demo (Events panel shows touch press/move/release).
+    if (auto* glfw_win = dynamic_cast<vne::testbed::window::GlfwWindow*>(app.getAppContext().window)) {
+        glfw_win->setTouchEmulationEnabled(true);
+    }
     // Layer 1: grid + axes + perspective camera
     auto* scene = new BaseSceneLayer("TestEventsBaseSceneLayer");
     app.getLayerStack().pushLayer(std::unique_ptr<BaseSceneLayer>(scene), app.getAppContext());
