@@ -29,7 +29,6 @@
 #include "vertexnova/testbed/app/application.h"
 #include "vertexnova/testbed/app/demo_factory.h"
 #include "vertexnova/testbed/layer.h"
-#include "vertexnova/testbed/render_context.h"
 
 #include "vertexnova/events/event.h"
 #include "vertexnova/events/input/input_manager.h"
@@ -48,11 +47,26 @@
 
 #include <cstring>
 #include <deque>
+#include <ranges>
 #include <string>
 
 namespace {
 
 constexpr int kRenderSortKey = 999;  //!< layer sorting order number
+
+// Demo UI / timing constants
+constexpr float kFpsIntervalSec = 1.0f;
+constexpr float kKeyHeldColorR = 0.9f;
+constexpr float kKeyHeldColorG = 0.3f;
+constexpr float kKeyHeldColorB = 0.15f;
+constexpr float kKeyIdleColor = 0.5f;
+constexpr float kEventLogVisibleLines = 8.0f;
+constexpr float kPollTableKeyColumnWidthPx = 80.0f;
+constexpr int kMouseButtonLeft = 0;
+constexpr int kMouseButtonRight = 1;
+constexpr int kMouseButtonMiddle = 2;
+constexpr int kInvalidKeyCode = -1;
+constexpr std::size_t kEventLogMaxEntries = 20u;
 
 enum class EventLogCategory { eKeyboard = 0, eMouse = 1, eWindow = 2, eTouch = 3 };
 
@@ -70,7 +84,7 @@ struct EventLogEntry {
 // ---------------------------------------------------------------------------
 class EventsLayer : public vne::testbed::ILayer {
    public:
-    static constexpr std::size_t kMaxLog = 20u;
+    static constexpr std::size_t kMaxLog = kEventLogMaxEntries;
 
     EventsLayer()
         : vne::testbed::ILayer("EventsLayer") {}
@@ -84,10 +98,10 @@ class EventsLayer : public vne::testbed::ILayer {
         events_this_second_ += events_since_last_update_;
         events_since_last_update_ = 0;
         second_acc_ += dt;
-        if (second_acc_ >= 1.0f) {
+        if (second_acc_ >= kFpsIntervalSec) {
             events_per_second_ = events_this_second_;
             events_this_second_ = 0;
-            second_acc_ -= 1.0f;
+            second_acc_ -= kFpsIntervalSec;
         }
         frame_++;
     }
@@ -220,7 +234,7 @@ class EventsLayer : public vne::testbed::ILayer {
     }
 
     std::deque<EventLogEntry> log_;
-    int last_key_code_{-1};
+    int last_key_code_{kInvalidKeyCode};
     LastKeyAction last_key_action_{LastKeyAction::eNone};
     uint32_t last_touch_id_{0};
     double last_touch_x_{0.0};
@@ -290,7 +304,8 @@ class EventsSettingsLayer : public vne::testbed::ILayer {
         const bool just_on = vne::events::InputManager::isKeyJustPressed(key);
         const bool just_off = vne::events::InputManager::isKeyJustReleased(key);
         const char* state = just_on ? "JUST ON" : (just_off ? "JUST OFF" : (held ? "held" : "—"));
-        ImVec4 col = held ? ImVec4(0.9f, 0.3f, 0.15f, 1.f) : ImVec4(0.5f, 0.5f, 0.5f, 1.f);
+        ImVec4 col = held ? ImVec4(kKeyHeldColorR, kKeyHeldColorG, kKeyHeldColorB, 1.0f)
+                          : ImVec4(kKeyIdleColor, kKeyIdleColor, kKeyIdleColor, 1.0f);
         ImGui::TableNextRow();
         ImGui::TableSetColumnIndex(0);
         ImGui::Text("%s", label);
@@ -300,18 +315,19 @@ class EventsSettingsLayer : public vne::testbed::ILayer {
 
     void renderPanel() {
         // ---- Event log (keyboard / mouse / window with separators and color scheme) ----
-        if (ImGui::CollapsingHeader("Events (last 20)", ImGuiTreeNodeFlags_DefaultOpen)) {
+        const std::string events_header = "Events (last " + std::to_string(kEventLogMaxEntries) + ")";
+        if (ImGui::CollapsingHeader(events_header.c_str(), ImGuiTreeNodeFlags_DefaultOpen)) {
             if (events_layer_) {
                 ImGui::Text("Total: %llu  /sec: %u",
                             static_cast<unsigned long long>(events_layer_->totalEvents()),
                             events_layer_->eventsPerSecond());
                 ImGui::Separator();
 
-                const float log_height = ImGui::GetTextLineHeightWithSpacing() * 8.0f;
-                ImGui::BeginChild("EventLog", ImVec2(0.f, log_height), true);
+                const float log_height = ImGui::GetTextLineHeightWithSpacing() * kEventLogVisibleLines;
+                ImGui::BeginChild("EventLog", ImVec2(0.0f, log_height), true);
                 const auto& log = events_layer_->log();
-                for (auto it = log.rbegin(); it != log.rend(); ++it) {
-                    ImGui::TextUnformatted(it->line.c_str());
+                for (const auto& entry : std::ranges::reverse_view(log)) {
+                    ImGui::TextUnformatted(entry.line.c_str());
                 }
                 ImGui::EndChild();
             }
@@ -338,7 +354,7 @@ class EventsSettingsLayer : public vne::testbed::ILayer {
             ImGui::Text("Keyboard");
             ImGui::Separator();
             if (ImGui::BeginTable("PollTable", 2, ImGuiTableFlags_BordersInnerV | ImGuiTableFlags_RowBg)) {
-                ImGui::TableSetupColumn("Key", ImGuiTableColumnFlags_WidthFixed, 80.f);
+                ImGui::TableSetupColumn("Key", ImGuiTableColumnFlags_WidthFixed, kPollTableKeyColumnWidthPx);
                 ImGui::TableSetupColumn("State", ImGuiTableColumnFlags_WidthStretch);
                 ImGui::TableHeadersRow();
 
@@ -358,9 +374,9 @@ class EventsSettingsLayer : public vne::testbed::ILayer {
                 const char* action_str = (ka == LastKeyAction::ePressed)    ? "pressed"
                                          : (ka == LastKeyAction::eReleased) ? "released"
                                          : (ka == LastKeyAction::eRepeat)   ? "repeat"
-                                                                                        : "";
+                                                                            : "";
                 const char* key_label = keyCodeToLabel(kc);
-                if (action_str[0] != '\0' && kc >= 0) {
+                if (action_str[0] != '\0' && kc != kInvalidKeyCode) {
                     if (key_label) {
                         ImGui::Text("Key: %s %s", key_label, action_str);
                     } else {
@@ -375,7 +391,7 @@ class EventsSettingsLayer : public vne::testbed::ILayer {
             const size_t len = std::strlen(char_display_buf_);
             const char* last_n =
                 (len <= kCharDisplayLastN) ? char_display_buf_ : (char_display_buf_ + len - kCharDisplayLastN);
-            ImGui::Text("Last 10: %s", len > 0u ? last_n : "(none)");
+            ImGui::Text("Last %zu: %s", kCharDisplayLastN, len > 0u ? last_n : "(none)");
 
             // Mouse: collapsing header
             if (ImGui::CollapsingHeader("Mouse", ImGuiTreeNodeFlags_DefaultOpen)) {
@@ -383,9 +399,9 @@ class EventsSettingsLayer : public vne::testbed::ILayer {
                 auto [sx, sy] = vne::events::InputManager::mouseScroll();
                 ImGui::Text("Mouse pos:    %d, %d", mx, my);
                 ImGui::Text("Mouse scroll: X %.2f  Y %.2f", static_cast<double>(sx), static_cast<double>(sy));
-                const char* lb = vne::events::InputManager::isMouseButtonPressed(0) ? "down" : "up  ";
-                const char* rb = vne::events::InputManager::isMouseButtonPressed(1) ? "down" : "up  ";
-                const char* mb = vne::events::InputManager::isMouseButtonPressed(2) ? "down" : "up  ";
+                const char* lb = vne::events::InputManager::isMouseButtonPressed(kMouseButtonLeft) ? "down" : "up  ";
+                const char* rb = vne::events::InputManager::isMouseButtonPressed(kMouseButtonRight) ? "down" : "up  ";
+                const char* mb = vne::events::InputManager::isMouseButtonPressed(kMouseButtonMiddle) ? "down" : "up  ";
                 ImGui::Text("LMB: %s   RMB: %s   MMB: %s", lb, rb, mb);
             }
 
@@ -400,7 +416,7 @@ class EventsSettingsLayer : public vne::testbed::ILayer {
                     const char* action_str = (ta == LastTouchAction::ePress)     ? "press"
                                              : (ta == LastTouchAction::eRelease) ? "release"
                                              : (ta == LastTouchAction::eMove)    ? "move"
-                                                                                             : "";
+                                                                                 : "";
                     if (action_str[0] != '\0') {
                         ImGui::Text("Last: id %u  %s  (%.0f, %.0f)", tid, action_str, tx, ty);
                     }
@@ -420,7 +436,7 @@ class EventsSettingsLayer : public vne::testbed::ILayer {
 
 // ---------------------------------------------------------------------------
 
-void RegisterTestEventsDemo(vne::testbed::Application& app) {
+void registerTestEventsDemo(vne::testbed::Application& app) {
     // Layer 1: grid + axes + perspective camera
     auto* scene = new BaseSceneLayer("TestEventsBaseSceneLayer");
     app.getLayerStack().pushLayer(std::unique_ptr<BaseSceneLayer>(scene), app.getAppContext());
@@ -453,4 +469,4 @@ void RegisterTestEventsDemo(vne::testbed::Application& app) {
 
 }  // namespace
 
-VNETESTBED_REGISTER_DEMO("test_events", RegisterTestEventsDemo)
+VNETESTBED_REGISTER_DEMO("test_events", registerTestEventsDemo)
