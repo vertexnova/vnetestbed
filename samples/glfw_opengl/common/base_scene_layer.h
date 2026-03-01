@@ -26,6 +26,7 @@
 
 #ifdef VNE_TESTBED_INTERACTION
 #include "vertexnova/events/event.h"
+#include "vertexnova/events/input/input.h"
 #include "vertexnova/events/key_event.h"
 #include "vertexnova/events/mouse_event.h"
 #include "vertexnova/events/types.h"
@@ -225,6 +226,17 @@ class BaseInteractionLayer : public vne::testbed::ILayer, public vne::events::Ev
             const auto& e = static_cast<const vne::events::MouseMovedEvent&>(event);
             check_x = static_cast<float>(e.x());
             check_y = static_cast<float>(e.y());
+            // Update last position before viewport check so early return (e.g. over Settings panel)
+            // does not leave stale position for the next event (e.g. scroll).
+            last_x_ = e.x();
+            last_y_ = e.y();
+            first_mouse_ = false;
+        } else if (event.type() == ET::eMouseScrolled || event.type() == ET::eMouseButtonPressed
+                   || event.type() == ET::eMouseButtonReleased) {
+            // Position-less or same-frame position: use current cursor for viewport hit-test.
+            const auto [mx, my] = vne::events::Input::mousePosition();
+            check_x = static_cast<float>(mx);
+            check_y = static_cast<float>(my);
         }
         int viewport_index = 0;
 #ifdef VNE_TESTBED_IMGUI

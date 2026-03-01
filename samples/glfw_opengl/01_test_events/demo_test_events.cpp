@@ -48,19 +48,9 @@
 #include <deque>
 #include <string>
 
-// GLFW key codes for input polling display (same values GLFW uses)
-#ifndef GLFW_KEY_W
-#define GLFW_KEY_W 87
-#define GLFW_KEY_A 65
-#define GLFW_KEY_S 83
-#define GLFW_KEY_D 68
-#define GLFW_KEY_SPACE 32
-#define GLFW_KEY_ESCAPE 256
-#define GLFW_KEY_LEFT_SHIFT 340
-#endif
-
 namespace {
 
+constexpr int kRenderSortKey = 999;  //!< layer sorting order number
 // ---------------------------------------------------------------------------
 // EventsLayer — captures every event and exposes stats for the UI
 // ---------------------------------------------------------------------------
@@ -145,7 +135,7 @@ class EventsLayer : public vne::testbed::ILayer {
         }
 
         // Prepend frame number
-        line = "[f" + std::to_string(frame_) + "] " + line;
+        line = "[f-" + std::to_string(frame_) + "] " + line;
         log_.push_back(std::move(line));
         if (log_.size() > kMaxLog) {
             log_.pop_front();
@@ -175,7 +165,7 @@ class EventsSettingsLayer : public vne::testbed::ILayer {
    public:
     EventsSettingsLayer()
         : vne::testbed::ILayer("EventsSettingsLayer") {
-        setRenderSortKey(999);
+        setRenderSortKey(kRenderSortKey);
     }
 
     void setImGuiLayer(vne::testbed::ImGuiLayer* l) { imgui_layer_ = l; }
@@ -201,7 +191,7 @@ class EventsSettingsLayer : public vne::testbed::ILayer {
         const bool just_on = vne::events::InputManager::isKeyJustPressed(key);
         const bool just_off = vne::events::InputManager::isKeyJustReleased(key);
         const char* state = just_on ? "JUST ON" : (just_off ? "JUST OFF" : (held ? "held" : "—"));
-        ImVec4 col = held ? ImVec4(0.2f, 1.0f, 0.2f, 1.f) : ImVec4(0.5f, 0.5f, 0.5f, 1.f);
+        ImVec4 col = held ? ImVec4(0.9f, 0.3f, 0.15f, 1.f) : ImVec4(0.5f, 0.5f, 0.5f, 1.f);
         ImGui::TableNextRow();
         ImGui::TableSetColumnIndex(0);
         ImGui::Text("%s", label);
@@ -236,13 +226,13 @@ class EventsSettingsLayer : public vne::testbed::ILayer {
                 ImGui::TableSetupColumn("State", ImGuiTableColumnFlags_WidthStretch);
                 ImGui::TableHeadersRow();
 
-                keyPollRow("W", GLFW_KEY_W);
-                keyPollRow("A", GLFW_KEY_A);
-                keyPollRow("S", GLFW_KEY_S);
-                keyPollRow("D", GLFW_KEY_D);
-                keyPollRow("Space", GLFW_KEY_SPACE);
-                keyPollRow("Escape", GLFW_KEY_ESCAPE);
-                keyPollRow("Shift", GLFW_KEY_LEFT_SHIFT);
+                keyPollRow("W", static_cast<int>(vne::events::KeyCode::eW));
+                keyPollRow("A", static_cast<int>(vne::events::KeyCode::eA));
+                keyPollRow("S", static_cast<int>(vne::events::KeyCode::eS));
+                keyPollRow("D", static_cast<int>(vne::events::KeyCode::eD));
+                keyPollRow("Space", static_cast<int>(vne::events::KeyCode::eSpace));
+                keyPollRow("Escape", static_cast<int>(vne::events::KeyCode::eEscape));
+                keyPollRow("Shift", static_cast<int>(vne::events::KeyCode::eLeftShift));
 
                 ImGui::EndTable();
             }
@@ -253,10 +243,11 @@ class EventsSettingsLayer : public vne::testbed::ILayer {
             auto [sx, sy] = vne::events::InputManager::mouseScroll();
             ImGui::Text("Mouse pos:    %d, %d", mx, my);
             ImGui::Text("Mouse scroll: %.2f, %.2f", static_cast<double>(sx), static_cast<double>(sy));
-            ImGui::Text("LMB: %s   RMB: %s   MMB: %s",
-                        vne::events::InputManager::isMouseButtonPressed(0) ? "down" : "up",
-                        vne::events::InputManager::isMouseButtonPressed(1) ? "down" : "up",
-                        vne::events::InputManager::isMouseButtonPressed(2) ? "down" : "up");
+            // Fixed-width labels so layout does not shift when toggling up/down
+            const char* lb = vne::events::InputManager::isMouseButtonPressed(0) ? "down" : "up  ";
+            const char* rb = vne::events::InputManager::isMouseButtonPressed(1) ? "down" : "up  ";
+            const char* mb = vne::events::InputManager::isMouseButtonPressed(2) ? "down" : "up  ";
+            ImGui::Text("LMB: %s   RMB: %s   MMB: %s", lb, rb, mb);
         }
     }
 

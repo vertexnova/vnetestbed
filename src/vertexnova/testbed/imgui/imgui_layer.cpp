@@ -69,9 +69,18 @@ constexpr float kClearR = 74.0f / 255.0f;
 constexpr float kClearG = 74.0f / 255.0f;
 constexpr float kClearB = 76.0f / 255.0f;
 
+// Fixed spacing so layout does not shift when Font scale slider changes (up/down).
+constexpr float kItemSpacingX = 8.0f;
+constexpr float kItemSpacingY = 4.0f;
+constexpr float kFramePaddingX = 6.0f;
+constexpr float kFramePaddingY = 3.0f;
+
 void applyVertexNovaStyle() {
     ImGuiStyle& style = ImGui::GetStyle();
     ImVec4* c = style.Colors;
+
+    style.ItemSpacing = ImVec2(kItemSpacingX, kItemSpacingY);
+    style.FramePadding = ImVec2(kFramePaddingX, kFramePaddingY);
 
     c[ImGuiCol_Text] = ImVec4(kTextR, kTextG, kTextB, 1.0f);
     c[ImGuiCol_TextDisabled] = ImVec4(kMutedR, kMutedG, kMutedB, 1.0f);
@@ -502,9 +511,13 @@ void ImGuiLayer::renderSettingsPanel(const RenderContext& ctx) {
         viewport_layout_ = LAYOUTS[layout_idx];
     }
 
-    // Font scale: applies to all ImGui text (same font, larger/smaller)
+    // Font scale: applies to all ImGui text (same font, larger/smaller).
+    // Keep spacing fixed so layout does not shift when changing the slider.
     if (ImGui::SliderFloat("Font scale", &font_scale_, 0.8f, 2.0f, "%.2f")) {
-        ImGui::GetStyle().FontScaleMain = font_scale_;
+        ImGuiStyle& style = ImGui::GetStyle();
+        style.FontScaleMain = font_scale_;
+        style.ItemSpacing = ImVec2(kItemSpacingX, kItemSpacingY);
+        style.FramePadding = ImVec2(kFramePaddingX, kFramePaddingY);
     }
 
 #if defined(VNE_TESTBED_OPENGL)
