@@ -82,7 +82,7 @@ TEST_F(DemoFactoryTest, CreateDemoByIdInstallsAndReturnsTrue) {
     });
     EXPECT_TRUE(DemoFactory::createDemo(*app_, "one"));
 #if defined(VNE_TESTBED_IMGUI)
-    EXPECT_EQ(app_->getLayerStack().getCount(), 1u);   // demo layer only
+    EXPECT_EQ(app_->getLayerStack().getCount(), 1u);         // demo layer only
     EXPECT_EQ(app_->getLayerStack().getOverlayCount(), 1u);  // ImGuiLayer overlay
 #else
     EXPECT_EQ(app_->getLayerStack().getCount(), 1u);
@@ -106,7 +106,7 @@ TEST_F(DemoFactoryTest, CreateDemoSingleWhenExactlyOneSucceeds) {
     });
     EXPECT_TRUE(DemoFactory::createDemo(*app_));
 #if defined(VNE_TESTBED_IMGUI)
-    EXPECT_EQ(app_->getLayerStack().getCount(), 1u);   // demo layer only
+    EXPECT_EQ(app_->getLayerStack().getCount(), 1u);         // demo layer only
     EXPECT_EQ(app_->getLayerStack().getOverlayCount(), 1u);  // ImGuiLayer overlay
 #else
     EXPECT_EQ(app_->getLayerStack().getCount(), 1u);
@@ -137,7 +137,7 @@ TEST_F(DemoFactoryTest, CreateDefaultWithOneInstallsIt) {
     });
     EXPECT_TRUE(DemoFactory::createDefault(*app_));
 #if defined(VNE_TESTBED_IMGUI)
-    EXPECT_EQ(app_->getLayerStack().getCount(), 1u);   // demo layer only
+    EXPECT_EQ(app_->getLayerStack().getCount(), 1u);         // demo layer only
     EXPECT_EQ(app_->getLayerStack().getOverlayCount(), 1u);  // ImGuiLayer overlay
 #else
     EXPECT_EQ(app_->getLayerStack().getCount(), 1u);
@@ -153,7 +153,7 @@ TEST_F(DemoFactoryTest, CreateDefaultPrefersWindowId) {
     });
     EXPECT_TRUE(DemoFactory::createDefault(*app_));
 #if defined(VNE_TESTBED_IMGUI)
-    EXPECT_EQ(app_->getLayerStack().getCount(), 1u);   // demo layer only
+    EXPECT_EQ(app_->getLayerStack().getCount(), 1u);         // demo layer only
     EXPECT_EQ(app_->getLayerStack().getOverlayCount(), 1u);  // ImGuiLayer overlay
 #else
     EXPECT_EQ(app_->getLayerStack().getCount(), 1u);
@@ -171,7 +171,7 @@ TEST_F(DemoFactoryTest, CreateDefaultWithNoWindowInstallsFirst) {
     });
     EXPECT_TRUE(DemoFactory::createDefault(*app_));
 #if defined(VNE_TESTBED_IMGUI)
-    EXPECT_EQ(app_->getLayerStack().getCount(), 1u);   // demo layer only
+    EXPECT_EQ(app_->getLayerStack().getCount(), 1u);         // demo layer only
     EXPECT_EQ(app_->getLayerStack().getOverlayCount(), 1u);  // ImGuiLayer overlay
 #else
     EXPECT_EQ(app_->getLayerStack().getCount(), 1u);
@@ -196,7 +196,7 @@ TEST_F(DemoFactoryTest, CreateDemoMultipleTimesDoesNotDuplicateImGuiLayer) {
         a.getLayerStack().pushLayer(std::make_unique<RecordingLayer>("Dup"), a.getAppContext());
     });
     EXPECT_TRUE(DemoFactory::createDemo(*app_, "dup"));
-    EXPECT_EQ(app_->getLayerStack().getCount(), 1u);    // demo layer only
+    EXPECT_EQ(app_->getLayerStack().getCount(), 1u);         // demo layer only
     EXPECT_EQ(app_->getLayerStack().getOverlayCount(), 1u);  // ImGuiLayer overlay
 
     EXPECT_TRUE(DemoFactory::createDemo(*app_, "dup"));
@@ -218,11 +218,11 @@ TEST_F(DemoFactoryTest, CreateDefaultMultipleTimesDoesNotDuplicateImGuiLayer) {
         a.getLayerStack().pushLayer(std::make_unique<RecordingLayer>("First"), a.getAppContext());
     });
     EXPECT_TRUE(DemoFactory::createDefault(*app_));
-    EXPECT_EQ(app_->getLayerStack().getCount(), 1u);    // demo layer only
+    EXPECT_EQ(app_->getLayerStack().getCount(), 1u);         // demo layer only
     EXPECT_EQ(app_->getLayerStack().getOverlayCount(), 1u);  // ImGuiLayer overlay
 
     EXPECT_TRUE(DemoFactory::createDefault(*app_));
-    EXPECT_EQ(app_->getLayerStack().getCount(), 2u);    // 2 demo layers
+    EXPECT_EQ(app_->getLayerStack().getCount(), 2u);         // 2 demo layers
     EXPECT_EQ(app_->getLayerStack().getOverlayCount(), 1u);  // ImGuiLayer not duplicated
 
     int imgui_count = 0;

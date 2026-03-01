@@ -452,7 +452,11 @@ void ImGuiLayer::setupDockLayout(ImGuiID dockspace_id, const ImVec2& size) {
             // Left: two equal size stacked; right: one full height (same height as left)
             ImGuiID id_left{};
             ImGuiID id_right_col{};
-            ImGui::DockBuilderSplitNode(id_viewport, ImGuiDir_Left, 0.5f, &id_left, &id_right_col);  // 50% left, 50% right
+            ImGui::DockBuilderSplitNode(id_viewport,
+                                        ImGuiDir_Left,
+                                        0.5f,
+                                        &id_left,
+                                        &id_right_col);  // 50% left, 50% right
             ImGuiID id_left_top{};
             ImGuiID id_left_bottom{};
             ImGui::DockBuilderSplitNode(id_left,
