@@ -56,6 +56,12 @@ git submodule update --init --recursive
 
 (Add submodules first if your repo uses them; see `deps/README.md`.)
 
+**ImGui layer:** The demos use an ImGui overlay (settings panel, viewports) when `deps/external/imgui` is present. If the ImGui layer is missing after cloning or pulling, ensure the imgui submodule is initialized:
+
+```bash
+git submodule update --init deps/external/imgui
+```
+
 ## Build
 
 From the project root:

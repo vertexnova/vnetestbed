@@ -12,8 +12,16 @@
 #include "vertexnova/testbed/app/application.h"
 
 #include "vertexnova/testbed/app/application_descriptor.h"
+#include "vertexnova/testbed/app/application_event_listener.h"
 #include "vertexnova/testbed/app/demo_application.h"
 #include "vertexnova/testbed/logging_guard.h"
+
+#if defined(VNE_TESTBED_EVENTS)
+#include "vertexnova/events/event_manager.h"
+#include "vertexnova/events/key_event.h"
+#include "vertexnova/events/types.h"
+#include "vertexnova/events/window_event.h"
+#endif
 
 #if defined(VNE_TESTBED_OPENGL) || defined(VNE_TESTBED_OPENGLES)
 #include "vertexnova/testbed/gl/opengl_debug_draw.h"
@@ -22,10 +30,6 @@
 #include "vertexnova/testbed/gl/texture2d.h"  // complete type for TextureSlot destruction when impl_ is destroyed in this TU
 #include "vertexnova/testbed/window/glfw_window.h"
 #include "vertexnova/testbed/window/glfw_window_descriptor.h"
-#endif
-
-#if defined(VNE_TESTBED_EVENTS)
-#include "vertexnova/events/event_manager.h"
 #endif
 
 #include <chrono>
@@ -91,6 +95,10 @@ bool Application::initialize(const ApplicationDescriptor& descriptor) {
     app_ctx_.device = impl_->render_device.get();
     app_ctx_.debugDraw = impl_->debug_draw.get();
 
+#if defined(VNE_TESTBED_EVENTS)
+    registerAsListener();
+#endif
+
     running_ = true;
     return true;
 }
@@ -129,19 +137,72 @@ void Application::mainLoop() {
     render_ctx.frame_info.dt = dt;
     render_ctx.debug_draw = app_ctx_.debugDraw;
 
-    // Layer update and GUI (CPU phase)
+    // Layer update
     layer_stack_.onUpdate(dt);
+
+    // Set callback for multi-viewport rendering (ImGuiLayer calls it for each viewport)
+    app_ctx_.renderSceneForViewport = [this](const RenderContext& ctx) { layer_stack_.onRenderLayersOnly(ctx); };
+    app_ctx_.scene_rendered_by_imgui = false;
+
+    // GPU phase: scene first, then ImGui on top
+    app_ctx_.renderer->beginFrame();
+    layer_stack_.onBeginRender(render_ctx);
+    if (!app_ctx_.scene_rendered_by_imgui) {
+        layer_stack_.onRender(render_ctx);
+    }
+
+    // GUI phase: ImGui draws on top of scene
     layer_stack_.onGuiBegin(render_ctx);
     layer_stack_.onGuiRender(render_ctx);
     layer_stack_.onGuiEnd(render_ctx);
 
-    // GPU phase: begin frame, layers render, end frame, swap
-    app_ctx_.renderer->beginFrame();
-    layer_stack_.onBeginRender(render_ctx);
-    layer_stack_.onRender(render_ctx);
     app_ctx_.renderer->endFrame();
-
     impl_->window->swapBuffers();
+}
+
+void Application::registerAsListener() {
+#if defined(VNE_TESTBED_EVENTS)
+    application_event_listener_ = std::make_shared<ApplicationEventListener>(this);
+    auto& mgr = vne::events::EventManager::instance();
+    using ET = vne::events::EventType;
+    mgr.registerListener(ET::eWindowClose, application_event_listener_);
+    mgr.registerListener(ET::eWindowResize, application_event_listener_);
+    mgr.registerListener(ET::eKeyPressed, application_event_listener_);
+    mgr.registerListener(ET::eKeyReleased, application_event_listener_);
+    mgr.registerListener(ET::eKeyRepeat, application_event_listener_);
+    mgr.registerListener(ET::eKeyTyped, application_event_listener_);
+    mgr.registerListener(ET::eMouseButtonPressed, application_event_listener_);
+    mgr.registerListener(ET::eMouseButtonReleased, application_event_listener_);
+    mgr.registerListener(ET::eMouseMoved, application_event_listener_);
+    mgr.registerListener(ET::eMouseScrolled, application_event_listener_);
+    mgr.registerListener(ET::eTouchPress, application_event_listener_);
+    mgr.registerListener(ET::eTouchRelease, application_event_listener_);
+    mgr.registerListener(ET::eTouchMove, application_event_listener_);
+#endif
+}
+
+void Application::onEvent(const vne::events::Event& event) {
+#if defined(VNE_TESTBED_EVENTS)
+    using ET = vne::events::EventType;
+    using KC = vne::events::KeyCode;
+
+    if (event.type() == ET::eKeyPressed) {
+        const auto& key_event = static_cast<const vne::events::KeyPressedEvent&>(event);
+        if (key_event.keyCode() == KC::eEscape) {
+            running_ = false;
+            return;
+        }
+    }
+
+    if (event.type() == ET::eWindowClose) {
+        running_ = false;
+        return;
+    }
+
+    layer_stack_.onEvent(event);
+#else
+    (void)event;
+#endif
 }
 
 void Application::shutdown() {

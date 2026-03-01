@@ -124,6 +124,14 @@ void LayerStack::onRender(const RenderContext& ctx) {
     }
 }
 
+void LayerStack::onRenderLayersOnly(const RenderContext& ctx) {
+    for (const auto& layer : layers_) {
+        if (layer && layer->isEnabled() && layer->isVisible()) {
+            layer->onRender(ctx);
+        }
+    }
+}
+
 void LayerStack::onGuiBegin(const RenderContext& ctx) {
     for (const auto& layer : layers_) {
         if (layer && layer->isEnabled()) {

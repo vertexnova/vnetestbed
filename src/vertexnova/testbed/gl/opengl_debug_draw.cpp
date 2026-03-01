@@ -41,13 +41,49 @@ void main() {
 }
 )";
 
+// Expand each line segment into a quad so thickness is visible (glLineWidth is ignored on macOS Core Profile)
+static const char* kDebugGeomSrc = R"(
+#version 410 core
+layout(lines) in;
+layout(triangle_strip, max_vertices = 4) out;
+
+in vec3 vColor[];
+
+out vec3 fColor;
+
+uniform float uHalfWidth = 0.004;
+
+void main() {
+    vec4 a = gl_in[0].gl_Position;
+    vec4 b = gl_in[1].gl_Position;
+    vec2 ndc0 = a.xy / a.w;
+    vec2 ndc1 = b.xy / b.w;
+    vec2 dir = ndc1 - ndc0;
+    float len = length(dir);
+    vec2 perp = len > 1e-6 ? vec2(-dir.y, dir.x) / len : vec2(1.0, 0.0);
+    perp *= uHalfWidth;
+
+    vec4 v0 = vec4((ndc0 + perp) * a.w, a.z, a.w);
+    vec4 v1 = vec4((ndc0 - perp) * a.w, a.z, a.w);
+    vec4 v2 = vec4((ndc1 + perp) * b.w, b.z, b.w);
+    vec4 v3 = vec4((ndc1 - perp) * b.w, b.z, b.w);
+
+    fColor = vColor[0];
+    gl_Position = v0; EmitVertex();
+    gl_Position = v1; EmitVertex();
+    gl_Position = v2; EmitVertex();
+    gl_Position = v3; EmitVertex();
+    EndPrimitive();
+}
+)";
+
 static const char* kDebugFragSrc = R"(
 #version 410 core
-in  vec3 vColor;
+in  vec3 fColor;
 out vec4 FragColor;
 
 void main() {
-    FragColor = vec4(vColor, 1.0);
+    FragColor = vec4(fColor, 1.0);
 }
 )";
 #else  // OpenGL ES 3.0
@@ -91,7 +127,12 @@ bool OpenGLDebugDraw::init() {
         return true;
     }
 
+#if defined(VNE_TESTBED_OPENGL)
+    // Use geometry shader to draw lines as quads (thick lines work on macOS Core Profile)
+    shader_ = std::make_unique<Shader>(kDebugVertSrc, kDebugGeomSrc, kDebugFragSrc);
+#else
     shader_ = std::make_unique<Shader>(kDebugVertSrc, kDebugFragSrc);
+#endif
     if (!shader_->isValid()) {
         return false;
     }
@@ -182,7 +223,15 @@ void OpenGLDebugDraw::flush() {
     shader_->setMat4("uVP", vp_matrix_);
 
     vao_->bind();
+#if defined(VNE_TESTBED_OPENGL)
+    shader_->setFloat("uHalfWidth", 0.004f);
+#endif
+    // Don't write depth so overlapping line quads don't z-fight and flicker
+    GLboolean depth_mask_prev = GL_TRUE;
+    glGetBooleanv(GL_DEPTH_WRITEMASK, &depth_mask_prev);
+    glDepthMask(GL_FALSE);
     glDrawArrays(GL_LINES, 0, static_cast<GLsizei>(vertex_data_.size() / kFloatsPerVertex));
+    glDepthMask(depth_mask_prev);
     vao_->unbind();
 
     shader_->unbind();

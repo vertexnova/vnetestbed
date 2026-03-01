@@ -14,7 +14,7 @@ Thank you for your interest in contributing. This document explains how to build
   cmake -B build -DCMAKE_BUILD_TYPE=Debug -DVNE_TESTBED_TESTS=ON
   cmake --build build
   ```
-- **Tests and examples:** `-DVNE_TESTBED_DEV=ON`, or set `-DVNE_TESTBED_TESTS=ON` and `-DVNE_TESTBED_EXAMPLES=ON` separately.
+- **Tests and samples:** `-DVNE_TESTBED_DEV=ON`, or set `-DVNE_TESTBED_TESTS=ON` and `-DVNE_TESTBED_SAMPLES=ON` separately.
 - **Platform scripts:** See [scripts/README.md](scripts/README.md) for `build_linux.sh`, `build_macos.sh`, `build_windows.sh`, `build_windows.py`, and `build_windows.ps1`.
 
 ## Testing

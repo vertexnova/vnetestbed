@@ -97,7 +97,8 @@ class OpenGLRenderAdapter : public IRenderAdapter {
 
    private:
     OpenGLContext context_;
-    vne::math::Vec4f clear_color_{0.12f, 0.12f, 0.16f, 1.0f};
+    // Mid gray (#4A4A4C) — neutral screen clear
+    vne::math::Vec4f clear_color_{74.0f / 255.0f, 74.0f / 255.0f, 76.0f / 255.0f, 1.0f};
     bool initialized_{false};
 };
 

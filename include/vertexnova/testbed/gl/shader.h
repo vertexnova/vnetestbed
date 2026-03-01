@@ -54,6 +54,14 @@ class Shader {
     Shader(const char* vert_src, const char* frag_src);
 
     /**
+     * @brief Compile and link a shader program with an optional geometry shader (OpenGL only).
+     * @param vert_src  Vertex shader source.
+     * @param geom_src  Geometry shader source, or nullptr to omit.
+     * @param frag_src  Fragment shader source.
+     */
+    Shader(const char* vert_src, const char* geom_src, const char* frag_src);
+
+    /**
      * @brief Load and compile a shader program from two GLSL files.
      *
      * Reads vert_path and frag_path, then compiles and links. Returns an
@@ -103,8 +111,8 @@ class Shader {
    private:
     uint32_t program_id_{0u};
 
-    /** @brief Compile and link from source; sets program_id_ or leaves 0. */
-    void compileAndLink(const char* vert_src, const char* frag_src);
+    /** @brief Compile and link from source; sets program_id_ or leaves 0. geom_src may be nullptr. */
+    void compileAndLink(const char* vert_src, const char* frag_src, const char* geom_src = nullptr);
 
     /** @brief Compile a single shader stage; returns 0 on error. */
     static uint32_t compileStage(uint32_t type, const char* src);

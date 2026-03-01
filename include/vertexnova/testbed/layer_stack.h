@@ -58,6 +58,8 @@ class LayerStack {
     void onUpdate(float dt);
     void onBeginRender(const RenderContext& ctx);
     void onRender(const RenderContext& ctx);
+    /** @brief Render only layers (not overlays); used when ImGuiLayer does per-viewport render. */
+    void onRenderLayersOnly(const RenderContext& ctx);
     void onGuiBegin(const RenderContext& ctx);
     void onGuiRender(const RenderContext& ctx);
     void onGuiEnd(const RenderContext& ctx);

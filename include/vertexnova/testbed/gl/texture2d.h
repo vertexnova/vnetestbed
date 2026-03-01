@@ -93,6 +93,9 @@ class Texture2D {
     /** @brief Whether the texture was created successfully. */
     [[nodiscard]] bool isValid() const { return texture_id_ != 0u; }
 
+    /** @brief OpenGL texture id (for ImGui::Image, glfwSetWindowIcon, etc.). */
+    [[nodiscard]] uint32_t getTextureId() const { return texture_id_; }
+
    private:
     uint32_t texture_id_{0u};
     uint32_t width_{0u};

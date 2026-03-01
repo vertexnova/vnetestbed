@@ -58,7 +58,9 @@ uint32_t Shader::compileStage(uint32_t type, const char* src) {
     if (!ok) {
         char log[1024];
         glGetShaderInfoLog(id, 1024, nullptr, log);
-        const char* stage = (type == GL_VERTEX_SHADER) ? "vertex" : "fragment";
+        const char* stage = (type == GL_VERTEX_SHADER)     ? "vertex"
+                            : (type == GL_FRAGMENT_SHADER) ? "fragment"
+                                                           : "geometry";
         VNE_LOG_ERROR << "Shader " << stage << " compile error: " << log;
         glDeleteShader(id);
         return 0u;
@@ -66,18 +68,37 @@ uint32_t Shader::compileStage(uint32_t type, const char* src) {
     return id;
 }
 
-void Shader::compileAndLink(const char* vert_src, const char* frag_src) {
+void Shader::compileAndLink(const char* vert_src, const char* frag_src, const char* geom_src) {
     uint32_t vs = compileStage(GL_VERTEX_SHADER, vert_src);
     uint32_t fs = compileStage(GL_FRAGMENT_SHADER, frag_src);
     if (vs == 0u || fs == 0u) {
-        glDeleteShader(vs);
-        glDeleteShader(fs);
+        if (vs)
+            glDeleteShader(vs);
+        if (fs)
+            glDeleteShader(fs);
         return;
+    }
+
+    uint32_t gs = 0u;
+    if (geom_src && *geom_src != '\0') {
+#if defined(VNE_TESTBED_OPENGL)
+        gs = compileStage(GL_GEOMETRY_SHADER, geom_src);
+        if (gs == 0u) {
+            glDeleteShader(vs);
+            glDeleteShader(fs);
+            return;
+        }
+#else
+        (void)geom_src;
+#endif
     }
 
     program_id_ = glCreateProgram();
     glAttachShader(program_id_, vs);
     glAttachShader(program_id_, fs);
+    if (gs != 0u) {
+        glAttachShader(program_id_, gs);
+    }
     glLinkProgram(program_id_);
 
     int ok = 0;
@@ -92,11 +113,19 @@ void Shader::compileAndLink(const char* vert_src, const char* frag_src) {
 
     glDeleteShader(vs);
     glDeleteShader(fs);
+    if (gs)
+        glDeleteShader(gs);
 }
 
 Shader::Shader(const char* vert_src, const char* frag_src) {
     if (vert_src && frag_src) {
-        compileAndLink(vert_src, frag_src);
+        compileAndLink(vert_src, frag_src, nullptr);
+    }
+}
+
+Shader::Shader(const char* vert_src, const char* geom_src, const char* frag_src) {
+    if (vert_src && frag_src) {
+        compileAndLink(vert_src, frag_src, geom_src);
     }
 }
 

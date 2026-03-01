@@ -25,9 +25,7 @@ namespace testbed {
 namespace gl {
 
 OpenGLRenderAdapter::~OpenGLRenderAdapter() {
-    if (initialized_) {
-        shutdown();
-    }
+    shutdown();
 }
 
 void OpenGLRenderAdapter::setClearColor(float r, float g, float b, float a) {
@@ -74,6 +72,9 @@ void OpenGLRenderAdapter::beginFrame() {
 }
 
 void OpenGLRenderAdapter::shutdown() {
+    if (!initialized_) {
+        return;
+    }
     initialized_ = false;
     context_.destroy();
 }

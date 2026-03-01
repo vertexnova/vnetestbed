@@ -20,3 +20,6 @@
 #define VNE_INCLUDE_DIR         "@VNE_INCLUDE_DIR@"
 #define VNE_SRC_DIR             "@VNE_SRC_DIR@"
 #define VNE_BUILD_DIR           "@CMAKE_BINARY_DIR@"
+
+/* Logo path for ImGui + GLFW window icon (empty if no logo) */
+#define VNETESTBED_LOGO_PNG_PATH "@VNETESTBED_LOGO_PNG_PATH@"

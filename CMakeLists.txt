@@ -97,6 +97,8 @@ endif()
 #==============================================================================
 # vneinteraction is optional; only added when VNE_WITH_VNEINTRACTION=ON (see VNEPrivateDeps.cmake).
 option(VNE_WITH_VNEINTRACTION "Enable private dependency vneinteraction" OFF)
+option(VNE_TESTBED_IMGUI "Build ImGui layer (docking + viewports; requires OpenGL + GLFW)" ON)
+option(VNE_TESTBED_VNEIO "Enable vneio for logo (ImGui + GLFW window icon); requires nrrdio in vneio deps" ON)
 include(VneUseDep)
 include(VneTestbedDeps)
 
@@ -111,6 +113,21 @@ vnetestbed_use_dep(TARGET glfw SUBDIR glfw DEPS_DIR EXTERNAL
   SAVE_RESTORE GLFW_BUILD_DOCS)
 vnetestbed_use_dep(TARGET glad::glad SUBDIR glad DEPS_DIR INTERNAL)
 
+# ImGui (docking branch) - optional, requires glfw + glad + imgui submodule
+set(VNE_TESTBED_IMGUI_AVAILABLE OFF)
+if(VNE_TESTBED_IMGUI AND TARGET glfw AND TARGET glad::glad)
+    if(EXISTS "${VNE_DEPS_EXTERNAL_DIR}/imgui/imgui.h")
+        include(${CMAKE_CURRENT_LIST_DIR}/cmake/AddImgui.cmake)
+        set(VNE_TESTBED_IMGUI_AVAILABLE ON)
+        message(STATUS "VNE_TESTBED_IMGUI: available — imgui submodule found")
+    else()
+        message(STATUS "VNE_TESTBED_IMGUI: OFF — imgui submodule not initialized")
+        message(STATUS "  Run: git submodule update --init deps/external/imgui")
+    endif()
+elseif(VNE_TESTBED_IMGUI AND (NOT TARGET glfw OR NOT TARGET glad::glad))
+    message(STATUS "VNE_TESTBED_IMGUI: OFF — requires glfw and glad")
+endif()
+
 vnetestbed_use_dep(TARGET vne::events SUBDIR vneevents DEPS_DIR INTERNAL
   CACHE_VARS BUILD_TESTS OFF BUILD_EXAMPLES OFF SAVE_RESTORE BUILD_TESTS BUILD_EXAMPLES)
 vnetestbed_use_dep(TARGET vne::math SUBDIR vnemath DEPS_DIR INTERNAL
@@ -119,11 +136,92 @@ vnetestbed_use_dep(TARGET vne::math SUBDIR vnemath DEPS_DIR INTERNAL
 vnetestbed_use_dep(TARGET vne::scene SUBDIR vnescene DEPS_DIR INTERNAL
   CACHE_VARS VNE_SCENE_TESTS OFF BUILD_TESTS OFF BUILD_EXAMPLES OFF
   SAVE_RESTORE BUILD_TESTS BUILD_EXAMPLES)
+# Optional: vneio for image loading (logo in ImGui + GLFW window icon).
+# vneio's image component requires nrrdio; only add vneio when VNE_TESTBED_VNEIO=ON and nrrdio is available.
+set(VNE_TESTBED_HAVE_VNEIO OFF)
+if(VNE_TESTBED_IMGUI_AVAILABLE AND VNE_TESTBED_VNEIO AND EXISTS "${VNE_DEPS_INTERNAL_DIR}/vneio/CMakeLists.txt")
+  set(_vneio_nrrdio_ok OFF)
+  if(EXISTS "${VNE_DEPS_INTERNAL_DIR}/vneio/deps/external/nrrdio/CMakeLists.txt" OR
+     EXISTS "${VNE_DEPS_INTERNAL_DIR}/vneio/deps/external/nrrdio/nrrdio/CMakeLists.txt")
+    set(_vneio_nrrdio_ok ON)
+  endif()
+  find_package(nrrdio QUIET)
+  if(nrrdio_FOUND)
+    set(_vneio_nrrdio_ok ON)
+  endif()
+  if(_vneio_nrrdio_ok)
+    vnetestbed_use_dep(TARGET vne::io SUBDIR vneio DEPS_DIR INTERNAL
+      CACHE_VARS VNEIO_BUILD_TESTS OFF VNEIO_BUILD_EXAMPLES OFF
+      SAVE_RESTORE VNEIO_BUILD_TESTS VNEIO_BUILD_EXAMPLES)
+    if(TARGET vne::io)
+      set(VNE_TESTBED_HAVE_VNEIO ON)
+      message(STATUS "VneTestbed: VNE_TESTBED_VNEIO=ON — vneio linked, logo in ImGui + GLFW window icon")
+    endif()
+  else()
+    message(STATUS "VneTestbed: VNE_TESTBED_VNEIO=ON but vneio skipped (nrrdio required; add deps/external/nrrdio under vneio for logo)")
+  endif()
+endif()
 include(VNEPrivateDeps)
 
 # Include dirs and config
 set(VNE_INCLUDE_DIR ${PROJECT_SOURCE_DIR}/include)
 set(VNE_SRC_DIR ${PROJECT_SOURCE_DIR}/src)
+
+# Logo PNG path for ImGui + GLFW: generate from SVG if rsvg-convert found, else use source PNG if present.
+# Keep VNETESTBED_LOGO_PNG_PATH as "" or path (no quotes) so if(NOT ...) and if(...) work; config.h.in adds quotes.
+set(VNETESTBED_LOGO_PNG_PATH "")
+set(_logo_svg "${PROJECT_SOURCE_DIR}/icons/vertexnova_logo_medallion_only.svg")
+set(_logo_png_build "${CMAKE_BINARY_DIR}/bin/icons/vertexnova_logo_medallion_only.png")
+set(_logo_png_src "${PROJECT_SOURCE_DIR}/icons/vertexnova_logo_medallion_only.png")
+if(VNE_TESTBED_HAVE_VNEIO AND EXISTS "${_logo_svg}")
+  find_program(RSVG_CONVERT rsvg-convert)
+  if(RSVG_CONVERT)
+    file(MAKE_DIRECTORY "${CMAKE_BINARY_DIR}/bin/icons")
+    execute_process(COMMAND ${RSVG_CONVERT} -w 128 -h 128 -o "${_logo_png_build}" "${_logo_svg}"
+      RESULT_VARIABLE _rsvg_ret)
+    if(_rsvg_ret EQUAL 0)
+      set(VNETESTBED_LOGO_PNG_PATH "${_logo_png_build}")
+      message(STATUS "VneTestbed: logo PNG generated at ${VNETESTBED_LOGO_PNG_PATH}")
+    endif()
+  endif()
+  if(NOT VNETESTBED_LOGO_PNG_PATH AND EXISTS "${_logo_png_src}")
+    set(VNETESTBED_LOGO_PNG_PATH "${_logo_png_src}")
+    message(STATUS "VneTestbed: using logo PNG from source icons/")
+  endif()
+elseif(VNE_TESTBED_HAVE_VNEIO)
+  set(VNETESTBED_LOGO_PNG_PATH "")
+endif()
+if(NOT DEFINED VNETESTBED_LOGO_PNG_PATH)
+  set(VNETESTBED_LOGO_PNG_PATH "")
+endif()
+
+# macOS app bundle icon (.icns) for Dock and application menu (glfwSetWindowIcon does not work on macOS)
+set(VNETESTBED_MACOS_ICON_ICNS "")
+if(APPLE AND VNE_TESTBED_IMGUI_AVAILABLE AND EXISTS "${_logo_svg}")
+  find_program(RSVG_CONVERT rsvg-convert)
+  if(RSVG_CONVERT)
+    set(_icns_dir "${CMAKE_BINARY_DIR}/icons/vertexnova_logo.iconset")
+    set(_icns_out "${CMAKE_BINARY_DIR}/icons/vertexnova_logo.icns")
+    file(MAKE_DIRECTORY "${_icns_dir}")
+    set(_sizes 16 32 128 256 512)
+    set(_icns_ok ON)
+    foreach(_s IN LISTS _sizes)
+      execute_process(COMMAND ${RSVG_CONVERT} -w ${_s} -h ${_s} -o "${_icns_dir}/icon_${_s}x${_s}.png" "${_logo_svg}"
+        RESULT_VARIABLE _ret)
+      if(NOT _ret EQUAL 0)
+        set(_icns_ok OFF)
+      endif()
+    endforeach()
+    if(_icns_ok)
+      execute_process(COMMAND iconutil -c icns "${_icns_dir}" -o "${_icns_out}" RESULT_VARIABLE _iconutil_ret)
+      if(_iconutil_ret EQUAL 0)
+        set(VNETESTBED_MACOS_ICON_ICNS "${_icns_out}")
+        message(STATUS "VneTestbed: macOS app icon generated at ${VNETESTBED_MACOS_ICON_ICNS}")
+      endif()
+    endif()
+  endif()
+endif()
+
 configure_file(${PROJECT_SOURCE_DIR}/configs/config.h.in ${CMAKE_BINARY_DIR}/config.h)
 include_directories(${CMAKE_BINARY_DIR})
 
@@ -155,7 +253,7 @@ if(VNE_TESTBED_CI)
 endif()
 
 option(VNE_TESTBED_TESTS "Build vnetestbed test suite (turn OFF when used as submodule)" ON)
-option(VNE_TESTBED_EXAMPLES "Build vnetestbed example programs (turn OFF when used as submodule)" OFF)
+option(VNE_TESTBED_SAMPLES "Build vnetestbed sample programs (samples/; turn OFF when used as submodule)" OFF)
 option(ENABLE_DOXYGEN "Enable Doxygen documentation builds" OFF)
 option(ENABLE_COVERAGE "Enable code coverage reporting" OFF)
 option(WARNINGS_AS_ERRORS "Treat compiler warnings as errors" OFF)
@@ -169,12 +267,12 @@ endif()
 
 if(VNE_TESTBED_CI)
     set(VNE_TESTBED_TESTS ON CACHE BOOL "" FORCE)
-    set(VNE_TESTBED_EXAMPLES OFF CACHE BOOL "" FORCE)
-    message(STATUS "VneTestbed: CI build -> VNE_TESTBED_TESTS=ON, VNE_TESTBED_EXAMPLES=OFF")
+    set(VNE_TESTBED_SAMPLES OFF CACHE BOOL "" FORCE)
+    message(STATUS "VneTestbed: CI build -> VNE_TESTBED_TESTS=ON, VNE_TESTBED_SAMPLES=OFF")
 elseif(VNE_TESTBED_DEV)
     set(VNE_TESTBED_TESTS ON CACHE BOOL "" FORCE)
-    set(VNE_TESTBED_EXAMPLES ON CACHE BOOL "" FORCE)
-    message(STATUS "VneTestbed: DEV build -> VNE_TESTBED_TESTS=ON, VNE_TESTBED_EXAMPLES=ON")
+    set(VNE_TESTBED_SAMPLES ON CACHE BOOL "" FORCE)
+    message(STATUS "VneTestbed: DEV build -> VNE_TESTBED_TESTS=ON, VNE_TESTBED_SAMPLES=ON")
 endif()
 
 #==============================================================================
@@ -232,10 +330,9 @@ if(VNE_TESTBED_TESTS)
 endif()
 
 #==============================================================================
-# Examples and samples
+# Samples
 #==============================================================================
-if(VNE_TESTBED_EXAMPLES)
-    add_subdirectory(examples)
+if(VNE_TESTBED_SAMPLES)
     add_subdirectory(samples)
 endif()
 
