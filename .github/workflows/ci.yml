@@ -34,7 +34,7 @@ jobs:
 
       - name: Check formatting
         run: |
-          find src include examples tests -type f \( -name '*.h' -o -name '*.cpp' -o -name '*.hpp' -o -name '*.c' \) \
+          find src include samples tests -type f \( -name '*.h' -o -name '*.cpp' -o -name '*.hpp' -o -name '*.c' \) \
             -print0 | xargs -0 -r clang-format --dry-run --Werror --style=file --fallback-style=Google
 
   linux:

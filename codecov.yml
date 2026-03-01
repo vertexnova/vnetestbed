@@ -23,7 +23,7 @@ coverage:
 # Ignore files that are not part of library coverage
 ignore:
   - "tests/**/*"
-  - "examples/**/*"
+  - "samples/**/*"
   - "deps/external/**/*"
   - "deps/internal/**/*"
   - "cmake/**/*"
