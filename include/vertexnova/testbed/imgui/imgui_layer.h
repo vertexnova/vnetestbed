@@ -92,7 +92,7 @@ class ImGuiLayer : public ILayer {
     void setSettingsPanelWidth(float width_px) {
         if (width_px != settings_panel_width_) {
             settings_panel_width_ = width_px;
-            dock_layout_dirty_    = true;
+            dock_layout_dirty_ = true;
         }
     }
     [[nodiscard]] float getSettingsPanelWidth() const { return settings_panel_width_; }
@@ -126,7 +126,7 @@ class ImGuiLayer : public ILayer {
     SettingsCallback settings_callback_;
     bool initialized_{false};
     float settings_panel_width_{320.0f};  ///< Fixed pixel width; viewport absorbs remaining space.
-    bool  dock_layout_dirty_{false};      ///< True when settings_panel_width_ changed mid-session.
+    bool dock_layout_dirty_{false};       ///< True when settings_panel_width_ changed mid-session.
 
 #if defined(VNE_TESTBED_OPENGL) || defined(VNE_TESTBED_OPENGLES)
     std::unique_ptr<gl::Framebuffer> scene_fbo_;

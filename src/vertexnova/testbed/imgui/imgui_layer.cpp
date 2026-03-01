@@ -156,12 +156,12 @@ void ImGuiLayer::onGuiRender(const RenderContext& ctx) {
         // Rebuild when: (1) no saved layout yet, (2) viewport count changed, (3) panel width changed
         ImGuiDockNode* node = ImGui::DockBuilderGetNode(dockspace_id);
         bool has_saved_layout = (node && node->IsSplitNode());
-        bool layout_changed   = (last_dock_layout_ != viewport_layout_) || dock_layout_dirty_;
+        bool layout_changed = (last_dock_layout_ != viewport_layout_) || dock_layout_dirty_;
 
         if (!has_saved_layout || layout_changed) {
             ImGuiViewport* vp = ImGui::GetMainViewport();
             setupDockLayout(dockspace_id, vp->WorkSize);
-            last_dock_layout_  = viewport_layout_;
+            last_dock_layout_ = viewport_layout_;
             dock_layout_dirty_ = false;
         }
 
@@ -201,7 +201,7 @@ void ImGuiLayer::setupDockLayout(ImGuiID dockspace_id, const ImVec2& size) {
     // Settings panel: fixed pixel width so it does not grow with the window.
     // Viewport area absorbs all remaining space to the right.
     const float settings_w = settings_panel_width_;
-    const float total_w    = (size.x > 0.0f) ? size.x : 1.0f;
+    const float total_w = (size.x > 0.0f) ? size.x : 1.0f;
     const float ratio_right = (total_w - settings_w) / total_w;  // fraction kept on right
 
     ImGuiID id_right{};
@@ -299,8 +299,7 @@ void ImGuiLayer::renderSettingsPanel(const RenderContext& ctx) {
         ImGui::Separator();
         // Height = 0 means "fill to the bottom of the parent window".
         // The child scrolls independently of the viewport area.
-        ImGui::BeginChild("SettingsScrollArea", ImVec2(0.0f, 0.0f), false,
-                          ImGuiWindowFlags_HorizontalScrollbar);
+        ImGui::BeginChild("SettingsScrollArea", ImVec2(0.0f, 0.0f), false, ImGuiWindowFlags_HorizontalScrollbar);
         settings_callback_();
         ImGui::EndChild();
     }
