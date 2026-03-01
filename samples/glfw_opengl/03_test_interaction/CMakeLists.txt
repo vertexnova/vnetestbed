@@ -12,8 +12,6 @@ add_sample_platform_sources(sample_03_test_interaction)
 
 target_link_libraries(sample_03_test_interaction PRIVATE
     vne::testbed
-    glfw
-    glad::glad
 )
 
 target_include_directories(sample_03_test_interaction PRIVATE

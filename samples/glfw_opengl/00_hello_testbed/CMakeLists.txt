@@ -12,8 +12,6 @@ add_sample_platform_sources(sample_00_hello_testbed)
 
 target_link_libraries(sample_00_hello_testbed PRIVATE
     vne::testbed
-    glfw
-    glad::glad
 )
 
 target_include_directories(sample_00_hello_testbed PRIVATE
