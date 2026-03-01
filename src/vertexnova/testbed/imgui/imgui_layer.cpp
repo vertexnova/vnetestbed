@@ -11,6 +11,12 @@
 
 #include "vertexnova/testbed/imgui/imgui_layer.h"
 
+#if defined(VNE_TESTBED_EVENTS)
+#include "vertexnova/testbed/imgui/imgui_event_listener.h"
+#include "vertexnova/events/event_manager.h"
+#include "vertexnova/events/types.h"
+#endif
+
 #if defined(VNE_TESTBED_OPENGL)
 #include "vertexnova/testbed/window/glfw_window.h"
 #include <glad/glad.h>
@@ -72,13 +78,50 @@ void ImGuiLayer::tryInitFromContext() {
     const char* glsl_version = "#version 410 core";
 #endif
 
-    ImGui_ImplGlfw_InitForOpenGL(window, true);
+    // install_callbacks=false: ImGui gets input from ImGuiEventListener (EventManager) instead of GLFW.
+    // Matches vertexnova samples/core/imgui pattern for unified event handling.
+    ImGui_ImplGlfw_InitForOpenGL(window, false);
     ImGui_ImplOpenGL3_Init(glsl_version);
 
+    // Set initial display size (listener will update on WindowResizeEvent)
+    int w = 0, h = 0;
+    glfwGetFramebufferSize(window, &w, &h);
+    io.DisplaySize = ImVec2(static_cast<float>(w), static_cast<float>(h));
+
     initialized_ = true;
+
+#if defined(VNE_TESTBED_EVENTS)
+    // Register ImGui event listener for manual input forwarding (like application event listeners).
+    event_listener_ = std::make_shared<ImGuiEventListener>(this);
+    auto& mgr = vne::events::EventManager::instance();
+    using ET = vne::events::EventType;
+    mgr.registerListener(ET::eKeyPressed, event_listener_);
+    mgr.registerListener(ET::eKeyReleased, event_listener_);
+    mgr.registerListener(ET::eKeyTyped, event_listener_);
+    mgr.registerListener(ET::eMouseButtonPressed, event_listener_);
+    mgr.registerListener(ET::eMouseButtonReleased, event_listener_);
+    mgr.registerListener(ET::eMouseMoved, event_listener_);
+    mgr.registerListener(ET::eMouseScrolled, event_listener_);
+    mgr.registerListener(ET::eWindowResize, event_listener_);
+#endif
 }
 
 void ImGuiLayer::onDetach() {
+#if defined(VNE_TESTBED_EVENTS)
+    if (event_listener_) {
+        auto& mgr = vne::events::EventManager::instance();
+        using ET = vne::events::EventType;
+        mgr.unregisterListener(ET::eKeyPressed, event_listener_.get());
+        mgr.unregisterListener(ET::eKeyReleased, event_listener_.get());
+        mgr.unregisterListener(ET::eKeyTyped, event_listener_.get());
+        mgr.unregisterListener(ET::eMouseButtonPressed, event_listener_.get());
+        mgr.unregisterListener(ET::eMouseButtonReleased, event_listener_.get());
+        mgr.unregisterListener(ET::eMouseMoved, event_listener_.get());
+        mgr.unregisterListener(ET::eMouseScrolled, event_listener_.get());
+        mgr.unregisterListener(ET::eWindowResize, event_listener_.get());
+        event_listener_.reset();
+    }
+#endif
 #if defined(VNE_TESTBED_OPENGL) || defined(VNE_TESTBED_OPENGLES)
     scene_fbo_.reset();
     scene_fbo_width_ = 0;

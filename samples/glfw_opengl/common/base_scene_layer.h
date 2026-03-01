@@ -36,12 +36,14 @@
 
 #include <memory>
 
+#ifdef VNE_TESTBED_INTERACTION
 // ---------------------------------------------------------------------------
 // Non-owning shared_ptr helper (same pattern as 02_events / 04_scene_interaction)
 // ---------------------------------------------------------------------------
 inline vne::events::EventManager::ListenerPtr asBaseListenerPtr(vne::events::EventListener* raw) {
     return {raw, [](vne::events::EventListener*) {}};
 }
+#endif
 
 // ---------------------------------------------------------------------------
 // BaseSceneLayer — grid + axes + perspective camera

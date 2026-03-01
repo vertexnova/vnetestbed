@@ -63,7 +63,11 @@ set(HEADER_FILES
 # ImGui layer (when imgui submodule + OpenGL available)
 if(VNE_TESTBED_IMGUI_AVAILABLE AND (VNE_TESTBED_OPENGL OR VNE_TESTBED_OPENGLES) AND TARGET imgui)
     list(APPEND SOURCE_FILES vertexnova/testbed/imgui/imgui_layer.cpp)
+    list(APPEND SOURCE_FILES vertexnova/testbed/imgui/imgui_event_listener.cpp)
+    list(APPEND SOURCE_FILES vertexnova/testbed/imgui/imgui_key_mapping.cpp)
     list(APPEND HEADER_FILES ${VNE_INCLUDE_DIR}/vertexnova/testbed/imgui/imgui_layer.h)
+    list(APPEND HEADER_FILES ${VNE_INCLUDE_DIR}/vertexnova/testbed/imgui/imgui_event_listener.h)
+    list(APPEND HEADER_FILES ${VNE_INCLUDE_DIR}/vertexnova/testbed/imgui/imgui_key_mapping.h)
 endif()
 
 add_library(vnetestbed STATIC ${SOURCE_FILES} ${HEADER_FILES})

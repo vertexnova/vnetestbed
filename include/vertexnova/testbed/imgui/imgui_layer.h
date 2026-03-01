@@ -24,6 +24,12 @@
 #error "imgui_layer.h requires VNE_TESTBED_IMGUI. Build with ImGui enabled."
 #endif
 
+namespace vne {
+namespace testbed {
+class ImGuiEventListener;
+}
+}
+
 #include "vertexnova/testbed/app_context.h"
 #include "vertexnova/testbed/layer.h"
 #include "vertexnova/testbed/render_context.h"
@@ -111,6 +117,9 @@ class ImGuiLayer : public ILayer {
     /** @brief Scene FBO texture id for ImGui::Image; 0 if not available. */
     [[nodiscard]] unsigned int getSceneTextureId() const;
 
+    /** @brief Whether ImGui context and backends are initialized (for ImGuiEventListener). */
+    [[nodiscard]] bool isInitialized() const { return initialized_; }
+
    private:
     void tryInitFromContext();  // Init ImGui; no-op if already initialized or no window
     void ensureSceneFbo(int width, int height);
@@ -132,6 +141,10 @@ class ImGuiLayer : public ILayer {
     std::unique_ptr<gl::Framebuffer> scene_fbo_;
     int scene_fbo_width_{0};
     int scene_fbo_height_{0};
+#endif
+
+#if defined(VNE_TESTBED_EVENTS)
+    std::shared_ptr<ImGuiEventListener> event_listener_;
 #endif
 };
 
