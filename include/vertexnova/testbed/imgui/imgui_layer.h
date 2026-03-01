@@ -58,8 +58,9 @@ namespace testbed {
  * @class ImGuiLayer
  * @brief ImGui overlay with docking, viewports, settings panel, and viewport layout.
  *
- * Push as first overlay so onGuiBegin runs before other overlays and onGuiEnd runs last.
- * Handles ImGui context lifecycle, GLFW + OpenGL3 backend init, and input forwarding.
+ * Recommended to be added early in the layer stack so onGuiBegin runs before other
+ * UI layers and onGuiEnd runs after layers that are added later in the stack. Handles
+ * ImGui context lifecycle, GLFW + OpenGL3 backend init, and input forwarding.
  */
 class ImGuiLayer : public ILayer {
    public:
