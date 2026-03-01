@@ -398,7 +398,7 @@ void ImGuiLayer::renderViewportWindows(const RenderContext& ctx) {
     auto drawViewport = [this, multi_viewport](const char* title, int index) {
         const unsigned int tex_id = multi_viewport ? getSceneTextureId(index) : getSceneTextureId();
         const bool has_scene = (tex_id != 0u);
-        const ImTextureID im_tex_id = static_cast<ImTextureID>(tex_id);
+        const ImTextureID im_tex_id = static_cast<ImTextureID>(static_cast<intptr_t>(tex_id));
 
         if (ImGui::Begin(title, nullptr, ImGuiWindowFlags_None)) {
             ImVec2 pos = ImGui::GetWindowPos();
