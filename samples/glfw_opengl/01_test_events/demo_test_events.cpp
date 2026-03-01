@@ -240,9 +240,10 @@ class EventsSettingsLayer : public vne::testbed::ILayer {
 
             // Mouse state from InputManager
             auto [mx, my] = vne::events::InputManager::mousePosition();
+            // sx = horizontal scroll (e.g. tilt wheel / trackpad); sy = vertical (normal wheel). sx is 0 on most mice.
             auto [sx, sy] = vne::events::InputManager::mouseScroll();
             ImGui::Text("Mouse pos:    %d, %d", mx, my);
-            ImGui::Text("Mouse scroll: %.2f, %.2f", static_cast<double>(sx), static_cast<double>(sy));
+            ImGui::Text("Mouse scroll: X %.2f  Y %.2f", static_cast<double>(sx), static_cast<double>(sy));
             // Fixed-width labels so layout does not shift when toggling up/down
             const char* lb = vne::events::InputManager::isMouseButtonPressed(0) ? "down" : "up  ";
             const char* rb = vne::events::InputManager::isMouseButtonPressed(1) ? "down" : "up  ";
