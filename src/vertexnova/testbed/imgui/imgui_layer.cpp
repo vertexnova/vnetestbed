@@ -455,7 +455,11 @@ void ImGuiLayer::setupDockLayout(ImGuiID dockspace_id, const ImVec2& size) {
             ImGui::DockBuilderSplitNode(id_viewport, ImGuiDir_Left, 0.5f, &id_left, &id_right);  // 50% left, 50% right
             ImGuiID id_left_top{};
             ImGuiID id_left_bottom{};
-            ImGui::DockBuilderSplitNode(id_left, ImGuiDir_Down, 0.5f, &id_left_bottom, &id_left_top);  // top 50%, bottom 50%
+            ImGui::DockBuilderSplitNode(id_left,
+                                        ImGuiDir_Down,
+                                        0.5f,
+                                        &id_left_bottom,
+                                        &id_left_top);  // top 50%, bottom 50%
             ImGui::DockBuilderDockWindow("Viewport 1", id_left_top);
             ImGui::DockBuilderDockWindow("Viewport 2", id_left_bottom);
             ImGui::DockBuilderDockWindow("Viewport 3", id_right);  // full height on right
@@ -476,8 +480,10 @@ void ImGuiLayer::renderSettingsPanel(const RenderContext& ctx) {
     // ---- Fixed header (always visible, not scrolled) -------------------------
 
     const char* layout_items[] = {"1 Viewport", "2 Viewports", "3 Viewports", "4 Viewports"};
-    static constexpr ViewportLayout LAYOUTS[] = {
-        ViewportLayout::eOne, ViewportLayout::eTwo, ViewportLayout::eThree, ViewportLayout::eFour};
+    static constexpr ViewportLayout LAYOUTS[] = {ViewportLayout::eOne,
+                                                 ViewportLayout::eTwo,
+                                                 ViewportLayout::eThree,
+                                                 ViewportLayout::eFour};
     constexpr int layout_count = 4;
     int layout_idx = 0;
     for (int i = 0; i < layout_count; ++i) {
