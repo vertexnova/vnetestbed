@@ -34,6 +34,10 @@
 #include "vertexnova/interaction/camera_system_controller.h"
 #endif
 
+#ifdef VNE_TESTBED_IMGUI
+namespace vne { namespace testbed { class ImGuiLayer; } }
+#endif
+
 #include <memory>
 
 #ifdef VNE_TESTBED_INTERACTION
@@ -141,6 +145,11 @@ class BaseInteractionLayer : public vne::testbed::ILayer, public vne::events::Ev
         }
     }
 
+#ifdef VNE_TESTBED_IMGUI
+    /** @brief Set ImGuiLayer for viewport-based hit-testing; only process interaction when mouse is over a viewport. */
+    void setImGuiLayer(vne::testbed::ImGuiLayer* layer) { imgui_layer_ = layer; }
+#endif
+
     void onAttach(vne::testbed::AppContext& ctx) override {
         auto& mgr = vne::events::EventManager::instance();
         auto self = asBaseListenerPtr(this);
@@ -177,6 +186,18 @@ class BaseInteractionLayer : public vne::testbed::ILayer, public vne::events::Ev
             return;
         }
         using ET = vne::events::EventType;
+        float check_x = static_cast<float>(last_x_);
+        float check_y = static_cast<float>(last_y_);
+        if (event.type() == ET::eMouseMoved) {
+            const auto& e = static_cast<const vne::events::MouseMovedEvent&>(event);
+            check_x = static_cast<float>(e.x());
+            check_y = static_cast<float>(e.y());
+        }
+#ifdef VNE_TESTBED_IMGUI
+        if (imgui_layer_ && !imgui_layer_->isMouseOverSceneViewport(check_x, check_y)) {
+            return;
+        }
+#endif
         switch (event.type()) {
             case ET::eMouseMoved: {
                 const auto& e = static_cast<const vne::events::MouseMovedEvent&>(event);
@@ -239,6 +260,9 @@ class BaseInteractionLayer : public vne::testbed::ILayer, public vne::events::Ev
     double last_x_{0.0};
     double last_y_{0.0};
     bool first_mouse_{true};
+#ifdef VNE_TESTBED_IMGUI
+    vne::testbed::ImGuiLayer* imgui_layer_{nullptr};
+#endif
 };
 
 #endif  // VNE_TESTBED_INTERACTION

@@ -82,6 +82,10 @@ class InteractionTestLayer : public vne::testbed::ILayer, public vne::events::Ev
         }
     }
 
+#ifdef VNE_TESTBED_IMGUI
+    void setImGuiLayer(vne::testbed::ImGuiLayer* layer) { imgui_layer_ = layer; }
+#endif
+
     void onAttach(vne::testbed::AppContext& ctx) override {
         auto& mgr = vne::events::EventManager::instance();
         auto self = asListenerPtr(this);
@@ -116,6 +120,17 @@ class InteractionTestLayer : public vne::testbed::ILayer, public vne::events::Ev
         if (!controller_)
             return;
         using ET = vne::events::EventType;
+        float check_x = static_cast<float>(last_x_);
+        float check_y = static_cast<float>(last_y_);
+        if (event.type() == ET::eMouseMoved) {
+            const auto& e = static_cast<const vne::events::MouseMovedEvent&>(event);
+            check_x = static_cast<float>(e.x());
+            check_y = static_cast<float>(e.y());
+        }
+#ifdef VNE_TESTBED_IMGUI
+        if (imgui_layer_ && !imgui_layer_->isMouseOverSceneViewport(check_x, check_y))
+            return;
+#endif
         switch (event.type()) {
             case ET::eMouseMoved: {
                 const auto& e = static_cast<const vne::events::MouseMovedEvent&>(event);
@@ -252,6 +267,9 @@ class InteractionTestLayer : public vne::testbed::ILayer, public vne::events::Ev
     double last_x_{0.0};
     double last_y_{0.0};
     bool first_mouse_{true};
+#ifdef VNE_TESTBED_IMGUI
+    vne::testbed::ImGuiLayer* imgui_layer_{nullptr};
+#endif
 };
 
 // ---------------------------------------------------------------------------
@@ -419,8 +437,10 @@ void RegisterTestInteractionDemo(vne::testbed::Application& app) {
 #ifdef VNE_TESTBED_IMGUI
     auto* settings = new InteractionSettingsLayer();
     auto* imgui = dynamic_cast<vne::testbed::ImGuiLayer*>(app.getLayerStack().findLayerByName("ImGuiLayer"));
-    if (imgui)
+    if (imgui) {
         settings->setImGuiLayer(imgui);
+        interaction->setImGuiLayer(imgui);
+    }
     settings->setInteractionLayer(interaction);
     app.getLayerStack().pushLayer(std::unique_ptr<InteractionSettingsLayer>(settings), app.getAppContext());
 #endif

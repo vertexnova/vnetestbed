@@ -700,8 +700,12 @@ void RegisterTestSceneDemo(vne::testbed::Application& app) {
 #ifdef VNE_TESTBED_IMGUI
     auto* settings = new SceneSettingsLayer();
     auto* imgui = dynamic_cast<vne::testbed::ImGuiLayer*>(app.getLayerStack().findLayerByName("ImGuiLayer"));
-    if (imgui)
+    if (imgui) {
         settings->setImGuiLayer(imgui);
+#ifdef VNE_TESTBED_INTERACTION
+        interaction->setImGuiLayer(imgui);
+#endif
+    }
     settings->setSceneLayer(scene);
     app.getLayerStack().pushLayer(std::unique_ptr<SceneSettingsLayer>(settings), app.getAppContext());
 #endif

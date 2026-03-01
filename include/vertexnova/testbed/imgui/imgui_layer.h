@@ -120,6 +120,22 @@ class ImGuiLayer : public ILayer {
     /** @brief Whether ImGui context and backends are initialized (for ImGuiEventListener). */
     [[nodiscard]] bool isInitialized() const { return initialized_; }
 
+    /**
+     * @brief Check if mouse is over any scene viewport window.
+     * @param mouse_x Screen-space X (e.g. from GLFW or event)
+     * @param mouse_y Screen-space Y
+     * @return true if over Viewport / Viewport 1 / Viewport 2 / etc.
+     */
+    [[nodiscard]] bool isMouseOverSceneViewport(float mouse_x, float mouse_y) const;
+
+    /**
+     * @brief Get the viewport index under the mouse (0-based).
+     * @param mouse_x Screen-space X
+     * @param mouse_y Screen-space Y
+     * @return 0..(N-1) for viewport index, or -1 if not over any scene viewport
+     */
+    [[nodiscard]] int getHoveredViewportIndex(float mouse_x, float mouse_y) const;
+
    private:
     void tryInitFromContext();  // Init ImGui; no-op if already initialized or no window
     void ensureSceneFbo(int width, int height);
@@ -142,6 +158,9 @@ class ImGuiLayer : public ILayer {
     int scene_fbo_width_{0};
     int scene_fbo_height_{0};
 #endif
+
+    /// Viewport window rects in screen space (min_x, min_y, max_x, max_y); updated each frame in renderViewportWindows
+    std::vector<float> viewport_rects_;
 
 #if defined(VNE_TESTBED_EVENTS)
     std::shared_ptr<ImGuiEventListener> event_listener_;

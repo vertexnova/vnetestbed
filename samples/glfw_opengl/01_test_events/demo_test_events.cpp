@@ -316,6 +316,9 @@ void RegisterTestEventsDemo(vne::testbed::Application& app) {
     auto* imgui = dynamic_cast<vne::testbed::ImGuiLayer*>(app.getLayerStack().findLayerByName("ImGuiLayer"));
     if (imgui) {
         settings->setImGuiLayer(imgui);
+#ifdef VNE_TESTBED_INTERACTION
+        interaction->setImGuiLayer(imgui);
+#endif
     }
     settings->setEventsLayer(events_layer);
     app.getLayerStack().pushLayer(std::unique_ptr<EventsSettingsLayer>(settings), app.getAppContext());

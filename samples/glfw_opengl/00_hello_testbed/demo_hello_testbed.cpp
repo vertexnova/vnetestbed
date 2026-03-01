@@ -113,6 +113,9 @@ void RegisterHelloTestbedDemo(vne::testbed::Application& app) {
     auto* imgui = dynamic_cast<vne::testbed::ImGuiLayer*>(app.getLayerStack().findLayerByName("ImGuiLayer"));
     if (imgui) {
         settings->setImGuiLayer(imgui);
+#ifdef VNE_TESTBED_INTERACTION
+        interaction->setImGuiLayer(imgui);
+#endif
     }
     app.getLayerStack().pushLayer(std::unique_ptr<HelloSettingsLayer>(settings), app.getAppContext());
 #endif

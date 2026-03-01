@@ -356,14 +356,23 @@ void ImGuiLayer::renderViewportWindows(const RenderContext& ctx) {
     const bool has_scene = (tex_id != 0u);
     const ImTextureID im_tex_id = static_cast<ImTextureID>(tex_id);
 
-    auto drawViewport = [im_tex_id, has_scene](const char* title) {
+    viewport_rects_.clear();
+
+    auto drawViewport = [this, im_tex_id, has_scene](const char* title) {
         if (ImGui::Begin(title, nullptr, ImGuiWindowFlags_None)) {
-            ImVec2 size = ImGui::GetContentRegionAvail();
-            if (has_scene && size.x > 0 && size.y > 0) {
+            ImVec2 pos = ImGui::GetWindowPos();
+            ImVec2 size = ImGui::GetWindowSize();
+            viewport_rects_.push_back(pos.x);
+            viewport_rects_.push_back(pos.y);
+            viewport_rects_.push_back(pos.x + size.x);
+            viewport_rects_.push_back(pos.y + size.y);
+
+            ImVec2 content_size = ImGui::GetContentRegionAvail();
+            if (has_scene && content_size.x > 0 && content_size.y > 0) {
 #if IMGUI_VERSION_NUM >= 19200
-                ImGui::Image(ImTextureRef(im_tex_id), size, ImVec2(0, 1), ImVec2(1, 0));
+                ImGui::Image(ImTextureRef(im_tex_id), content_size, ImVec2(0, 1), ImVec2(1, 0));
 #else
-                ImGui::Image(im_tex_id, size, ImVec2(0, 1), ImVec2(1, 0));
+                ImGui::Image(im_tex_id, content_size, ImVec2(0, 1), ImVec2(1, 0));
 #endif
             } else {
                 ImGui::Text("No scene");
@@ -387,6 +396,24 @@ void ImGuiLayer::renderViewportWindows(const RenderContext& ctx) {
             drawViewport("Viewport 4");
             break;
     }
+}
+
+bool ImGuiLayer::isMouseOverSceneViewport(float mouse_x, float mouse_y) const {
+    return getHoveredViewportIndex(mouse_x, mouse_y) >= 0;
+}
+
+int ImGuiLayer::getHoveredViewportIndex(float mouse_x, float mouse_y) const {
+    const size_t n = viewport_rects_.size() / 4u;
+    for (size_t i = 0; i < n; ++i) {
+        const float min_x = viewport_rects_[i * 4u + 0u];
+        const float min_y = viewport_rects_[i * 4u + 1u];
+        const float max_x = viewport_rects_[i * 4u + 2u];
+        const float max_y = viewport_rects_[i * 4u + 3u];
+        if (mouse_x >= min_x && mouse_x <= max_x && mouse_y >= min_y && mouse_y <= max_y) {
+            return static_cast<int>(i);
+        }
+    }
+    return -1;
 }
 
 unsigned int ImGuiLayer::getSceneTextureId() const {
