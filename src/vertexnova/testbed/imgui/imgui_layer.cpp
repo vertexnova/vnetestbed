@@ -325,16 +325,20 @@ void ImGuiLayer::onGuiRender(const RenderContext& ctx) {
         ImGuiID dockspace_id = ImGui::GetID("MainDockSpace");
         ImGui::DockSpace(dockspace_id, ImVec2(0.0f, 0.0f), ImGuiDockNodeFlags_None);
 
-        // Rebuild when: (1) no saved layout yet, (2) viewport count changed, (3) panel width changed
-        // Use !IsEmpty() so leaf nodes with docked windows (restored from imgui.ini) are preserved.
+        // Rebuild when: (1) no saved layout yet, (2) viewport count changed, (3) panel width changed,
+        // (4) window size changed — so Settings stays fixed and Viewport absorbs resize.
         ImGuiDockNode* node = ImGui::DockBuilderGetNode(dockspace_id);
+        ImGuiViewport* vp = ImGui::GetMainViewport();
+        const ImVec2 current_size = vp->WorkSize;
         bool has_saved_layout = (node && !node->IsEmpty());
-        bool layout_changed = (last_dock_layout_ != viewport_layout_) || dock_layout_dirty_;
+        bool size_changed = (current_size.x != last_dock_size_.x || current_size.y != last_dock_size_.y);
+        bool layout_changed =
+            (last_dock_layout_ != viewport_layout_) || dock_layout_dirty_ || size_changed;
 
         if (!has_saved_layout || layout_changed) {
-            ImGuiViewport* vp = ImGui::GetMainViewport();
-            setupDockLayout(dockspace_id, vp->WorkSize);
+            setupDockLayout(dockspace_id, current_size);
             last_dock_layout_ = viewport_layout_;
+            last_dock_size_ = current_size;
             dock_layout_dirty_ = false;
         }
 
