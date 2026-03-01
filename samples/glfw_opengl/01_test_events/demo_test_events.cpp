@@ -9,14 +9,14 @@
  *
  * What you can test here:
  *   • Every vneevents type arrives correctly (keyboard, mouse button,
- *     mouse move, scroll, window resize)
+ *     mouse move, scroll, window resize, window close)
  *   • Event ordering — move vs pressed vs released
  *   • EventManager queue depth (events/sec counter)
  *   • Input polling via InputManager::isKeyPressed() — shows held state
  *     separately from discrete events
  *
  * ImGui Settings panel sections:
- *   [Events]      last 20 events with type, data, and frame counter
+ *   [Events]      last 20 events (key, mouse, window resize/close) with type, data, frame
  *   [Input Poll]  live key-held state for WASD + Space + Escape,
  *                 current mouse position, current scroll
  *   [Stats]       total events received, events this second
@@ -45,12 +45,21 @@
 
 #include "../common/base_scene_layer.h"
 
+#include <cstring>
 #include <deque>
 #include <string>
 
 namespace {
 
 constexpr int kRenderSortKey = 999;  //!< layer sorting order number
+
+enum class EventLogCategory { Keyboard, Mouse, Window };
+
+struct EventLogEntry {
+    EventLogCategory category;
+    std::string line;
+};
+
 // ---------------------------------------------------------------------------
 // EventsLayer — captures every event and exposes stats for the UI
 // ---------------------------------------------------------------------------
@@ -82,73 +91,98 @@ class EventsLayer : public vne::testbed::ILayer {
         events_total_++;
         events_since_last_update_++;
 
-        // Build a short display string: "type  data"
+        EventLogCategory cat = EventLogCategory::Keyboard;
         std::string line;
         using ET = vne::events::EventType;
         switch (event.type()) {
             case ET::eKeyPressed: {
+                cat = EventLogCategory::Keyboard;
                 const auto& e = static_cast<const vne::events::KeyEvent&>(event);
+                setLastKey(static_cast<int>(e.keyCode()), LastKeyAction::Pressed);
                 line = "KeyPressed    key=" + std::to_string(static_cast<int>(e.keyCode()));
                 break;
             }
             case ET::eKeyRepeat: {
+                cat = EventLogCategory::Keyboard;
                 const auto& e = static_cast<const vne::events::KeyRepeatEvent&>(event);
+                setLastKey(static_cast<int>(e.keyCode()), LastKeyAction::Repeat);
                 line = "KeyRepeat     key=" + std::to_string(static_cast<int>(e.keyCode()))
                        + "  count=" + std::to_string(e.repeatCount());
                 break;
             }
             case ET::eKeyReleased: {
+                cat = EventLogCategory::Keyboard;
                 const auto& e = static_cast<const vne::events::KeyEvent&>(event);
+                setLastKey(static_cast<int>(e.keyCode()), LastKeyAction::Released);
                 line = "KeyReleased   key=" + std::to_string(static_cast<int>(e.keyCode()));
                 break;
             }
             case ET::eMouseButtonPressed: {
+                cat = EventLogCategory::Mouse;
                 const auto& e = static_cast<const vne::events::MouseButtonEvent&>(event);
                 line = "MousePressed  btn=" + std::to_string(static_cast<int>(e.button()));
                 break;
             }
             case ET::eMouseButtonReleased: {
+                cat = EventLogCategory::Mouse;
                 const auto& e = static_cast<const vne::events::MouseButtonEvent&>(event);
                 line = "MouseReleased btn=" + std::to_string(static_cast<int>(e.button()));
                 break;
             }
             case ET::eMouseMoved: {
+                cat = EventLogCategory::Mouse;
                 const auto& e = static_cast<const vne::events::MouseMovedEvent&>(event);
                 line = "MouseMoved    x=" + std::to_string(static_cast<int>(e.x()))
                        + "  y=" + std::to_string(static_cast<int>(e.y()));
                 break;
             }
             case ET::eMouseScrolled: {
+                cat = EventLogCategory::Mouse;
                 const auto& e = static_cast<const vne::events::MouseScrolledEvent&>(event);
                 line = "MouseScrolled dx=" + std::to_string(static_cast<int>(e.xOffset()))
                        + "  dy=" + std::to_string(static_cast<int>(e.yOffset()));
                 break;
             }
             case ET::eWindowResize: {
+                cat = EventLogCategory::Window;
                 const auto& e = static_cast<const vne::events::WindowResizeEvent&>(event);
                 line = "WindowResize  w=" + std::to_string(e.width()) + "  h=" + std::to_string(e.height());
                 break;
             }
+            case ET::eWindowClose:
+                cat = EventLogCategory::Window;
+                line = "WindowClose";
+                break;
             default:
                 line = event.toString();
                 break;
         }
 
-        // Prepend frame number
         line = "[f-" + std::to_string(frame_) + "] " + line;
-        log_.push_back(std::move(line));
+        log_.push_back({cat, std::move(line)});
         if (log_.size() > kMaxLog) {
             log_.pop_front();
         }
     }
 
     // Accessors for the UI layer
-    [[nodiscard]] const std::deque<std::string>& log() const { return log_; }
+    [[nodiscard]] const std::deque<EventLogEntry>& log() const { return log_; }
     [[nodiscard]] uint64_t totalEvents() const { return events_total_; }
     [[nodiscard]] uint32_t eventsPerSecond() const { return events_per_second_; }
 
+    enum class LastKeyAction { None, Pressed, Released, Repeat };
+    [[nodiscard]] int lastKeyCode() const { return last_key_code_; }
+    [[nodiscard]] LastKeyAction lastKeyAction() const { return last_key_action_; }
+
    private:
-    std::deque<std::string> log_;
+    void setLastKey(int key_code, LastKeyAction action) {
+        last_key_code_ = key_code;
+        last_key_action_ = action;
+    }
+
+    std::deque<EventLogEntry> log_;
+    int last_key_code_{-1};
+    LastKeyAction last_key_action_{LastKeyAction::None};
     uint64_t events_total_{0};
     uint32_t events_since_last_update_{0};
     uint32_t events_this_second_{0};
@@ -186,6 +220,20 @@ class EventsSettingsLayer : public vne::testbed::ILayer {
     }
 
    private:
+    static const char* keyCodeToLabel(int key_code) {
+        using K = vne::events::KeyCode;
+        switch (static_cast<K>(key_code)) {
+            case K::eW: return "W";
+            case K::eA: return "A";
+            case K::eS: return "S";
+            case K::eD: return "D";
+            case K::eSpace: return "Space";
+            case K::eEscape: return "Escape";
+            case K::eLeftShift: return "Shift";
+            default: return nullptr;
+        }
+    }
+
     static void keyPollRow(const char* label, int key) {
         const bool held = vne::events::InputManager::isKeyPressed(key);
         const bool just_on = vne::events::InputManager::isKeyJustPressed(key);
@@ -200,7 +248,7 @@ class EventsSettingsLayer : public vne::testbed::ILayer {
     }
 
     void renderPanel() {
-        // ---- Event log ----
+        // ---- Event log (keyboard / mouse / window with separators and color scheme) ----
         if (ImGui::CollapsingHeader("Events (last 20)", ImGuiTreeNodeFlags_DefaultOpen)) {
             if (events_layer_) {
                 ImGui::Text("Total: %llu  /sec: %u",
@@ -210,17 +258,33 @@ class EventsSettingsLayer : public vne::testbed::ILayer {
 
                 const float log_height = ImGui::GetTextLineHeightWithSpacing() * 8.0f;
                 ImGui::BeginChild("EventLog", ImVec2(0.f, log_height), true);
-                // Show newest at top
                 const auto& log = events_layer_->log();
                 for (auto it = log.rbegin(); it != log.rend(); ++it) {
-                    ImGui::TextUnformatted(it->c_str());
+                    ImGui::TextUnformatted(it->line.c_str());
                 }
                 ImGui::EndChild();
             }
         }
 
+        // ---- Window size & active viewport ----
+        if (ImGui::CollapsingHeader("Window & viewports", ImGuiTreeNodeFlags_DefaultOpen)) {
+            auto [win_w, win_h] = vne::events::InputManager::windowSize();
+            ImGui::Text("Window size: %d x %d", win_w, win_h);
+            if (imgui_layer_) {
+                const int vp_count = imgui_layer_->getViewportCount();
+                ImGui::Text("Viewports: %d", vp_count);
+                auto [mx, my] = vne::events::InputManager::mousePosition();
+                const int hovered = imgui_layer_->getHoveredViewportIndex(static_cast<float>(mx), static_cast<float>(my));
+                const char* active_name = (hovered >= 0) ? imgui_layer_->getViewportName(hovered) : "—";
+                ImGui::Text("Active viewport: %s", active_name);
+            }
+        }
+
         // ---- Input polling ----
         if (ImGui::CollapsingHeader("Input Polling", ImGuiTreeNodeFlags_DefaultOpen)) {
+            // Keyboard: key table + key press/release display + char entry
+            ImGui::Text("Keyboard");
+            ImGui::Separator();
             if (ImGui::BeginTable("PollTable", 2, ImGuiTableFlags_BordersInnerV | ImGuiTableFlags_RowBg)) {
                 ImGui::TableSetupColumn("Key", ImGuiTableColumnFlags_WidthFixed, 80.f);
                 ImGui::TableSetupColumn("State", ImGuiTableColumnFlags_WidthStretch);
@@ -236,21 +300,48 @@ class EventsSettingsLayer : public vne::testbed::ILayer {
 
                 ImGui::EndTable();
             }
+            if (events_layer_) {
+                const int kc = events_layer_->lastKeyCode();
+                const auto ka = events_layer_->lastKeyAction();
+                const char* action_str = (ka == EventsLayer::LastKeyAction::Pressed)  ? "pressed"
+                                      : (ka == EventsLayer::LastKeyAction::Released) ? "released"
+                                      : (ka == EventsLayer::LastKeyAction::Repeat)   ? "repeat"
+                                                                                     : "";
+                const char* key_label = keyCodeToLabel(kc);
+                if (action_str[0] != '\0' && kc >= 0) {
+                    if (key_label) {
+                        ImGui::Text("Key: %s %s", key_label, action_str);
+                    } else {
+                        ImGui::Text("Key: %d %s", kc, action_str);
+                    }
+                }
+            }
             ImGui::Spacing();
+            ImGui::Text("Char entry");
+            ImGui::Separator();
+            ImGui::InputText("Char display", char_display_buf_, sizeof(char_display_buf_));
+            const size_t len = std::strlen(char_display_buf_);
+            const char* last_n =
+                (len <= kCharDisplayLastN) ? char_display_buf_ : (char_display_buf_ + len - kCharDisplayLastN);
+            ImGui::Text("Last 10: %s", len > 0u ? last_n : "(none)");
 
-            // Mouse state from InputManager
-            auto [mx, my] = vne::events::InputManager::mousePosition();
-            // sx = horizontal scroll (e.g. tilt wheel / trackpad); sy = vertical (normal wheel). sx is 0 on most mice.
-            auto [sx, sy] = vne::events::InputManager::mouseScroll();
-            ImGui::Text("Mouse pos:    %d, %d", mx, my);
-            ImGui::Text("Mouse scroll: X %.2f  Y %.2f", static_cast<double>(sx), static_cast<double>(sy));
-            // Fixed-width labels so layout does not shift when toggling up/down
-            const char* lb = vne::events::InputManager::isMouseButtonPressed(0) ? "down" : "up  ";
-            const char* rb = vne::events::InputManager::isMouseButtonPressed(1) ? "down" : "up  ";
-            const char* mb = vne::events::InputManager::isMouseButtonPressed(2) ? "down" : "up  ";
-            ImGui::Text("LMB: %s   RMB: %s   MMB: %s", lb, rb, mb);
+            // Mouse: collapsing header
+            if (ImGui::CollapsingHeader("Mouse", ImGuiTreeNodeFlags_DefaultOpen)) {
+                auto [mx, my] = vne::events::InputManager::mousePosition();
+                auto [sx, sy] = vne::events::InputManager::mouseScroll();
+                ImGui::Text("Mouse pos:    %d, %d", mx, my);
+                ImGui::Text("Mouse scroll: X %.2f  Y %.2f", static_cast<double>(sx), static_cast<double>(sy));
+                const char* lb = vne::events::InputManager::isMouseButtonPressed(0) ? "down" : "up  ";
+                const char* rb = vne::events::InputManager::isMouseButtonPressed(1) ? "down" : "up  ";
+                const char* mb = vne::events::InputManager::isMouseButtonPressed(2) ? "down" : "up  ";
+                ImGui::Text("LMB: %s   RMB: %s   MMB: %s", lb, rb, mb);
+            }
         }
     }
+
+    static constexpr size_t kCharDisplayBufSize = 256;
+    static constexpr size_t kCharDisplayLastN = 10;
+    char char_display_buf_[kCharDisplayBufSize] = {};
 
     vne::testbed::ImGuiLayer* imgui_layer_{nullptr};
     EventsLayer* events_layer_{nullptr};

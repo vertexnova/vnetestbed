@@ -30,6 +30,8 @@
 #include <imgui_impl_glfw.h>
 #include <imgui_impl_opengl3.h>
 
+#include <cstdio>
+
 namespace vne {
 namespace testbed {
 
@@ -630,6 +632,19 @@ int ImGuiLayer::getHoveredViewportIndex(float mouse_x, float mouse_y) const {
         }
     }
     return -1;
+}
+
+const char* ImGuiLayer::getViewportName(int index) const {
+    const int n = getViewportCount();
+    if (index < 0 || index >= n) {
+        return "";
+    }
+    if (viewport_layout_ == ViewportLayout::eOne) {
+        return "Viewport";
+    }
+    static char buf[16];
+    std::snprintf(buf, sizeof(buf), "Viewport %d", index + 1);
+    return buf;
 }
 
 unsigned int ImGuiLayer::getSceneTextureId() const {

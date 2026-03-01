@@ -149,6 +149,13 @@ class ImGuiLayer : public ILayer {
      */
     [[nodiscard]] int getHoveredViewportIndex(float mouse_x, float mouse_y) const;
 
+    /**
+     * @brief Get the window title for a viewport index (e.g. "Viewport", "Viewport 1", "Viewport 2").
+     * @param index 0-based viewport index
+     * @return Title string for the current layout; empty if index out of range
+     */
+    [[nodiscard]] const char* getViewportName(int index) const;
+
    private:
     void tryInitFromContext();  // Init ImGui; no-op if already initialized or no window
     void ensureSceneFbo(int width, int height);
