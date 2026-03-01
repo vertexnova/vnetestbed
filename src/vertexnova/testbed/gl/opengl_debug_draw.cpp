@@ -224,10 +224,14 @@ void OpenGLDebugDraw::flush() {
 
     vao_->bind();
 #if defined(VNE_TESTBED_OPENGL)
-    // Half-width in NDC (~0.004 ≈ 0.4% of screen) for thick debug lines
     shader_->setFloat("uHalfWidth", 0.004f);
 #endif
+    // Don't write depth so overlapping line quads don't z-fight and flicker
+    GLboolean depth_mask_prev = GL_TRUE;
+    glGetBooleanv(GL_DEPTH_WRITEMASK, &depth_mask_prev);
+    glDepthMask(GL_FALSE);
     glDrawArrays(GL_LINES, 0, static_cast<GLsizei>(vertex_data_.size() / kFloatsPerVertex));
+    glDepthMask(depth_mask_prev);
     vao_->unbind();
 
     shader_->unbind();
