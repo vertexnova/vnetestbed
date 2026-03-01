@@ -109,6 +109,10 @@ void applyVertexNovaStyle() {
     c[ImGuiCol_TabHovered] = c[ImGuiCol_HeaderHovered];
     c[ImGuiCol_TabSelected] = ImVec4(kOrangeR, kOrangeG, kOrangeB, 0.6f);
     c[ImGuiCol_TabSelectedOverline] = c[ImGuiCol_HeaderActive];
+    // Unfocused tab bar: lighter gray (Muted #AEAEB2) instead of default blue
+    c[ImGuiCol_TabDimmed] = ImVec4(kMutedR, kMutedG, kMutedB, 0.8f);
+    c[ImGuiCol_TabDimmedSelected] = ImVec4(kOrangeDarkR, kOrangeDarkG, kOrangeDarkB, 0.6f);
+    c[ImGuiCol_TabDimmedSelectedOverline] = ImVec4(kOrangeDarkR, kOrangeDarkG, kOrangeDarkB, 0.8f);
     c[ImGuiCol_DockingPreview] = ImVec4(kOrangeR, kOrangeG, kOrangeB, 0.7f);
     c[ImGuiCol_DockingEmptyBg] = ImVec4(kBgR, kBgG, kBgB, 1.0f);
     c[ImGuiCol_PlotLines] = ImVec4(kMutedR, kMutedG, kMutedB, 1.0f);

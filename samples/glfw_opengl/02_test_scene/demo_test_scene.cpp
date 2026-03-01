@@ -587,7 +587,8 @@ class SceneTestLayer : public vne::testbed::ILayer {
     static constexpr float kGridHalf = kGridLines * kGridSpacing * 0.5f;
 
     void drawGrid() const {
-        const vne::math::Vec3f col{0.28f, 0.28f, 0.28f};
+        // Lighter than viewport clear (#4A4A4C) so grid is visible
+        const vne::math::Vec3f col{0.50f, 0.50f, 0.52f};
         for (int i = -kGridLines; i <= kGridLines; ++i) {
             const float t = static_cast<float>(i) * kGridSpacing;
             debug_draw_->line({t, 0.f, -kGridHalf}, {t, 0.f, kGridHalf}, col);
