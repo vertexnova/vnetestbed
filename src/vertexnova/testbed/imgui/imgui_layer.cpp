@@ -451,8 +451,8 @@ void ImGuiLayer::setupDockLayout(ImGuiID dockspace_id, const ImVec2& size) {
         case ViewportLayout::eThree: {
             // Left: two equal size stacked; right: one full height (same height as left)
             ImGuiID id_left{};
-            ImGuiID id_right{};
-            ImGui::DockBuilderSplitNode(id_viewport, ImGuiDir_Left, 0.5f, &id_left, &id_right);  // 50% left, 50% right
+            ImGuiID id_right_col{};
+            ImGui::DockBuilderSplitNode(id_viewport, ImGuiDir_Left, 0.5f, &id_left, &id_right_col);  // 50% left, 50% right
             ImGuiID id_left_top{};
             ImGuiID id_left_bottom{};
             ImGui::DockBuilderSplitNode(id_left,
@@ -462,7 +462,7 @@ void ImGuiLayer::setupDockLayout(ImGuiID dockspace_id, const ImVec2& size) {
                                         &id_left_top);  // top 50%, bottom 50%
             ImGui::DockBuilderDockWindow("Viewport 1", id_left_top);
             ImGui::DockBuilderDockWindow("Viewport 2", id_left_bottom);
-            ImGui::DockBuilderDockWindow("Viewport 3", id_right);  // full height on right
+            ImGui::DockBuilderDockWindow("Viewport 3", id_right_col);  // full height on right
             break;
         }
     }
@@ -471,6 +471,7 @@ void ImGuiLayer::setupDockLayout(ImGuiID dockspace_id, const ImVec2& size) {
 }
 
 void ImGuiLayer::renderSettingsPanel(const RenderContext& ctx) {
+    (void)ctx;
     // NoScrollbar on the outer window — we manage scrolling ourselves below.
     if (!ImGui::Begin("Settings", nullptr, ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse)) {
         ImGui::End();
