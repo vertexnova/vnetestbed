@@ -250,7 +250,7 @@ void ImGuiLayer::onBeginRender(const RenderContext& ctx) {
         return;
     }
 
-    const int viewport_count = static_cast<int>(viewport_layout_);
+    const int viewport_count = getViewportCount();
     if (viewport_count > 1 && app_ctx_->renderSceneForViewport) {
         // Multi-viewport: render each viewport with its own FBO
         ensureViewportFbos(viewport_count, w, h);
@@ -302,7 +302,7 @@ void ImGuiLayer::onGuiBegin(const RenderContext& ctx) {
         return;
     }
 #if defined(VNE_TESTBED_OPENGL) || defined(VNE_TESTBED_OPENGLES)
-    const int viewport_count = static_cast<int>(viewport_layout_);
+    const int viewport_count = getViewportCount();
     if (viewport_count <= 1 && scene_fbo_ && scene_fbo_->isValid()) {
         scene_fbo_->unbind();
     }
@@ -382,6 +382,20 @@ void ImGuiLayer::onGuiEnd(const RenderContext& ctx) {
     }
 }
 
+int ImGuiLayer::getViewportCount() const {
+    switch (viewport_layout_) {
+        case ViewportLayout::eOne:
+            return 1;
+        case ViewportLayout::eTwo:
+            return 2;
+        case ViewportLayout::eThree:
+            return 3;
+        case ViewportLayout::eFour:
+            return 4;
+    }
+    return 1;
+}
+
 void ImGuiLayer::setupDockLayout(ImGuiID dockspace_id, const ImVec2& size) {
     // Ensure the dock builder node exists before manipulating it.
     if (ImGui::DockBuilderGetNode(dockspace_id) == nullptr) {
@@ -434,6 +448,19 @@ void ImGuiLayer::setupDockLayout(ImGuiID dockspace_id, const ImVec2& size) {
             ImGui::DockBuilderDockWindow("Viewport 4", id_bottom_right);
             break;
         }
+        case ViewportLayout::eThree: {
+            // Left: two equal size stacked; right: one full height (same height as left)
+            ImGuiID id_left{};
+            ImGuiID id_right{};
+            ImGui::DockBuilderSplitNode(id_viewport, ImGuiDir_Left, 0.5f, &id_left, &id_right);  // 50% left, 50% right
+            ImGuiID id_left_top{};
+            ImGuiID id_left_bottom{};
+            ImGui::DockBuilderSplitNode(id_left, ImGuiDir_Down, 0.5f, &id_left_bottom, &id_left_top);  // top 50%, bottom 50%
+            ImGui::DockBuilderDockWindow("Viewport 1", id_left_top);
+            ImGui::DockBuilderDockWindow("Viewport 2", id_left_bottom);
+            ImGui::DockBuilderDockWindow("Viewport 3", id_right);  // full height on right
+            break;
+        }
     }
 
     ImGui::DockBuilderFinish(dockspace_id);
@@ -448,17 +475,19 @@ void ImGuiLayer::renderSettingsPanel(const RenderContext& ctx) {
 
     // ---- Fixed header (always visible, not scrolled) -------------------------
 
-    const char* layout_items[] = {"1 Viewport", "2 Viewports", "4 Viewports"};
-    static constexpr ViewportLayout LAYOUTS[] = {ViewportLayout::eOne, ViewportLayout::eTwo, ViewportLayout::eFour};
+    const char* layout_items[] = {"1 Viewport", "2 Viewports", "3 Viewports", "4 Viewports"};
+    static constexpr ViewportLayout LAYOUTS[] = {
+        ViewportLayout::eOne, ViewportLayout::eTwo, ViewportLayout::eThree, ViewportLayout::eFour};
+    constexpr int layout_count = 4;
     int layout_idx = 0;
-    for (int i = 0; i < 3; ++i) {
+    for (int i = 0; i < layout_count; ++i) {
         if (LAYOUTS[i] == viewport_layout_) {
             layout_idx = i;
             break;
         }
     }
-    if (ImGui::Combo("Viewport Layout", &layout_idx, layout_items, 3)) {
-        layout_idx = (layout_idx >= 0 && layout_idx < 3) ? layout_idx : 0;
+    if (ImGui::Combo("Viewport Layout", &layout_idx, layout_items, layout_count)) {
+        layout_idx = (layout_idx >= 0 && layout_idx < layout_count) ? layout_idx : 0;
         viewport_layout_ = LAYOUTS[layout_idx];
     }
 
@@ -504,7 +533,7 @@ void ImGuiLayer::renderViewportWindows(const RenderContext& ctx) {
     (void)ctx;
     viewport_rects_.clear();
 
-    const int viewport_count = static_cast<int>(viewport_layout_);
+    const int viewport_count = getViewportCount();
     const bool multi_viewport = (viewport_count > 1);
 
     auto drawViewport = [this, multi_viewport](const char* title, int index) {
@@ -546,6 +575,11 @@ void ImGuiLayer::renderViewportWindows(const RenderContext& ctx) {
         case ViewportLayout::eTwo:
             drawViewport("Viewport 1", 0);
             drawViewport("Viewport 2", 1);
+            break;
+        case ViewportLayout::eThree:
+            drawViewport("Viewport 1", 0);
+            drawViewport("Viewport 2", 1);
+            drawViewport("Viewport 3", 2);
             break;
         case ViewportLayout::eFour:
             drawViewport("Viewport 1", 0);

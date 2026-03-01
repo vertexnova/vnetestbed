@@ -66,9 +66,13 @@ namespace testbed {
 class ImGuiLayer : public ILayer {
    public:
     /**
-     * @brief Viewport layout: number of viewport windows (1, 2, or 4).
+     * @brief Viewport layout: number and arrangement of viewport windows.
+     * eThree = left: two equal stacked; right: one full height (same height as left).
      */
-    enum class ViewportLayout { eOne = 1, eTwo = 2, eFour = 4 };
+    enum class ViewportLayout { eOne = 1, eTwo = 2, eThree = 3, eFour = 4 };
+
+    /** @brief Number of viewport windows for the current layout (1, 2, 3, or 4). */
+    [[nodiscard]] int getViewportCount() const;
 
     /**
      * @brief Callback for demo-specific settings (optional).
@@ -89,7 +93,7 @@ class ImGuiLayer : public ILayer {
     void onGuiRender(const RenderContext& ctx) override;
     void onGuiEnd(const RenderContext& ctx) override;
 
-    /** @brief Set viewport layout (1, 2, or 4 viewports). */
+    /** @brief Set viewport layout (1, 2, 3, or 4 viewports). */
     void setViewportLayout(ViewportLayout layout) { viewport_layout_ = layout; }
 
     /** @brief Get current viewport layout. */
