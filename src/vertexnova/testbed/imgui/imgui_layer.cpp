@@ -33,6 +33,93 @@
 namespace vne {
 namespace testbed {
 
+namespace {
+// VertexNova color palette (https://learnvertexnova.com/docs/docs/misc/color-palette)
+// Primary palette for decks & UI
+constexpr float kBgR = 28.0f / 255.0f;   // #1C1C1E Background
+constexpr float kBgG = 28.0f / 255.0f;
+constexpr float kBgB = 30.0f / 255.0f;
+constexpr float kPanelR = 44.0f / 255.0f;   // #2C2C2E Primary panel
+constexpr float kPanelG = 44.0f / 255.0f;
+constexpr float kPanelB = 46.0f / 255.0f;
+constexpr float kMidR = 58.0f / 255.0f;     // #3A3A3C Mid panel
+constexpr float kMidG = 58.0f / 255.0f;
+constexpr float kMidB = 60.0f / 255.0f;
+constexpr float kBorderR = 72.0f / 255.0f;   // #48484A Border
+constexpr float kBorderG = 72.0f / 255.0f;
+constexpr float kBorderB = 74.0f / 255.0f;
+constexpr float kOrangeR = 232.0f / 255.0f;  // #E8622A Orange (primary)
+constexpr float kOrangeG = 98.0f / 255.0f;
+constexpr float kOrangeB = 42.0f / 255.0f;
+constexpr float kOrangeLightR = 242.0f / 255.0f;  // #F28C5E Orange light
+constexpr float kOrangeLightG = 140.0f / 255.0f;
+constexpr float kOrangeLightB = 94.0f / 255.0f;
+constexpr float kOrangeDarkR = 122.0f / 255.0f;   // #7A3315 Orange dark
+constexpr float kOrangeDarkG = 51.0f / 255.0f;
+constexpr float kOrangeDarkB = 21.0f / 255.0f;
+constexpr float kTextR = 235.0f / 255.0f;   // #EBEBF0 Near-white text
+constexpr float kTextG = 235.0f / 255.0f;
+constexpr float kTextB = 240.0f / 255.0f;
+constexpr float kMutedR = 174.0f / 255.0f;  // #AEAEB2 Muted text
+constexpr float kMutedG = 174.0f / 255.0f;
+constexpr float kMutedB = 178.0f / 255.0f;
+
+void applyVertexNovaStyle() {
+    ImGuiStyle& style = ImGui::GetStyle();
+    ImVec4* c = style.Colors;
+
+    c[ImGuiCol_Text] = ImVec4(kTextR, kTextG, kTextB, 1.0f);
+    c[ImGuiCol_TextDisabled] = ImVec4(kMutedR, kMutedG, kMutedB, 1.0f);
+    c[ImGuiCol_WindowBg] = ImVec4(kPanelR, kPanelG, kPanelB, 0.94f);
+    c[ImGuiCol_ChildBg] = ImVec4(kBgR, kBgG, kBgB, 0.0f);
+    c[ImGuiCol_PopupBg] = ImVec4(kPanelR, kPanelG, kPanelB, 0.94f);
+    c[ImGuiCol_Border] = ImVec4(kBorderR, kBorderG, kBorderB, 0.5f);
+    c[ImGuiCol_FrameBg] = ImVec4(kMidR, kMidG, kMidB, 0.54f);
+    c[ImGuiCol_FrameBgHovered] = ImVec4(kOrangeR, kOrangeG, kOrangeB, 0.4f);
+    c[ImGuiCol_FrameBgActive] = ImVec4(kOrangeR, kOrangeG, kOrangeB, 0.67f);
+    c[ImGuiCol_TitleBg] = ImVec4(kBgR, kBgG, kBgB, 1.0f);
+    c[ImGuiCol_TitleBgActive] = ImVec4(kOrangeDarkR, kOrangeDarkG, kOrangeDarkB, 1.0f);
+    c[ImGuiCol_TitleBgCollapsed] = ImVec4(kBgR, kBgG, kBgB, 0.51f);
+    c[ImGuiCol_MenuBarBg] = ImVec4(kPanelR, kPanelG, kPanelB, 1.0f);
+    c[ImGuiCol_ScrollbarBg] = ImVec4(kBgR, kBgG, kBgB, 0.53f);
+    c[ImGuiCol_ScrollbarGrab] = ImVec4(kMidR, kMidG, kMidB, 1.0f);
+    c[ImGuiCol_ScrollbarGrabHovered] = ImVec4(kBorderR, kBorderG, kBorderB, 1.0f);
+    c[ImGuiCol_ScrollbarGrabActive] = ImVec4(kOrangeR, kOrangeG, kOrangeB, 1.0f);
+    c[ImGuiCol_CheckMark] = ImVec4(kOrangeR, kOrangeG, kOrangeB, 1.0f);
+    c[ImGuiCol_SliderGrab] = ImVec4(kOrangeR, kOrangeG, kOrangeB, 1.0f);
+    c[ImGuiCol_SliderGrabActive] = ImVec4(kOrangeLightR, kOrangeLightG, kOrangeLightB, 1.0f);
+    c[ImGuiCol_Button] = ImVec4(kOrangeDarkR, kOrangeDarkG, kOrangeDarkB, 0.4f);
+    c[ImGuiCol_ButtonHovered] = ImVec4(kOrangeR, kOrangeG, kOrangeB, 1.0f);
+    c[ImGuiCol_ButtonActive] = ImVec4(kOrangeLightR, kOrangeLightG, kOrangeLightB, 1.0f);
+    c[ImGuiCol_Header] = ImVec4(kOrangeR, kOrangeG, kOrangeB, 0.31f);
+    c[ImGuiCol_HeaderHovered] = ImVec4(kOrangeR, kOrangeG, kOrangeB, 0.8f);
+    c[ImGuiCol_HeaderActive] = ImVec4(kOrangeR, kOrangeG, kOrangeB, 1.0f);
+    c[ImGuiCol_Separator] = c[ImGuiCol_Border];
+    c[ImGuiCol_SeparatorHovered] = ImVec4(kOrangeR, kOrangeG, kOrangeB, 0.78f);
+    c[ImGuiCol_SeparatorActive] = ImVec4(kOrangeR, kOrangeG, kOrangeB, 1.0f);
+    c[ImGuiCol_ResizeGrip] = ImVec4(kOrangeR, kOrangeG, kOrangeB, 0.2f);
+    c[ImGuiCol_ResizeGripHovered] = ImVec4(kOrangeR, kOrangeG, kOrangeB, 0.67f);
+    c[ImGuiCol_ResizeGripActive] = ImVec4(kOrangeR, kOrangeG, kOrangeB, 0.95f);
+    c[ImGuiCol_Tab] = ImVec4(kOrangeDarkR, kOrangeDarkG, kOrangeDarkB, 0.8f);
+    c[ImGuiCol_TabHovered] = c[ImGuiCol_HeaderHovered];
+    c[ImGuiCol_TabSelected] = ImVec4(kOrangeR, kOrangeG, kOrangeB, 0.6f);
+    c[ImGuiCol_TabSelectedOverline] = c[ImGuiCol_HeaderActive];
+    c[ImGuiCol_DockingPreview] = ImVec4(kOrangeR, kOrangeG, kOrangeB, 0.7f);
+    c[ImGuiCol_DockingEmptyBg] = ImVec4(kBgR, kBgG, kBgB, 1.0f);
+    c[ImGuiCol_PlotLines] = ImVec4(kMutedR, kMutedG, kMutedB, 1.0f);
+    c[ImGuiCol_PlotLinesHovered] = ImVec4(kOrangeR, kOrangeG, kOrangeB, 1.0f);
+    c[ImGuiCol_PlotHistogram] = ImVec4(kOrangeR, kOrangeG, kOrangeB, 1.0f);
+    c[ImGuiCol_PlotHistogramHovered] = ImVec4(kOrangeLightR, kOrangeLightG, kOrangeLightB, 1.0f);
+    c[ImGuiCol_TableHeaderBg] = ImVec4(kMidR, kMidG, kMidB, 1.0f);
+    c[ImGuiCol_TableBorderStrong] = ImVec4(kBorderR, kBorderG, kBorderB, 1.0f);
+    c[ImGuiCol_TableBorderLight] = ImVec4(kMidR, kMidG, kMidB, 1.0f);
+    c[ImGuiCol_TextSelectedBg] = ImVec4(kOrangeR, kOrangeG, kOrangeB, 0.35f);
+    c[ImGuiCol_TextLink] = c[ImGuiCol_HeaderActive];
+    c[ImGuiCol_NavCursor] = ImVec4(kOrangeR, kOrangeG, kOrangeB, 1.0f);
+}
+
+}  // namespace
+
 ImGuiLayer::ImGuiLayer()
     : ILayer("ImGuiLayer") {
     setRenderSortKey(1000);  // Render last (on top)
@@ -65,6 +152,7 @@ void ImGuiLayer::tryInitFromContext() {
     io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;
 
     ImGui::StyleColorsDark();
+    applyVertexNovaStyle();
 
     ImGuiStyle& style = ImGui::GetStyle();
     if (io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable) {
