@@ -33,3 +33,6 @@
 	path = deps/external/imgui
 	url = https://github.com/ocornut/imgui.git
 	branch = docking
+[submodule "deps/internal/vneio"]
+	path = deps/internal/vneio
+	url = https://github.com/vertexnova/vneio.git
