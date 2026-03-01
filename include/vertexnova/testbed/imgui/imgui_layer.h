@@ -17,12 +17,19 @@
  * Provides a shared UI for all demos: settings panel, viewport layout (1/2/4),
  * and dockspace. Uses Dear ImGui docking branch with GLFW + OpenGL3 backends.
  *
- * Only available when VNE_TESTBED_IMGUI is defined.
+ * When VNE_TESTBED_IMGUI is not defined, only a forward declaration is provided.
+ * Build with -DVNE_TESTBED_IMGUI to enable the full API.
  */
 
 #if !defined(VNE_TESTBED_IMGUI)
-#error "imgui_layer.h requires VNE_TESTBED_IMGUI. Build with ImGui enabled."
-#endif
+// Stub: ImGuiLayer is unavailable when VNE_TESTBED_IMGUI is not defined.
+// Build with -DVNE_TESTBED_IMGUI to enable. Safe for IDE indexers and doc generators.
+namespace vne {
+namespace testbed {
+class ImGuiLayer;
+}
+}  // namespace vne
+#else
 
 namespace vne {
 namespace testbed {
@@ -173,3 +180,5 @@ class ImGuiLayer : public ILayer {
 
 }  // namespace testbed
 }  // namespace vne
+
+#endif  // VNE_TESTBED_IMGUI

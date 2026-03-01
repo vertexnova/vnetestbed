@@ -9,8 +9,9 @@
  */
 
 #if !defined(VNE_TESTBED_IMGUI)
-#error "imgui_key_mapping.h requires VNE_TESTBED_IMGUI."
-#endif
+// Stub: ImGui key mapping functions are unavailable when VNE_TESTBED_IMGUI is not defined.
+// Build with -DVNE_TESTBED_IMGUI to enable. Safe for IDE indexers and doc generators.
+#else
 
 #include "vertexnova/events/types.h"
 
@@ -30,3 +31,5 @@ void updateImGuiModifiers(uint8_t modifiers);
 
 }  // namespace testbed
 }  // namespace vne
+
+#endif  // VNE_TESTBED_IMGUI

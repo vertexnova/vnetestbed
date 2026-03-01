@@ -13,8 +13,15 @@
  */
 
 #if !defined(VNE_TESTBED_IMGUI)
-#error "imgui_event_listener.h requires VNE_TESTBED_IMGUI."
-#endif
+// Stub: ImGuiEventListener is unavailable when VNE_TESTBED_IMGUI is not defined.
+// Build with -DVNE_TESTBED_IMGUI to enable. Safe for IDE indexers and doc generators.
+namespace vne {
+namespace testbed {
+class ImGuiLayer;
+class ImGuiEventListener;
+}
+}  // namespace vne
+#else
 
 #include "vertexnova/events/event_listener.h"
 
@@ -47,3 +54,5 @@ class ImGuiEventListener : public vne::events::EventListener {
 
 }  // namespace testbed
 }  // namespace vne
+
+#endif  // VNE_TESTBED_IMGUI

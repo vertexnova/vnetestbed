@@ -180,3 +180,50 @@ TEST_F(DemoFactoryTest, ResetClearsRegistry) {
     EXPECT_TRUE(DemoFactory::list().empty());
     EXPECT_FALSE(DemoFactory::createDemo(*app_, "x"));
 }
+
+// ---------------------------------------------------------------------------
+// ImGui layer deduplication: createDemo/createDefault must not add a second
+// ImGuiLayer when one already exists (name-based uniqueness check).
+// ---------------------------------------------------------------------------
+#if defined(VNE_TESTBED_IMGUI)
+TEST_F(DemoFactoryTest, CreateDemoMultipleTimesDoesNotDuplicateImGuiLayer) {
+    DemoFactory::registerDemo("dup", [](Application& a) {
+        a.getLayerStack().pushLayer(std::make_unique<RecordingLayer>("Dup"), a.getAppContext());
+    });
+    EXPECT_TRUE(DemoFactory::createDemo(*app_, "dup"));
+    const std::size_t count_after_first = app_->getLayerStack().getCount();
+    EXPECT_EQ(count_after_first, 2u);  // ImGuiLayer + demo
+
+    EXPECT_TRUE(DemoFactory::createDemo(*app_, "dup"));
+    const std::size_t count_after_second = app_->getLayerStack().getCount();
+    // 3 layers: 1 ImGuiLayer (not duplicated) + 2 demo layers from two installs
+    EXPECT_EQ(count_after_second, 3u);
+
+    int imgui_count = 0;
+    for (vne::testbed::ILayer* layer : app_->getLayerStack().getAll()) {
+        if (layer && layer->getName() == "ImGuiLayer") {
+            ++imgui_count;
+        }
+    }
+    EXPECT_EQ(imgui_count, 1) << "ImGuiLayer must not be duplicated";
+}
+
+TEST_F(DemoFactoryTest, CreateDefaultMultipleTimesDoesNotDuplicateImGuiLayer) {
+    DemoFactory::registerDemo("first", [](Application& a) {
+        a.getLayerStack().pushLayer(std::make_unique<RecordingLayer>("First"), a.getAppContext());
+    });
+    EXPECT_TRUE(DemoFactory::createDefault(*app_));
+    EXPECT_EQ(app_->getLayerStack().getCount(), 2u);  // ImGuiLayer + demo
+
+    EXPECT_TRUE(DemoFactory::createDefault(*app_));
+    EXPECT_EQ(app_->getLayerStack().getCount(), 3u);  // ImGuiLayer + 2 demo layers
+
+    int imgui_count = 0;
+    for (vne::testbed::ILayer* layer : app_->getLayerStack().getAll()) {
+        if (layer && layer->getName() == "ImGuiLayer") {
+            ++imgui_count;
+        }
+    }
+    EXPECT_EQ(imgui_count, 1) << "ImGuiLayer must not be duplicated";
+}
+#endif
