@@ -9,16 +9,17 @@
  *
  * What you can test here:
  *   • Every vneevents type arrives correctly (keyboard, mouse button,
- *     mouse move, scroll, window resize, window close)
+ *     mouse move, scroll, window resize, window close, touch press/move/release)
+ *   • Touch: LMB emulates touch id 0 (TouchPress, TouchMove, TouchRelease)
  *   • Event ordering — move vs pressed vs released
  *   • EventManager queue depth (events/sec counter)
  *   • Input polling via InputManager::isKeyPressed() — shows held state
  *     separately from discrete events
  *
  * ImGui Settings panel sections:
- *   [Events]      last 20 events (key, mouse, window resize/close) with type, data, frame
+ *   [Events]      last N events (key, mouse, window resize/close, touch) with type, data, frame
  *   [Input Poll]  live key-held state for WASD + Space + Escape,
- *                 current mouse position, current scroll
+ *                 current mouse position, current scroll; Keyboard, Mouse, Char entry, Touch
  *   [Stats]       total events received, events this second
  *
  * Libraries exercised: vne::testbed, vne::scene, vne::events,
@@ -56,12 +57,17 @@ constexpr int kRenderSortKey = 999;  //!< layer sorting order number
 
 // Demo UI / timing constants
 constexpr float kFpsIntervalSec = 1.0f;
+
+// Orange
 constexpr float kKeyHeldColorR = 0.9f;
 constexpr float kKeyHeldColorG = 0.3f;
 constexpr float kKeyHeldColorB = 0.15f;
+// Gray
 constexpr float kKeyIdleColor = 0.5f;
+
 constexpr float kEventLogVisibleLines = 8.0f;
 constexpr float kPollTableKeyColumnWidthPx = 80.0f;
+
 constexpr int kMouseButtonLeft = 0;
 constexpr int kMouseButtonRight = 1;
 constexpr int kMouseButtonMiddle = 2;
@@ -343,8 +349,9 @@ class EventsSettingsLayer : public vne::testbed::ILayer {
                 auto [mx, my] = vne::events::InputManager::mousePosition();
                 const int hovered =
                     imgui_layer_->getHoveredViewportIndex(static_cast<float>(mx), static_cast<float>(my));
-                const char* active_name = (hovered >= 0) ? imgui_layer_->getViewportName(hovered) : "—";
-                ImGui::Text("Active viewport: %s", active_name);
+                const std::string active_name =
+                    (hovered >= 0) ? imgui_layer_->getViewportName(hovered) : std::string("—");
+                ImGui::Text("Active viewport: %s", active_name.c_str());
             }
         }
 
