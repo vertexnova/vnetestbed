@@ -245,8 +245,7 @@ void ImGuiLayer::renderSettingsPanel(const RenderContext& ctx) {
     }
 
     const char* layout_items[] = {"1 Viewport", "2 Viewports", "4 Viewports"};
-    static constexpr ViewportLayout LAYOUTS[] = {
-        ViewportLayout::eOne, ViewportLayout::eTwo, ViewportLayout::eFour};
+    static constexpr ViewportLayout LAYOUTS[] = {ViewportLayout::eOne, ViewportLayout::eTwo, ViewportLayout::eFour};
     int layout_idx = 0;
     for (int i = 0; i < 3; ++i) {
         if (LAYOUTS[i] == viewport_layout_) {
