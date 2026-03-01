@@ -399,7 +399,14 @@ void ImGuiLayer::renderViewportWindows(const RenderContext& ctx) {
         const unsigned int tex_id = multi_viewport ? getSceneTextureId(index) : getSceneTextureId();
         const bool has_scene = (tex_id != 0u);
         // C-style cast (ImTextureID)(intptr_t) works for both void* and ImU64 ImTextureID (ImGui FAQ)
-        const ImTextureID im_tex_id = (ImTextureID)(intptr_t)tex_id;  // NOLINT(cppcoreguidelines-pro-type-cstyle-cast)
+#if defined(__clang__)
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wold-style-cast"
+#endif
+        const ImTextureID im_tex_id = (ImTextureID)(intptr_t)tex_id;
+#if defined(__clang__)
+#pragma clang diagnostic pop
+#endif
 
         if (ImGui::Begin(title, nullptr, ImGuiWindowFlags_None)) {
             ImVec2 pos = ImGui::GetWindowPos();
@@ -411,7 +418,7 @@ void ImGuiLayer::renderViewportWindows(const RenderContext& ctx) {
 
             ImVec2 content_size = ImGui::GetContentRegionAvail();
             if (has_scene && content_size.x > 0 && content_size.y > 0) {
-                // ImTextureID via intptr_t + reinterpret_cast (OpenGL convention; works for void* or ImU64)
+                // ImTextureID via (ImTextureID)(intptr_t) (OpenGL convention; works for void* or ImU64)
                 ImGui::Image(im_tex_id, content_size, ImVec2(0, 1), ImVec2(1, 0));
             } else {
                 ImGui::Text("No scene");
