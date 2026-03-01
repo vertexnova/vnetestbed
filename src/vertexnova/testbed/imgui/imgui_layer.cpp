@@ -224,14 +224,19 @@ void ImGuiLayer::renderSettingsPanel(const RenderContext& ctx) {
 
 void ImGuiLayer::renderViewportWindows(const RenderContext& ctx) {
     (void)ctx;
-    const ImTextureRef tex_ref(static_cast<ImTextureID>(getSceneTextureId()));
-    const bool has_scene = (getSceneTextureId() != 0u);
+    const unsigned int tex_id = getSceneTextureId();
+    const bool has_scene = (tex_id != 0u);
+    const ImTextureID im_tex_id = static_cast<ImTextureID>(tex_id);
 
-    auto drawViewport = [tex_ref, has_scene](const char* title) {
+    auto drawViewport = [im_tex_id, has_scene](const char* title) {
         if (ImGui::Begin(title, nullptr, ImGuiWindowFlags_None)) {
             ImVec2 size = ImGui::GetContentRegionAvail();
             if (has_scene && size.x > 0 && size.y > 0) {
-                ImGui::Image(tex_ref, size, ImVec2(0, 1), ImVec2(1, 0));
+#if IMGUI_VERSION_NUM >= 19200
+                ImGui::Image(ImTextureRef(im_tex_id), size, ImVec2(0, 1), ImVec2(1, 0));
+#else
+                ImGui::Image(im_tex_id, size, ImVec2(0, 1), ImVec2(1, 0));
+#endif
             } else {
                 ImGui::Text("No scene");
             }
