@@ -323,8 +323,8 @@ class SceneTestLayer : public vne::testbed::ILayer {
             return;
 
         const int vp_idx = (ctx.active_viewport_index >= 0 && ctx.active_viewport_index < kMaxViewports)
-                              ? ctx.active_viewport_index
-                              : 0;
+                               ? ctx.active_viewport_index
+                               : 0;
 
         // Aspect / resize
         if (ctx.frame_info.width > 0 && ctx.frame_info.height > 0) {
@@ -508,8 +508,8 @@ class SceneTestLayer : public vne::testbed::ILayer {
             cameras_ortho_[static_cast<size_t>(i)] = std::move(ortho);
         }
         scene_state_.setActiveCamera(use_perspective_
-                                        ? std::static_pointer_cast<vne::scene::ICamera>(cameras_persp_[0])
-                                        : std::static_pointer_cast<vne::scene::ICamera>(cameras_ortho_[0]));
+                                         ? std::static_pointer_cast<vne::scene::ICamera>(cameras_persp_[0])
+                                         : std::static_pointer_cast<vne::scene::ICamera>(cameras_ortho_[0]));
     }
 
     void buildGeometry() {

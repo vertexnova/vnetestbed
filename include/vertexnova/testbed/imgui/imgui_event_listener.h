@@ -19,7 +19,7 @@ namespace vne {
 namespace testbed {
 class ImGuiLayer;
 class ImGuiEventListener;
-}
+}  // namespace testbed
 }  // namespace vne
 #else
 

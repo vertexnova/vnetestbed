@@ -136,8 +136,8 @@ class InteractionTestLayer : public vne::testbed::ILayer {
         }
 #endif
         auto* controller = (viewport_index >= 0 && viewport_index < static_cast<int>(controllers_.size()))
-                              ? controllers_[static_cast<size_t>(viewport_index)].get()
-                              : controllers_[0].get();
+                               ? controllers_[static_cast<size_t>(viewport_index)].get()
+                               : controllers_[0].get();
         if (!controller)
             return;
         switch (event.type()) {
@@ -149,35 +149,35 @@ class InteractionTestLayer : public vne::testbed::ILayer {
                 last_y_ = e.y();
                 first_mouse_ = false;
                 controller->handleMouseMove(static_cast<float>(e.x()),
-                                             static_cast<float>(e.y()),
-                                             static_cast<float>(dx),
-                                             static_cast<float>(dy),
-                                             kFixedDt);
+                                            static_cast<float>(e.y()),
+                                            static_cast<float>(dx),
+                                            static_cast<float>(dy),
+                                            kFixedDt);
                 break;
             }
             case ET::eMouseButtonPressed: {
                 const auto& e = static_cast<const vne::events::MouseButtonEvent&>(event);
                 controller->handleMouseButton(static_cast<int>(e.button()),
-                                               true,
-                                               static_cast<float>(last_x_),
-                                               static_cast<float>(last_y_),
-                                               kFixedDt);
+                                              true,
+                                              static_cast<float>(last_x_),
+                                              static_cast<float>(last_y_),
+                                              kFixedDt);
                 break;
             }
             case ET::eMouseButtonReleased: {
                 const auto& e = static_cast<const vne::events::MouseButtonEvent&>(event);
                 controller->handleMouseButton(static_cast<int>(e.button()),
-                                               false,
-                                               static_cast<float>(last_x_),
-                                               static_cast<float>(last_y_),
-                                               kFixedDt);
+                                              false,
+                                              static_cast<float>(last_x_),
+                                              static_cast<float>(last_y_),
+                                              kFixedDt);
                 break;
             }
             case ET::eMouseScrolled: {
                 const auto& e = static_cast<const vne::events::MouseScrolledEvent&>(event);
                 controller->handleMouseScroll(static_cast<float>(e.xOffset()),
-                                               static_cast<float>(e.yOffset()),
-                                               kFixedDt);
+                                              static_cast<float>(e.yOffset()),
+                                              kFixedDt);
                 break;
             }
             case ET::eKeyPressed: {
@@ -209,9 +209,8 @@ class InteractionTestLayer : public vne::testbed::ILayer {
     }
 
     [[nodiscard]] vne::interaction::CameraManipulatorType getManipulatorType() const {
-        return controllers_.empty() || !controllers_[0]
-                   ? vne::interaction::CameraManipulatorType::eOrbitArcball
-                   : controllers_[0]->getManipulatorType();
+        return controllers_.empty() || !controllers_[0] ? vne::interaction::CameraManipulatorType::eOrbitArcball
+                                                        : controllers_[0]->getManipulatorType();
     }
 
     void setZoomMethod(vne::interaction::ZoomMethod method) {

@@ -141,9 +141,7 @@ void Application::mainLoop() {
     layer_stack_.onUpdate(dt);
 
     // Set callback for multi-viewport rendering (ImGuiLayer calls it for each viewport)
-    app_ctx_.renderSceneForViewport = [this](const RenderContext& ctx) {
-        layer_stack_.onRenderLayersOnly(ctx);
-    };
+    app_ctx_.renderSceneForViewport = [this](const RenderContext& ctx) { layer_stack_.onRenderLayersOnly(ctx); };
     app_ctx_.scene_rendered_by_imgui = false;
 
     // GPU phase: scene first, then ImGui on top
@@ -164,8 +162,7 @@ void Application::mainLoop() {
 
 void Application::registerAsListener() {
 #if defined(VNE_TESTBED_EVENTS)
-    application_event_listener_ =
-        std::make_shared<ApplicationEventListener>(this);
+    application_event_listener_ = std::make_shared<ApplicationEventListener>(this);
     auto& mgr = vne::events::EventManager::instance();
     using ET = vne::events::EventType;
     mgr.registerListener(ET::eWindowClose, application_event_listener_);

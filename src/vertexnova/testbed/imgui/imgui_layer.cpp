@@ -158,8 +158,7 @@ void ImGuiLayer::onBeginRender(const RenderContext& ctx) {
         if (static_cast<int>(viewport_fbos_.size()) >= viewport_count) {
             RenderContext vp_ctx = ctx;
             for (int i = 0; i < viewport_count; ++i) {
-                if (viewport_fbos_[static_cast<size_t>(i)] &&
-                viewport_fbos_[static_cast<size_t>(i)]->isValid()) {
+                if (viewport_fbos_[static_cast<size_t>(i)] && viewport_fbos_[static_cast<size_t>(i)]->isValid()) {
                     viewport_fbos_[static_cast<size_t>(i)]->bind();
                     glClearColor(0.12f, 0.12f, 0.16f, 1.0f);
                     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -474,8 +473,8 @@ unsigned int ImGuiLayer::getSceneTextureId() const {
 unsigned int ImGuiLayer::getSceneTextureId(int viewport_index) const {
 #if defined(VNE_TESTBED_OPENGL) || defined(VNE_TESTBED_OPENGLES)
     if (viewport_index >= 0 && viewport_index < static_cast<int>(viewport_fbos_.size())) {
-        if (viewport_fbos_[static_cast<size_t>(viewport_index)] &&
-            viewport_fbos_[static_cast<size_t>(viewport_index)]->isValid()) {
+        if (viewport_fbos_[static_cast<size_t>(viewport_index)]
+            && viewport_fbos_[static_cast<size_t>(viewport_index)]->isValid()) {
             return viewport_fbos_[static_cast<size_t>(viewport_index)]->getColorTextureId();
         }
     }

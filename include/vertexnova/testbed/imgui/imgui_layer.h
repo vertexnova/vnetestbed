@@ -35,7 +35,7 @@ namespace vne {
 namespace testbed {
 class ImGuiEventListener;
 }
-}
+}  // namespace vne
 
 #include "vertexnova/testbed/app_context.h"
 #include "vertexnova/testbed/layer.h"
@@ -165,7 +165,7 @@ class ImGuiLayer : public ILayer {
     std::unique_ptr<gl::Framebuffer> scene_fbo_;
     int scene_fbo_width_{0};
     int scene_fbo_height_{0};
-    std::vector<std::unique_ptr<gl::Framebuffer>> viewport_fbos_;
+    std::vector<std::unique_ptr<gl::Framebuffer> > viewport_fbos_;
     int viewport_fbo_count_{0};
     int viewport_fbo_width_{0};
     int viewport_fbo_height_{0};

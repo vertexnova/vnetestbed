@@ -276,8 +276,9 @@ void updateImGuiModifiers(uint8_t modifiers) {
     io.AddKeyEvent(ImGuiMod_Shift, (modifiers & static_cast<uint8_t>(MK::eModShift)) != 0);
     io.AddKeyEvent(ImGuiMod_Alt, (modifiers & static_cast<uint8_t>(MK::eModAlt)) != 0);
     io.AddKeyEvent(ImGuiMod_Super,
-                   (modifiers & (static_cast<uint8_t>(MK::eModSuper) | static_cast<uint8_t>(MK::eModMeta)
-                                 | static_cast<uint8_t>(MK::eModCmd)))
+                   (modifiers
+                    & (static_cast<uint8_t>(MK::eModSuper) | static_cast<uint8_t>(MK::eModMeta)
+                       | static_cast<uint8_t>(MK::eModCmd)))
                        != 0);
 }
 

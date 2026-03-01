@@ -33,7 +33,11 @@
 #endif
 
 #ifdef VNE_TESTBED_IMGUI
-namespace vne { namespace testbed { class ImGuiLayer; } }
+namespace vne {
+namespace testbed {
+class ImGuiLayer;
+}
+}  // namespace vne
 #endif
 
 #include <memory>
@@ -58,9 +62,12 @@ class BaseSceneLayer : public vne::testbed::ILayer {
     void onAttach(vne::testbed::AppContext& ctx) override {
         cameras_.resize(kMaxViewports);
         for (size_t i = 0; i < static_cast<size_t>(kMaxViewports); ++i) {
-            auto cam = std::make_shared<vne::scene::PerspectiveCamera>(
-                60.0f, 1280.0f, 720.0f, 0.1f, 1000.0f,
-                std::string("BaseCamera") + std::to_string(i));
+            auto cam = std::make_shared<vne::scene::PerspectiveCamera>(60.0f,
+                                                                       1280.0f,
+                                                                       720.0f,
+                                                                       0.1f,
+                                                                       1000.0f,
+                                                                       std::string("BaseCamera") + std::to_string(i));
             cam->setPosition({4.0f, 3.0f, 6.0f});
             cam->setTarget({0.0f, 0.0f, 0.0f});
             cam->setGraphicsApi(vne::math::GraphicsApi::eOpenGL);
@@ -86,16 +93,17 @@ class BaseSceneLayer : public vne::testbed::ILayer {
     }
 
     void onRender(const vne::testbed::RenderContext& ctx) override {
-        const int idx = (ctx.active_viewport_index >= 0 && ctx.active_viewport_index < static_cast<int>(cameras_.size()))
-                           ? ctx.active_viewport_index
-                           : 0;
+        const int idx =
+            (ctx.active_viewport_index >= 0 && ctx.active_viewport_index < static_cast<int>(cameras_.size()))
+                ? ctx.active_viewport_index
+                : 0;
         auto& camera = cameras_[static_cast<size_t>(idx)];
         if (!camera || !debug_draw_) {
             return;
         }
         if (ctx.frame_info.width > 0 && ctx.frame_info.height > 0) {
             camera->setAspectRatio(static_cast<float>(ctx.frame_info.width)
-                                  / static_cast<float>(ctx.frame_info.height));
+                                   / static_cast<float>(ctx.frame_info.height));
             camera->updateProjectionMatrix();
         }
         debug_draw_->setViewProjectionMatrix(camera->getViewProjectionMatrix());
@@ -242,10 +250,10 @@ class BaseInteractionLayer : public vne::testbed::ILayer, public vne::events::Ev
                 last_y_ = e.y();
                 first_mouse_ = false;
                 controller->handleMouseMove(static_cast<float>(e.x()),
-                                             static_cast<float>(e.y()),
-                                             static_cast<float>(dx),
-                                             static_cast<float>(dy),
-                                             kFixedDt);
+                                            static_cast<float>(e.y()),
+                                            static_cast<float>(dx),
+                                            static_cast<float>(dy),
+                                            kFixedDt);
                 break;
             }
             case ET::eMouseButtonPressed: {
@@ -269,8 +277,8 @@ class BaseInteractionLayer : public vne::testbed::ILayer, public vne::events::Ev
             case ET::eMouseScrolled: {
                 const auto& e = static_cast<const vne::events::MouseScrolledEvent&>(event);
                 controller->handleMouseScroll(static_cast<float>(e.xOffset()),
-                                             static_cast<float>(e.yOffset()),
-                                             kFixedDt);
+                                              static_cast<float>(e.yOffset()),
+                                              kFixedDt);
                 break;
             }
             case ET::eKeyPressed: {
