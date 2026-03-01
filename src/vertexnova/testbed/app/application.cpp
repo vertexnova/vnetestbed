@@ -132,10 +132,18 @@ void Application::mainLoop() {
     // Layer update
     layer_stack_.onUpdate(dt);
 
+    // Set callback for multi-viewport rendering (ImGuiLayer calls it for each viewport)
+    app_ctx_.renderSceneForViewport = [this](const RenderContext& ctx) {
+        layer_stack_.onRenderLayersOnly(ctx);
+    };
+    app_ctx_.scene_rendered_by_imgui = false;
+
     // GPU phase: scene first, then ImGui on top
     app_ctx_.renderer->beginFrame();
     layer_stack_.onBeginRender(render_ctx);
-    layer_stack_.onRender(render_ctx);
+    if (!app_ctx_.scene_rendered_by_imgui) {
+        layer_stack_.onRender(render_ctx);
+    }
 
     // GUI phase: ImGui draws on top of scene
     layer_stack_.onGuiBegin(render_ctx);

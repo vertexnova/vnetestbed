@@ -51,6 +51,7 @@
 #include <array>
 #include <cmath>
 #include <memory>
+#include <string>
 #include <vector>
 
 namespace {
@@ -263,6 +264,8 @@ struct PointLightEntry {
 
 class SceneTestLayer : public vne::testbed::ILayer {
    public:
+    static constexpr int kMaxViewports = 4;
+
     SceneTestLayer()
         : vne::testbed::ILayer("SceneTestLayer") {}
 
@@ -289,8 +292,8 @@ class SceneTestLayer : public vne::testbed::ILayer {
         }
         scene_state_.clearLights();
         scene_state_.setActiveCamera(nullptr);
-        camera_persp_.reset();
-        camera_ortho_.reset();
+        cameras_persp_.clear();
+        cameras_ortho_.clear();
         debug_draw_ = nullptr;
         device_ = nullptr;
     }
@@ -305,10 +308,13 @@ class SceneTestLayer : public vne::testbed::ILayer {
             entry.light->setPosition({r * std::cos(entry.orbit_angle), 1.5f, r * std::sin(entry.orbit_angle)});
         }
 
-        if (use_perspective_) {
-            camera_persp_->updateMatrices();
-        } else {
-            camera_ortho_->updateMatrices();
+        for (auto& cam : cameras_persp_) {
+            if (cam)
+                cam->updateMatrices();
+        }
+        for (auto& cam : cameras_ortho_) {
+            if (cam)
+                cam->updateMatrices();
         }
     }
 
@@ -316,13 +322,17 @@ class SceneTestLayer : public vne::testbed::ILayer {
         if (!device_ || !shader_.isValid())
             return;
 
+        const int vp_idx = (ctx.active_viewport_index >= 0 && ctx.active_viewport_index < kMaxViewports)
+                              ? ctx.active_viewport_index
+                              : 0;
+
         // Aspect / resize
         if (ctx.frame_info.width > 0 && ctx.frame_info.height > 0) {
             updateCameraAspect(ctx.frame_info.width, ctx.frame_info.height);
         }
 
-        const auto vp = activeVP();
-        const auto cam_pos = activePosition();
+        const auto vp = activeVP(vp_idx);
+        const auto cam_pos = activePosition(vp_idx);
 
         // Draw grid + axes via debug draw
         if (debug_draw_) {
@@ -457,38 +467,49 @@ class SceneTestLayer : public vne::testbed::ILayer {
         e.light->setEnabled(e.enabled);
     }
 
-    [[nodiscard]] std::shared_ptr<vne::scene::PerspectiveCamera> cameraPersp() const { return camera_persp_; }
+    [[nodiscard]] std::shared_ptr<vne::scene::PerspectiveCamera> cameraPersp() const {
+        return cameras_persp_.empty() ? nullptr : cameras_persp_[0];
+    }
+    [[nodiscard]] const std::vector<std::shared_ptr<vne::scene::PerspectiveCamera>>& getCameras() const {
+        return cameras_persp_;
+    }
 
    private:
     // -----------------------------------------------------------------------
     void buildCamera(int w, int h) {
         const float aspect = (h > 0) ? (static_cast<float>(w) / static_cast<float>(h)) : 1.f;
-        camera_persp_ = std::make_shared<vne::scene::PerspectiveCamera>(fov_,
-                                                                        static_cast<float>(w),
-                                                                        static_cast<float>(h),
-                                                                        near_,
-                                                                        far_,
-                                                                        "SceneCamera");
-        camera_persp_->setPosition({4.f, 3.f, 6.f});
-        camera_persp_->setTarget({0.f, 0.f, 0.f});
-        camera_persp_->setGraphicsApi(vne::math::GraphicsApi::eOpenGL);
-        camera_persp_->updateMatrices();
+        cameras_persp_.resize(kMaxViewports);
+        cameras_ortho_.resize(kMaxViewports);
+        for (int i = 0; i < kMaxViewports; ++i) {
+            auto persp = std::make_shared<vne::scene::PerspectiveCamera>(fov_,
+                                                                         static_cast<float>(w),
+                                                                         static_cast<float>(h),
+                                                                         near_,
+                                                                         far_,
+                                                                         "SceneCamera" + std::to_string(i));
+            persp->setPosition({4.f, 3.f, 6.f});
+            persp->setTarget({0.f, 0.f, 0.f});
+            persp->setGraphicsApi(vne::math::GraphicsApi::eOpenGL);
+            persp->updateMatrices();
+            cameras_persp_[static_cast<size_t>(i)] = std::move(persp);
 
-        const float hw = ortho_half_ * aspect;
-        camera_ortho_ = std::make_shared<vne::scene::OrthographicCamera>(-hw,
-                                                                         hw,
-                                                                         -ortho_half_,
-                                                                         ortho_half_,
-                                                                         -100.f,
-                                                                         100.f,
-                                                                         "OrthoCamera");
-        camera_ortho_->setPosition({4.f, 3.f, 6.f});
-        camera_ortho_->setTarget({0.f, 0.f, 0.f});
-        camera_ortho_->setGraphicsApi(vne::math::GraphicsApi::eOpenGL);
-        camera_ortho_->updateMatrices();
-
-        scene_state_.setActiveCamera(use_perspective_ ? std::static_pointer_cast<vne::scene::ICamera>(camera_persp_)
-                                                      : std::static_pointer_cast<vne::scene::ICamera>(camera_ortho_));
+            const float hw = ortho_half_ * aspect;
+            auto ortho = std::make_shared<vne::scene::OrthographicCamera>(-hw,
+                                                                          hw,
+                                                                          -ortho_half_,
+                                                                          ortho_half_,
+                                                                          -100.f,
+                                                                          100.f,
+                                                                          "OrthoCamera" + std::to_string(i));
+            ortho->setPosition({4.f, 3.f, 6.f});
+            ortho->setTarget({0.f, 0.f, 0.f});
+            ortho->setGraphicsApi(vne::math::GraphicsApi::eOpenGL);
+            ortho->updateMatrices();
+            cameras_ortho_[static_cast<size_t>(i)] = std::move(ortho);
+        }
+        scene_state_.setActiveCamera(use_perspective_
+                                        ? std::static_pointer_cast<vne::scene::ICamera>(cameras_persp_[0])
+                                        : std::static_pointer_cast<vne::scene::ICamera>(cameras_ortho_[0]));
     }
 
     void buildGeometry() {
@@ -522,21 +543,43 @@ class SceneTestLayer : public vne::testbed::ILayer {
     void updateCameraAspect(int w, int h) {
         const float aspect = static_cast<float>(w) / static_cast<float>(h);
         if (use_perspective_) {
-            camera_persp_->setAspectRatio(aspect);
-            camera_persp_->updateProjectionMatrix();
+            for (auto& cam : cameras_persp_) {
+                if (cam) {
+                    cam->setAspectRatio(aspect);
+                    cam->updateProjectionMatrix();
+                }
+            }
         } else {
             const float hw = ortho_half_ * aspect;
-            camera_ortho_->resize(hw * 2.f, ortho_half_ * 2.f);
-            camera_ortho_->updateProjectionMatrix();
+            for (auto& cam : cameras_ortho_) {
+                if (cam) {
+                    cam->resize(hw * 2.f, ortho_half_ * 2.f);
+                    cam->updateProjectionMatrix();
+                }
+            }
         }
     }
 
-    vne::math::Mat4f activeVP() const {
-        return use_perspective_ ? camera_persp_->getViewProjectionMatrix() : camera_ortho_->getViewProjectionMatrix();
+    vne::math::Mat4f activeVP(int vp_idx) const {
+        const size_t i = static_cast<size_t>(vp_idx);
+        if (use_perspective_ && i < cameras_persp_.size() && cameras_persp_[i]) {
+            return cameras_persp_[i]->getViewProjectionMatrix();
+        }
+        if (!use_perspective_ && i < cameras_ortho_.size() && cameras_ortho_[i]) {
+            return cameras_ortho_[i]->getViewProjectionMatrix();
+        }
+        return vne::math::Mat4f::identity();
     }
 
-    vne::math::Vec3f activePosition() const {
-        return use_perspective_ ? camera_persp_->getPosition() : camera_ortho_->getPosition();
+    vne::math::Vec3f activePosition(int vp_idx) const {
+        const size_t i = static_cast<size_t>(vp_idx);
+        if (use_perspective_ && i < cameras_persp_.size() && cameras_persp_[i]) {
+            return cameras_persp_[i]->getPosition();
+        }
+        if (!use_perspective_ && i < cameras_ortho_.size() && cameras_ortho_[i]) {
+            return cameras_ortho_[i]->getPosition();
+        }
+        return {};
     }
 
     static constexpr int kGridLines = 20;
@@ -565,8 +608,8 @@ class SceneTestLayer : public vne::testbed::ILayer {
     vne::testbed::BufferHandle ibo_{};
     vne::testbed::PipelineHandle pipeline_{};
 
-    std::shared_ptr<vne::scene::PerspectiveCamera> camera_persp_;
-    std::shared_ptr<vne::scene::OrthographicCamera> camera_ortho_;
+    std::vector<std::shared_ptr<vne::scene::PerspectiveCamera>> cameras_persp_;
+    std::vector<std::shared_ptr<vne::scene::OrthographicCamera>> cameras_ortho_;
     vne::scene::SceneState scene_state_;
 
     std::shared_ptr<vne::scene::DirectionalLight> dir_light_;
@@ -691,9 +734,9 @@ void RegisterTestSceneDemo(vne::testbed::Application& app) {
     app.getLayerStack().pushLayer(std::unique_ptr<SceneTestLayer>(scene), app.getAppContext());
 
 #ifdef VNE_TESTBED_INTERACTION
-    // Layer 2: orbit-arcball
+    // Layer 2: orbit-arcball (per-viewport cameras when using 2 or 4 viewports)
     auto* interaction = new BaseInteractionLayer("TestSceneInteractionLayer");
-    interaction->setCamera(scene->cameraPersp());
+    interaction->setCameras(scene->getCameras());
     app.getLayerStack().pushLayer(std::unique_ptr<BaseInteractionLayer>(interaction), app.getAppContext());
 #endif
 

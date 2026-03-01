@@ -55,6 +55,7 @@
 
 #include <memory>
 #include <string>
+#include <vector>
 
 namespace {
 
@@ -71,14 +72,30 @@ class InteractionTestLayer : public vne::testbed::ILayer, public vne::events::Ev
     static constexpr double kFixedDt = 0.016;
 
     InteractionTestLayer()
-        : vne::testbed::ILayer("InteractionTestLayer")
-        , controller_(std::make_unique<vne::interaction::CameraSystemController>(
-              vne::interaction::CameraManipulatorType::eOrbitArcball)) {}
+        : vne::testbed::ILayer("InteractionTestLayer") {
+        controllers_.resize(BaseSceneLayer::kMaxViewports);
+        for (int i = 0; i < BaseSceneLayer::kMaxViewports; ++i) {
+            controllers_[i] = std::make_unique<vne::interaction::CameraSystemController>(
+                vne::interaction::CameraManipulatorType::eOrbitArcball);
+        }
+    }
 
     void setCamera(std::shared_ptr<vne::scene::PerspectiveCamera> cam) {
         camera_ = std::move(cam);
-        if (controller_) {
-            controller_->setCamera(camera_);
+        if (!controllers_.empty() && controllers_[0]) {
+            controllers_[0]->setCamera(camera_);
+        }
+    }
+
+    void setSceneLayer(const BaseSceneLayer* scene) {
+        if (scene) {
+            const auto& cams = scene->getCameras();
+            for (size_t i = 0; i < cams.size() && i < controllers_.size(); ++i) {
+                if (controllers_[i] && cams[i]) {
+                    controllers_[i]->setCamera(cams[i]);
+                }
+            }
+            camera_ = scene->getCamera();
         }
     }
 
@@ -95,9 +112,12 @@ class InteractionTestLayer : public vne::testbed::ILayer, public vne::events::Ev
         mgr.registerListener(vne::events::EventType::eMouseScrolled, self);
         mgr.registerListener(vne::events::EventType::eKeyPressed, self);
         mgr.registerListener(vne::events::EventType::eKeyReleased, self);
-        if (ctx.window && controller_) {
-            controller_->setViewportSize(static_cast<float>(ctx.window->getWidth()),
-                                         static_cast<float>(ctx.window->getHeight()));
+        const float vpw = ctx.window ? static_cast<float>(ctx.window->getWidth()) : 1280.0f;
+        const float vph = ctx.window ? static_cast<float>(ctx.window->getHeight()) : 720.0f;
+        for (auto& ctrl : controllers_) {
+            if (ctrl) {
+                ctrl->setViewportSize(vpw, vph);
+            }
         }
     }
 
@@ -112,12 +132,14 @@ class InteractionTestLayer : public vne::testbed::ILayer, public vne::events::Ev
     }
 
     void onUpdate(float dt) override {
-        if (controller_)
-            controller_->update(static_cast<double>(dt));
+        for (auto& ctrl : controllers_) {
+            if (ctrl)
+                ctrl->update(static_cast<double>(dt));
+        }
     }
 
     void onEvent(const vne::events::Event& event) override {
-        if (!controller_)
+        if (controllers_.empty() || !controllers_[0])
             return;
         using ET = vne::events::EventType;
         float check_x = static_cast<float>(last_x_);
@@ -127,10 +149,20 @@ class InteractionTestLayer : public vne::testbed::ILayer, public vne::events::Ev
             check_x = static_cast<float>(e.x());
             check_y = static_cast<float>(e.y());
         }
+        int viewport_index = 0;
 #ifdef VNE_TESTBED_IMGUI
-        if (imgui_layer_ && !imgui_layer_->isMouseOverSceneViewport(check_x, check_y))
-            return;
+        if (imgui_layer_) {
+            const int idx = imgui_layer_->getHoveredViewportIndex(check_x, check_y);
+            if (idx < 0)
+                return;
+            viewport_index = idx;
+        }
 #endif
+        auto* controller = (viewport_index >= 0 && viewport_index < static_cast<int>(controllers_.size()))
+                              ? controllers_[static_cast<size_t>(viewport_index)].get()
+                              : controllers_[0].get();
+        if (!controller)
+            return;
         switch (event.type()) {
             case ET::eMouseMoved: {
                 const auto& e = static_cast<const vne::events::MouseMovedEvent&>(event);
@@ -139,7 +171,7 @@ class InteractionTestLayer : public vne::testbed::ILayer, public vne::events::Ev
                 last_x_ = e.x();
                 last_y_ = e.y();
                 first_mouse_ = false;
-                controller_->handleMouseMove(static_cast<float>(e.x()),
+                controller->handleMouseMove(static_cast<float>(e.x()),
                                              static_cast<float>(e.y()),
                                              static_cast<float>(dx),
                                              static_cast<float>(dy),
@@ -148,7 +180,7 @@ class InteractionTestLayer : public vne::testbed::ILayer, public vne::events::Ev
             }
             case ET::eMouseButtonPressed: {
                 const auto& e = static_cast<const vne::events::MouseButtonEvent&>(event);
-                controller_->handleMouseButton(static_cast<int>(e.button()),
+                controller->handleMouseButton(static_cast<int>(e.button()),
                                                true,
                                                static_cast<float>(last_x_),
                                                static_cast<float>(last_y_),
@@ -157,7 +189,7 @@ class InteractionTestLayer : public vne::testbed::ILayer, public vne::events::Ev
             }
             case ET::eMouseButtonReleased: {
                 const auto& e = static_cast<const vne::events::MouseButtonEvent&>(event);
-                controller_->handleMouseButton(static_cast<int>(e.button()),
+                controller->handleMouseButton(static_cast<int>(e.button()),
                                                false,
                                                static_cast<float>(last_x_),
                                                static_cast<float>(last_y_),
@@ -166,19 +198,19 @@ class InteractionTestLayer : public vne::testbed::ILayer, public vne::events::Ev
             }
             case ET::eMouseScrolled: {
                 const auto& e = static_cast<const vne::events::MouseScrolledEvent&>(event);
-                controller_->handleMouseScroll(static_cast<float>(e.xOffset()),
+                controller->handleMouseScroll(static_cast<float>(e.xOffset()),
                                                static_cast<float>(e.yOffset()),
                                                kFixedDt);
                 break;
             }
             case ET::eKeyPressed: {
                 const auto& e = static_cast<const vne::events::KeyEvent&>(event);
-                controller_->handleKeyboard(static_cast<int>(e.keyCode()), true, kFixedDt);
+                controller->handleKeyboard(static_cast<int>(e.keyCode()), true, kFixedDt);
                 break;
             }
             case ET::eKeyReleased: {
                 const auto& e = static_cast<const vne::events::KeyEvent&>(event);
-                controller_->handleKeyboard(static_cast<int>(e.keyCode()), false, kFixedDt);
+                controller->handleKeyboard(static_cast<int>(e.keyCode()), false, kFixedDt);
                 break;
             }
             default:
@@ -190,38 +222,45 @@ class InteractionTestLayer : public vne::testbed::ILayer, public vne::events::Ev
     // Control API for the Settings panel
     // -----------------------------------------------------------------------
     void setManipulatorType(vne::interaction::CameraManipulatorType type) {
-        if (controller_) {
-            controller_->setManipulator(type);
-            // Re-apply camera after manipulator switch
-            if (camera_)
-                controller_->setCamera(camera_);
+        for (auto& ctrl : controllers_) {
+            if (ctrl) {
+                ctrl->setManipulator(type);
+                if (camera_)
+                    ctrl->setCamera(camera_);
+            }
         }
     }
 
     [[nodiscard]] vne::interaction::CameraManipulatorType getManipulatorType() const {
-        return controller_ ? controller_->getManipulatorType() : vne::interaction::CameraManipulatorType::eOrbitArcball;
+        return controllers_.empty() || !controllers_[0]
+                   ? vne::interaction::CameraManipulatorType::eOrbitArcball
+                   : controllers_[0]->getManipulatorType();
     }
 
     void setZoomMethod(vne::interaction::ZoomMethod method) {
-        if (!controller_)
-            return;
-        auto* m = controller_->getManipulator();
-        if (!m)
-            return;
-        auto* orbit = dynamic_cast<vne::interaction::OrbitArcballManipulator*>(m);
-        if (orbit)
-            orbit->setZoomMethod(method);
+        for (auto& ctrl : controllers_) {
+            if (!ctrl)
+                continue;
+            auto* m = ctrl->getManipulator();
+            if (!m)
+                continue;
+            auto* orbit = dynamic_cast<vne::interaction::OrbitArcballManipulator*>(m);
+            if (orbit)
+                orbit->setZoomMethod(method);
+        }
     }
 
     void setViewDirection(vne::interaction::ViewDirection dir) {
-        if (!controller_)
-            return;
-        auto* m = controller_->getManipulator();
-        if (!m)
-            return;
-        auto* orbit = dynamic_cast<vne::interaction::OrbitArcballManipulator*>(m);
-        if (orbit)
-            orbit->setViewDirection(dir);
+        for (auto& ctrl : controllers_) {
+            if (!ctrl)
+                continue;
+            auto* m = ctrl->getManipulator();
+            if (!m)
+                continue;
+            auto* orbit = dynamic_cast<vne::interaction::OrbitArcballManipulator*>(m);
+            if (orbit)
+                orbit->setViewDirection(dir);
+        }
     }
 
     void resetCamera() {
@@ -230,30 +269,36 @@ class InteractionTestLayer : public vne::testbed::ILayer, public vne::events::Ev
         camera_->setPosition({4.f, 3.f, 6.f});
         camera_->setTarget({0.f, 0.f, 0.f});
         camera_->updateMatrices();
-        if (controller_)
-            controller_->reset();
+        for (auto& ctrl : controllers_) {
+            if (ctrl)
+                ctrl->reset();
+        }
     }
 
     void setFpsSpeed(float s) {
-        if (!controller_)
-            return;
-        auto* m = controller_->getManipulator();
-        if (!m)
-            return;
-        auto* fps = dynamic_cast<vne::interaction::FpsFlyManipulator*>(m);
-        if (fps)
-            fps->setMoveSpeed(s);
+        for (auto& ctrl : controllers_) {
+            if (!ctrl)
+                continue;
+            auto* m = ctrl->getManipulator();
+            if (!m)
+                continue;
+            auto* fps = dynamic_cast<vne::interaction::FpsFlyManipulator*>(m);
+            if (fps)
+                fps->setMoveSpeed(s);
+        }
     }
 
     void setFpsSensitivity(float s) {
-        if (!controller_)
-            return;
-        auto* m = controller_->getManipulator();
-        if (!m)
-            return;
-        auto* fps = dynamic_cast<vne::interaction::FpsFlyManipulator*>(m);
-        if (fps)
-            fps->setMouseSensitivity(s);
+        for (auto& ctrl : controllers_) {
+            if (!ctrl)
+                continue;
+            auto* m = ctrl->getManipulator();
+            if (!m)
+                continue;
+            auto* fps = dynamic_cast<vne::interaction::FpsFlyManipulator*>(m);
+            if (fps)
+                fps->setMouseSensitivity(s);
+        }
     }
 
     [[nodiscard]] vne::math::Vec3f cameraPosition() const {
@@ -263,7 +308,7 @@ class InteractionTestLayer : public vne::testbed::ILayer, public vne::events::Ev
 
    private:
     std::shared_ptr<vne::scene::PerspectiveCamera> camera_;
-    std::unique_ptr<vne::interaction::CameraSystemController> controller_;
+    std::vector<std::unique_ptr<vne::interaction::CameraSystemController>> controllers_;
     double last_x_{0.0};
     double last_y_{0.0};
     bool first_mouse_{true};
@@ -425,13 +470,13 @@ class InteractionSettingsLayer : public vne::testbed::ILayer {
 // ---------------------------------------------------------------------------
 
 void RegisterTestInteractionDemo(vne::testbed::Application& app) {
-    // Layer 1: grid + axes base scene (owns camera)
+    // Layer 1: grid + axes base scene (owns per-viewport cameras)
     auto* scene = new BaseSceneLayer("TestInteractionBaseSceneLayer");
     app.getLayerStack().pushLayer(std::unique_ptr<BaseSceneLayer>(scene), app.getAppContext());
 
-    // Layer 2: interaction (owns controller, shares camera with BaseSceneLayer)
+    // Layer 2: interaction (per-viewport controllers when using 2 or 4 viewports)
     auto* interaction = new InteractionTestLayer();
-    interaction->setCamera(scene->getCamera());
+    interaction->setSceneLayer(scene);
     app.getLayerStack().pushLayer(std::unique_ptr<InteractionTestLayer>(interaction), app.getAppContext());
 
 #ifdef VNE_TESTBED_IMGUI

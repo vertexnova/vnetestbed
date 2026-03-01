@@ -36,6 +36,7 @@ class ImGuiEventListener;
 
 #include <functional>
 #include <memory>
+#include <vector>
 
 #if defined(VNE_TESTBED_OPENGL) || defined(VNE_TESTBED_OPENGLES)
 #include "vertexnova/testbed/gl/framebuffer.h"
@@ -117,6 +118,9 @@ class ImGuiLayer : public ILayer {
     /** @brief Scene FBO texture id for ImGui::Image; 0 if not available. */
     [[nodiscard]] unsigned int getSceneTextureId() const;
 
+    /** @brief Scene texture id for viewport index (multi-viewport); 0 if not available. */
+    [[nodiscard]] unsigned int getSceneTextureId(int viewport_index) const;
+
     /** @brief Whether ImGui context and backends are initialized (for ImGuiEventListener). */
     [[nodiscard]] bool isInitialized() const { return initialized_; }
 
@@ -139,6 +143,7 @@ class ImGuiLayer : public ILayer {
    private:
     void tryInitFromContext();  // Init ImGui; no-op if already initialized or no window
     void ensureSceneFbo(int width, int height);
+    void ensureViewportFbos(int count, int width, int height);
     void setupDockLayout(ImGuiID dockspace_id, const ImVec2& size);
 
     void renderSettingsPanel(const RenderContext& ctx);
@@ -157,6 +162,10 @@ class ImGuiLayer : public ILayer {
     std::unique_ptr<gl::Framebuffer> scene_fbo_;
     int scene_fbo_width_{0};
     int scene_fbo_height_{0};
+    std::vector<std::unique_ptr<gl::Framebuffer>> viewport_fbos_;
+    int viewport_fbo_count_{0};
+    int viewport_fbo_width_{0};
+    int viewport_fbo_height_{0};
 #endif
 
     /// Viewport window rects in screen space (min_x, min_y, max_x, max_y); updated each frame in renderViewportWindows

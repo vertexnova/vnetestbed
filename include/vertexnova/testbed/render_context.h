@@ -36,10 +36,14 @@ struct FrameInfo {
  *
  * Provides frame dimensions, delta time, and optional debug draw. Layers receive
  * const RenderContext& and can use debug_draw for geometry visualization.
+ *
+ * When rendering to multiple viewports, active_viewport_index identifies which
+ * viewport (0..N-1) is being rendered; scene layers use this to select the camera.
  */
 struct RenderContext {
     FrameInfo frame_info{};
     IDebugDraw* debug_draw{nullptr};
+    int active_viewport_index{0};  ///< 0 for single viewport; 0..N-1 for multi-viewport
 };
 
 }  // namespace testbed

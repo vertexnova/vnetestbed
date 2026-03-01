@@ -126,6 +126,10 @@ void ImGuiLayer::onDetach() {
     scene_fbo_.reset();
     scene_fbo_width_ = 0;
     scene_fbo_height_ = 0;
+    viewport_fbos_.clear();
+    viewport_fbo_count_ = 0;
+    viewport_fbo_width_ = 0;
+    viewport_fbo_height_ = 0;
 #endif
     if (initialized_) {
         ImGui_ImplOpenGL3_Shutdown();
@@ -141,12 +145,44 @@ void ImGuiLayer::onBeginRender(const RenderContext& ctx) {
         return;
     }
 #if defined(VNE_TESTBED_OPENGL) || defined(VNE_TESTBED_OPENGLES)
-    ensureSceneFbo(ctx.frame_info.width, ctx.frame_info.height);
-    if (scene_fbo_ && scene_fbo_->isValid()) {
-        scene_fbo_->bind();
-        glClearColor(0.12f, 0.12f, 0.16f, 1.0f);
-        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-        glViewport(0, 0, ctx.frame_info.width, ctx.frame_info.height);
+    const int w = ctx.frame_info.width;
+    const int h = ctx.frame_info.height;
+    if (w <= 0 || h <= 0) {
+        return;
+    }
+
+    const int viewport_count = static_cast<int>(viewport_layout_);
+    if (viewport_count > 1 && app_ctx_->renderSceneForViewport) {
+        // Multi-viewport: render each viewport with its own FBO
+        ensureViewportFbos(viewport_count, w, h);
+        if (static_cast<int>(viewport_fbos_.size()) >= viewport_count) {
+            RenderContext vp_ctx = ctx;
+            for (int i = 0; i < viewport_count; ++i) {
+                if (viewport_fbos_[static_cast<size_t>(i)] &&
+                viewport_fbos_[static_cast<size_t>(i)]->isValid()) {
+                    viewport_fbos_[static_cast<size_t>(i)]->bind();
+                    glClearColor(0.12f, 0.12f, 0.16f, 1.0f);
+                    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+                    glViewport(0, 0, w, h);
+                    vp_ctx.active_viewport_index = i;
+                    app_ctx_->renderSceneForViewport(vp_ctx);
+                }
+            }
+            if (!viewport_fbos_.empty() && viewport_fbos_[0] && viewport_fbos_[0]->isValid()) {
+                viewport_fbos_[0]->unbind();
+            }
+            glBindFramebuffer(GL_FRAMEBUFFER, 0);
+            app_ctx_->scene_rendered_by_imgui = true;
+        }
+    } else {
+        // Single viewport: use shared scene FBO
+        ensureSceneFbo(w, h);
+        if (scene_fbo_ && scene_fbo_->isValid()) {
+            scene_fbo_->bind();
+            glClearColor(0.12f, 0.12f, 0.16f, 1.0f);
+            glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+            glViewport(0, 0, w, h);
+        }
     }
 #endif
 }
@@ -158,12 +194,13 @@ void ImGuiLayer::onGuiBegin(const RenderContext& ctx) {
         return;
     }
 #if defined(VNE_TESTBED_OPENGL) || defined(VNE_TESTBED_OPENGLES)
-    if (scene_fbo_ && scene_fbo_->isValid()) {
+    const int viewport_count = static_cast<int>(viewport_layout_);
+    if (viewport_count <= 1 && scene_fbo_ && scene_fbo_->isValid()) {
         scene_fbo_->unbind();
-        glBindFramebuffer(GL_FRAMEBUFFER, 0);
-        if (app_ctx_ && app_ctx_->window) {
-            glViewport(0, 0, app_ctx_->window->getWidth(), app_ctx_->window->getHeight());
-        }
+    }
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+    if (app_ctx_ && app_ctx_->window) {
+        glViewport(0, 0, app_ctx_->window->getWidth(), app_ctx_->window->getHeight());
     }
 #endif
     ImGui_ImplOpenGL3_NewFrame();
@@ -352,13 +389,16 @@ void ImGuiLayer::renderSettingsPanel(const RenderContext& ctx) {
 
 void ImGuiLayer::renderViewportWindows(const RenderContext& ctx) {
     (void)ctx;
-    const unsigned int tex_id = getSceneTextureId();
-    const bool has_scene = (tex_id != 0u);
-    const ImTextureID im_tex_id = static_cast<ImTextureID>(tex_id);
-
     viewport_rects_.clear();
 
-    auto drawViewport = [this, im_tex_id, has_scene](const char* title) {
+    const int viewport_count = static_cast<int>(viewport_layout_);
+    const bool multi_viewport = (viewport_count > 1);
+
+    auto drawViewport = [this, multi_viewport](const char* title, int index) {
+        const unsigned int tex_id = multi_viewport ? getSceneTextureId(index) : getSceneTextureId();
+        const bool has_scene = (tex_id != 0u);
+        const ImTextureID im_tex_id = static_cast<ImTextureID>(tex_id);
+
         if (ImGui::Begin(title, nullptr, ImGuiWindowFlags_None)) {
             ImVec2 pos = ImGui::GetWindowPos();
             ImVec2 size = ImGui::GetWindowSize();
@@ -383,17 +423,17 @@ void ImGuiLayer::renderViewportWindows(const RenderContext& ctx) {
 
     switch (viewport_layout_) {
         case ViewportLayout::eOne:
-            drawViewport("Viewport");
+            drawViewport("Viewport", 0);
             break;
         case ViewportLayout::eTwo:
-            drawViewport("Viewport 1");
-            drawViewport("Viewport 2");
+            drawViewport("Viewport 1", 0);
+            drawViewport("Viewport 2", 1);
             break;
         case ViewportLayout::eFour:
-            drawViewport("Viewport 1");
-            drawViewport("Viewport 2");
-            drawViewport("Viewport 3");
-            drawViewport("Viewport 4");
+            drawViewport("Viewport 1", 0);
+            drawViewport("Viewport 2", 1);
+            drawViewport("Viewport 3", 2);
+            drawViewport("Viewport 4", 3);
             break;
     }
 }
@@ -425,6 +465,18 @@ unsigned int ImGuiLayer::getSceneTextureId() const {
     return 0u;
 }
 
+unsigned int ImGuiLayer::getSceneTextureId(int viewport_index) const {
+#if defined(VNE_TESTBED_OPENGL) || defined(VNE_TESTBED_OPENGLES)
+    if (viewport_index >= 0 && viewport_index < static_cast<int>(viewport_fbos_.size())) {
+        if (viewport_fbos_[static_cast<size_t>(viewport_index)] &&
+            viewport_fbos_[static_cast<size_t>(viewport_index)]->isValid()) {
+            return viewport_fbos_[static_cast<size_t>(viewport_index)]->getColorTextureId();
+        }
+    }
+#endif
+    return 0u;
+}
+
 void ImGuiLayer::ensureSceneFbo(int width, int height) {
 #if defined(VNE_TESTBED_OPENGL) || defined(VNE_TESTBED_OPENGLES)
     if (width <= 0 || height <= 0) {
@@ -440,6 +492,29 @@ void ImGuiLayer::ensureSceneFbo(int width, int height) {
     scene_fbo_ = std::make_unique<gl::Framebuffer>(desc);
     scene_fbo_width_ = width;
     scene_fbo_height_ = height;
+#endif
+}
+
+void ImGuiLayer::ensureViewportFbos(int count, int width, int height) {
+#if defined(VNE_TESTBED_OPENGL) || defined(VNE_TESTBED_OPENGLES)
+    if (count <= 0 || width <= 0 || height <= 0) {
+        return;
+    }
+    if (viewport_fbo_count_ == count && viewport_fbo_width_ == width && viewport_fbo_height_ == height) {
+        return;
+    }
+    viewport_fbos_.clear();
+    viewport_fbos_.reserve(static_cast<size_t>(count));
+    gl::FramebufferDescriptor desc{};
+    desc.width = static_cast<uint32_t>(width);
+    desc.height = static_cast<uint32_t>(height);
+    desc.attach_depth = true;
+    for (int i = 0; i < count; ++i) {
+        viewport_fbos_.push_back(std::make_unique<gl::Framebuffer>(desc));
+    }
+    viewport_fbo_count_ = count;
+    viewport_fbo_width_ = width;
+    viewport_fbo_height_ = height;
 #endif
 }
 
