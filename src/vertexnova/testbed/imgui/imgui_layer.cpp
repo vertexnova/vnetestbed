@@ -234,8 +234,9 @@ void ImGuiLayer::onGuiRender(const RenderContext& ctx) {
         ImGui::DockSpace(dockspace_id, ImVec2(0.0f, 0.0f), ImGuiDockNodeFlags_None);
 
         // Rebuild when: (1) no saved layout yet, (2) viewport count changed, (3) panel width changed
+        // Use !IsEmpty() so leaf nodes with docked windows (restored from imgui.ini) are preserved.
         ImGuiDockNode* node = ImGui::DockBuilderGetNode(dockspace_id);
-        bool has_saved_layout = (node && node->IsSplitNode());
+        bool has_saved_layout = (node && !node->IsEmpty());
         bool layout_changed = (last_dock_layout_ != viewport_layout_) || dock_layout_dirty_;
 
         if (!has_saved_layout || layout_changed) {
