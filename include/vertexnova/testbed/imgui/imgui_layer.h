@@ -35,6 +35,8 @@
 #include "vertexnova/testbed/gl/framebuffer.h"
 #endif
 
+#include <imgui.h>
+
 namespace vne {
 namespace testbed {
 
@@ -96,12 +98,14 @@ class ImGuiLayer : public ILayer {
 
    private:
     void ensureSceneFbo(int width, int height);
+    void setupDockLayout(ImGuiID dockspace_id, const ImVec2& size);
 
     void renderSettingsPanel(const RenderContext& ctx);
     void renderViewportWindows(const RenderContext& ctx);
 
     AppContext* app_ctx_{nullptr};
     ViewportLayout viewport_layout_{ViewportLayout::eOne};
+    ViewportLayout last_dock_layout_{ViewportLayout::eOne};  // Track layout for dock rebuild
     bool show_demo_window_{false};
     SettingsCallback settings_callback_;
     bool initialized_{false};

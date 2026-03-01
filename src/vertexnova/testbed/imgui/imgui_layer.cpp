@@ -20,6 +20,7 @@
 #include <GLFW/glfw3.h>
 
 #include <imgui.h>
+#include <imgui_internal.h>
 #include <imgui_impl_glfw.h>
 #include <imgui_impl_opengl3.h>
 
@@ -171,6 +172,51 @@ void ImGuiLayer::onGuiEnd(const RenderContext& ctx) {
         ImGui::RenderPlatformWindowsDefault();
         glfwMakeContextCurrent(backup);
     }
+}
+
+void ImGuiLayer::setupDockLayout(ImGuiID dockspace_id, const ImVec2& size) {
+    ImGui::DockBuilderRemoveNodeChildNodes(dockspace_id);
+    ImGui::DockBuilderSetNodeSize(dockspace_id, size);
+
+    // Split: Settings (left 25%) | Viewport area (right 75%)
+    ImGuiID id_right{};
+    ImGuiID id_settings{};
+    ImGui::DockBuilderSplitNode(dockspace_id, ImGuiDir_Right, 0.75f, &id_right, &id_settings);
+    ImGui::DockBuilderDockWindow("Settings", id_settings);
+
+    ImGuiID id_viewport = id_right;
+    switch (viewport_layout_) {
+        case ViewportLayout::eOne:
+            ImGui::DockBuilderDockWindow("Viewport", id_viewport);
+            break;
+        case ViewportLayout::eTwo: {
+            ImGuiID id_v1{};
+            ImGuiID id_v2{};
+            ImGui::DockBuilderSplitNode(id_viewport, ImGuiDir_Right, 0.5f, &id_v2, &id_v1);
+            ImGui::DockBuilderDockWindow("Viewport 1", id_v1);
+            ImGui::DockBuilderDockWindow("Viewport 2", id_v2);
+            break;
+        }
+        case ViewportLayout::eFour: {
+            // Top two and bottom two: split by Y, then each half by X
+            ImGuiID id_top{};
+            ImGuiID id_bottom{};
+            ImGui::DockBuilderSplitNode(id_viewport, ImGuiDir_Down, 0.5f, &id_bottom, &id_top);
+            ImGuiID id_top_left{};
+            ImGuiID id_top_right{};
+            ImGui::DockBuilderSplitNode(id_top, ImGuiDir_Right, 0.5f, &id_top_right, &id_top_left);
+            ImGuiID id_bottom_left{};
+            ImGuiID id_bottom_right{};
+            ImGui::DockBuilderSplitNode(id_bottom, ImGuiDir_Right, 0.5f, &id_bottom_right, &id_bottom_left);
+            ImGui::DockBuilderDockWindow("Viewport 1", id_top_left);
+            ImGui::DockBuilderDockWindow("Viewport 2", id_top_right);
+            ImGui::DockBuilderDockWindow("Viewport 3", id_bottom_left);
+            ImGui::DockBuilderDockWindow("Viewport 4", id_bottom_right);
+            break;
+        }
+    }
+
+    ImGui::DockBuilderFinish(dockspace_id);
 }
 
 void ImGuiLayer::renderSettingsPanel(const RenderContext& ctx) {
