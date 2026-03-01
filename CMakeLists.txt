@@ -253,7 +253,6 @@ endif()
 # Examples and samples
 #==============================================================================
 if(VNE_TESTBED_EXAMPLES)
-    add_subdirectory(examples)
     add_subdirectory(samples)
 endif()
 
