@@ -104,10 +104,6 @@ class ImGuiLayer : public ILayer {
     }
     [[nodiscard]] float getSettingsPanelWidth() const { return settings_panel_width_; }
 
-    /** @brief Whether to show ImGui demo window. */
-    void setShowDemoWindow(bool show) { show_demo_window_ = show; }
-    [[nodiscard]] bool getShowDemoWindow() const { return show_demo_window_; }
-
     /** @brief Whether scene should render to FBO for viewport display. */
 #if defined(VNE_TESTBED_OPENGL) || defined(VNE_TESTBED_OPENGLES)
     [[nodiscard]] bool useSceneFbo() const { return scene_fbo_ != nullptr && scene_fbo_->isValid(); }
@@ -152,7 +148,6 @@ class ImGuiLayer : public ILayer {
     AppContext* app_ctx_{nullptr};
     ViewportLayout viewport_layout_{ViewportLayout::eOne};
     ViewportLayout last_dock_layout_{ViewportLayout::eOne};  // Track layout for dock rebuild
-    bool show_demo_window_{false};
     SettingsCallback settings_callback_;
     bool initialized_{false};
     float settings_panel_width_{320.0f};  ///< Fixed pixel width; viewport absorbs remaining space.

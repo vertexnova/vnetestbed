@@ -247,10 +247,6 @@ void ImGuiLayer::onGuiRender(const RenderContext& ctx) {
 
         renderSettingsPanel(ctx);
         renderViewportWindows(ctx);
-
-        if (show_demo_window_) {
-            ImGui::ShowDemoWindow(&show_demo_window_);
-        }
     } else {
         ImGui::PopStyleVar(3);
     }
@@ -364,8 +360,6 @@ void ImGuiLayer::renderSettingsPanel(const RenderContext& ctx) {
         }
     }
 #endif
-
-    ImGui::Checkbox("Show ImGui Demo", &show_demo_window_);
 
     if (ctx.frame_info.dt > 0.0f) {
         const float fps = 1.0f / ctx.frame_info.dt;
