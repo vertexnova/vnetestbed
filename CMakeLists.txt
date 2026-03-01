@@ -111,6 +111,17 @@ vnetestbed_use_dep(TARGET glfw SUBDIR glfw DEPS_DIR EXTERNAL
   SAVE_RESTORE GLFW_BUILD_DOCS)
 vnetestbed_use_dep(TARGET glad::glad SUBDIR glad DEPS_DIR INTERNAL)
 
+# ImGui (docking branch) - optional, requires glfw + glad
+if(VNE_TESTBED_IMGUI AND TARGET glfw AND TARGET glad::glad)
+    add_subdirectory(${VNE_DEPS_EXTERNAL_DIR}/imgui ${CMAKE_BINARY_DIR}/deps/external/imgui)
+    set(VNE_TESTBED_IMGUI_AVAILABLE ON)
+else()
+    set(VNE_TESTBED_IMGUI_AVAILABLE OFF)
+    if(VNE_TESTBED_IMGUI AND (NOT TARGET glfw OR NOT TARGET glad::glad))
+        message(STATUS "VNE_TESTBED_IMGUI: OFF — requires glfw and glad")
+    endif()
+endif()
+
 vnetestbed_use_dep(TARGET vne::events SUBDIR vneevents DEPS_DIR INTERNAL
   CACHE_VARS BUILD_TESTS OFF BUILD_EXAMPLES OFF SAVE_RESTORE BUILD_TESTS BUILD_EXAMPLES)
 vnetestbed_use_dep(TARGET vne::math SUBDIR vnemath DEPS_DIR INTERNAL
@@ -156,6 +167,7 @@ endif()
 
 option(VNE_TESTBED_TESTS "Build vnetestbed test suite (turn OFF when used as submodule)" ON)
 option(VNE_TESTBED_EXAMPLES "Build vnetestbed example programs (turn OFF when used as submodule)" OFF)
+option(VNE_TESTBED_IMGUI "Build ImGui layer (docking + viewports; requires OpenGL + GLFW)" ON)
 option(ENABLE_DOXYGEN "Enable Doxygen documentation builds" OFF)
 option(ENABLE_COVERAGE "Enable code coverage reporting" OFF)
 option(WARNINGS_AS_ERRORS "Treat compiler warnings as errors" OFF)

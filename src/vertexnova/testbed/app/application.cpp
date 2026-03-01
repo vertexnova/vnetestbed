@@ -129,18 +129,20 @@ void Application::mainLoop() {
     render_ctx.frame_info.dt = dt;
     render_ctx.debug_draw = app_ctx_.debugDraw;
 
-    // Layer update and GUI (CPU phase)
+    // Layer update
     layer_stack_.onUpdate(dt);
+
+    // GPU phase: scene first, then ImGui on top
+    app_ctx_.renderer->beginFrame();
+    layer_stack_.onBeginRender(render_ctx);
+    layer_stack_.onRender(render_ctx);
+
+    // GUI phase: ImGui draws on top of scene
     layer_stack_.onGuiBegin(render_ctx);
     layer_stack_.onGuiRender(render_ctx);
     layer_stack_.onGuiEnd(render_ctx);
 
-    // GPU phase: begin frame, layers render, end frame, swap
-    app_ctx_.renderer->beginFrame();
-    layer_stack_.onBeginRender(render_ctx);
-    layer_stack_.onRender(render_ctx);
     app_ctx_.renderer->endFrame();
-
     impl_->window->swapBuffers();
 }
 

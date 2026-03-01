@@ -151,4 +151,15 @@ else()
     message(STATUS "VNE_TESTBED_OPENGL / VNE_TESTBED_OPENGLES: OFF — skipping gl/ and demo layers")
 endif()
 
+#==============================================================================
+# ImGui layer (docking + viewports; requires imgui, OpenGL, GLFW)
+#==============================================================================
+if(VNE_TESTBED_IMGUI_AVAILABLE AND (VNE_TESTBED_OPENGL OR VNE_TESTBED_OPENGLES) AND TARGET imgui)
+    target_sources(vnetestbed PRIVATE vertexnova/testbed/imgui/imgui_layer.cpp)
+    target_link_libraries(vnetestbed PUBLIC imgui)
+    target_compile_definitions(vnetestbed PUBLIC VNE_TESTBED_IMGUI)
+    list(APPEND HEADER_FILES ${VNE_INCLUDE_DIR}/vertexnova/testbed/imgui/imgui_layer.h)
+    message(STATUS "VNE_TESTBED_IMGUI: ON — ImGui layer with docking and viewports")
+endif()
+
 target_compile_features(vnetestbed PUBLIC cxx_std_20)

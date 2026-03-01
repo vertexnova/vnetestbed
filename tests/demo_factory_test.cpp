@@ -81,7 +81,11 @@ TEST_F(DemoFactoryTest, CreateDemoByIdInstallsAndReturnsTrue) {
         a.getLayerStack().pushLayer(std::make_unique<RecordingLayer>("One"), a.getAppContext());
     });
     EXPECT_TRUE(DemoFactory::createDemo(*app_, "one"));
+#if defined(VNE_TESTBED_IMGUI)
+    EXPECT_EQ(app_->getLayerStack().getCount(), 2u);  // ImGuiLayer + demo
+#else
     EXPECT_EQ(app_->getLayerStack().getCount(), 1u);
+#endif
 }
 
 TEST_F(DemoFactoryTest, CreateDemoByIdUnknownReturnsFalse) {
@@ -100,7 +104,11 @@ TEST_F(DemoFactoryTest, CreateDemoSingleWhenExactlyOneSucceeds) {
         a.getLayerStack().pushLayer(std::make_unique<RecordingLayer>("Only"), a.getAppContext());
     });
     EXPECT_TRUE(DemoFactory::createDemo(*app_));
+#if defined(VNE_TESTBED_IMGUI)
+    EXPECT_EQ(app_->getLayerStack().getCount(), 2u);  // ImGuiLayer + demo
+#else
     EXPECT_EQ(app_->getLayerStack().getCount(), 1u);
+#endif
 }
 
 TEST_F(DemoFactoryTest, CreateDemoSingleWhenZeroReturnsFalse) {
@@ -126,7 +134,11 @@ TEST_F(DemoFactoryTest, CreateDefaultWithOneInstallsIt) {
         a.getLayerStack().pushLayer(std::make_unique<RecordingLayer>("First"), a.getAppContext());
     });
     EXPECT_TRUE(DemoFactory::createDefault(*app_));
+#if defined(VNE_TESTBED_IMGUI)
+    EXPECT_EQ(app_->getLayerStack().getCount(), 2u);  // ImGuiLayer + demo
+#else
     EXPECT_EQ(app_->getLayerStack().getCount(), 1u);
+#endif
 }
 
 TEST_F(DemoFactoryTest, CreateDefaultPrefersWindowId) {
@@ -137,9 +149,13 @@ TEST_F(DemoFactoryTest, CreateDefaultPrefersWindowId) {
         a.getLayerStack().pushLayer(std::make_unique<RecordingLayer>("Window"), a.getAppContext());
     });
     EXPECT_TRUE(DemoFactory::createDefault(*app_));
+#if defined(VNE_TESTBED_IMGUI)
+    EXPECT_EQ(app_->getLayerStack().getCount(), 2u);  // ImGuiLayer + demo
+#else
     EXPECT_EQ(app_->getLayerStack().getCount(), 1u);
+#endif
     // "window" was installed; we can't easily assert which without exposing layer name
-    // so we only assert one layer and that createDefault returned true
+    // so we only assert layer count and that createDefault returned true
 }
 
 TEST_F(DemoFactoryTest, CreateDefaultWithNoWindowInstallsFirst) {
@@ -150,7 +166,11 @@ TEST_F(DemoFactoryTest, CreateDefaultWithNoWindowInstallsFirst) {
         a.getLayerStack().pushLayer(std::make_unique<RecordingLayer>("Beta"), a.getAppContext());
     });
     EXPECT_TRUE(DemoFactory::createDefault(*app_));
+#if defined(VNE_TESTBED_IMGUI)
+    EXPECT_EQ(app_->getLayerStack().getCount(), 2u);  // ImGuiLayer + demo
+#else
     EXPECT_EQ(app_->getLayerStack().getCount(), 1u);
+#endif
 }
 
 TEST_F(DemoFactoryTest, ResetClearsRegistry) {

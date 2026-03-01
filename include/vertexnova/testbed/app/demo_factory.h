@@ -26,7 +26,12 @@
 
 #include "vertexnova/testbed/app/application.h"
 
+#if defined(VNE_TESTBED_IMGUI)
+#include "vertexnova/testbed/imgui/imgui_layer.h"
+#endif
+
 #include <algorithm>
+#include <memory>
 #include <functional>
 #include <string>
 #include <unordered_map>
@@ -62,6 +67,12 @@ class DemoFactory {
         if (it == map.end()) {
             return false;
         }
+#if defined(VNE_TESTBED_IMGUI)
+        if (!app.getLayerStack().findLayerByName("ImGuiLayer")) {
+            auto& ctx = app.getAppContext();
+            app.getLayerStack().pushLayer(std::make_unique<ImGuiLayer>(), ctx);
+        }
+#endif
         it->second(app);
         return true;
     }
