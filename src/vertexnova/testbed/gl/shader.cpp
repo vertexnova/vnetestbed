@@ -58,8 +58,9 @@ uint32_t Shader::compileStage(uint32_t type, const char* src) {
     if (!ok) {
         char log[1024];
         glGetShaderInfoLog(id, 1024, nullptr, log);
-        const char* stage = (type == GL_VERTEX_SHADER) ? "vertex" :
-                       (type == GL_FRAGMENT_SHADER) ? "fragment" : "geometry";
+        const char* stage = (type == GL_VERTEX_SHADER)     ? "vertex"
+                            : (type == GL_FRAGMENT_SHADER) ? "fragment"
+                                                           : "geometry";
         VNE_LOG_ERROR << "Shader " << stage << " compile error: " << log;
         glDeleteShader(id);
         return 0u;
@@ -71,8 +72,10 @@ void Shader::compileAndLink(const char* vert_src, const char* frag_src, const ch
     uint32_t vs = compileStage(GL_VERTEX_SHADER, vert_src);
     uint32_t fs = compileStage(GL_FRAGMENT_SHADER, frag_src);
     if (vs == 0u || fs == 0u) {
-        if (vs) glDeleteShader(vs);
-        if (fs) glDeleteShader(fs);
+        if (vs)
+            glDeleteShader(vs);
+        if (fs)
+            glDeleteShader(fs);
         return;
     }
 
@@ -110,7 +113,8 @@ void Shader::compileAndLink(const char* vert_src, const char* frag_src, const ch
 
     glDeleteShader(vs);
     glDeleteShader(fs);
-    if (gs) glDeleteShader(gs);
+    if (gs)
+        glDeleteShader(gs);
 }
 
 Shader::Shader(const char* vert_src, const char* frag_src) {

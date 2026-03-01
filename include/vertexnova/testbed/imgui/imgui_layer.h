@@ -157,11 +157,11 @@ class ImGuiLayer : public ILayer {
     AppContext* app_ctx_{nullptr};
     ViewportLayout viewport_layout_{ViewportLayout::eOne};
     ViewportLayout last_dock_layout_{ViewportLayout::eOne};  // Track layout for dock rebuild
-    ImVec2 last_dock_size_{0.0f, 0.0f};                     // Track size for rebuild on window resize
+    ImVec2 last_dock_size_{0.0f, 0.0f};                      // Track size for rebuild on window resize
     SettingsCallback settings_callback_;
     bool initialized_{false};
     float settings_panel_width_{320.0f};  ///< Fixed pixel width; viewport absorbs remaining space.
-    float font_scale_{1.25f};              ///< Global font scale (style.FontScaleMain); user-adjustable in Settings.
+    float font_scale_{1.25f};             ///< Global font scale (style.FontScaleMain); user-adjustable in Settings.
     bool dock_layout_dirty_{false};       ///< True when settings_panel_width_ changed mid-session.
 
     /// FPS display: rolling average over last N frame times

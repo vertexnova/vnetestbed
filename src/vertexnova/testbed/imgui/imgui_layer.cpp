@@ -36,16 +36,16 @@ namespace testbed {
 namespace {
 // VertexNova color palette (https://learnvertexnova.com/docs/docs/misc/color-palette)
 // Primary palette for decks & UI
-constexpr float kBgR = 28.0f / 255.0f;   // #1C1C1E Background
+constexpr float kBgR = 28.0f / 255.0f;  // #1C1C1E Background
 constexpr float kBgG = 28.0f / 255.0f;
 constexpr float kBgB = 30.0f / 255.0f;
-constexpr float kPanelR = 44.0f / 255.0f;   // #2C2C2E Primary panel
+constexpr float kPanelR = 44.0f / 255.0f;  // #2C2C2E Primary panel
 constexpr float kPanelG = 44.0f / 255.0f;
 constexpr float kPanelB = 46.0f / 255.0f;
-constexpr float kMidR = 58.0f / 255.0f;     // #3A3A3C Mid panel
+constexpr float kMidR = 58.0f / 255.0f;  // #3A3A3C Mid panel
 constexpr float kMidG = 58.0f / 255.0f;
 constexpr float kMidB = 60.0f / 255.0f;
-constexpr float kBorderR = 72.0f / 255.0f;   // #48484A Border
+constexpr float kBorderR = 72.0f / 255.0f;  // #48484A Border
 constexpr float kBorderG = 72.0f / 255.0f;
 constexpr float kBorderB = 74.0f / 255.0f;
 constexpr float kOrangeR = 232.0f / 255.0f;  // #E8622A Orange (primary)
@@ -54,10 +54,10 @@ constexpr float kOrangeB = 42.0f / 255.0f;
 constexpr float kOrangeLightR = 242.0f / 255.0f;  // #F28C5E Orange light
 constexpr float kOrangeLightG = 140.0f / 255.0f;
 constexpr float kOrangeLightB = 94.0f / 255.0f;
-constexpr float kOrangeDarkR = 122.0f / 255.0f;   // #7A3315 Orange dark
+constexpr float kOrangeDarkR = 122.0f / 255.0f;  // #7A3315 Orange dark
 constexpr float kOrangeDarkG = 51.0f / 255.0f;
 constexpr float kOrangeDarkB = 21.0f / 255.0f;
-constexpr float kTextR = 235.0f / 255.0f;   // #EBEBF0 Near-white text
+constexpr float kTextR = 235.0f / 255.0f;  // #EBEBF0 Near-white text
 constexpr float kTextG = 235.0f / 255.0f;
 constexpr float kTextB = 240.0f / 255.0f;
 constexpr float kMutedR = 174.0f / 255.0f;  // #AEAEB2 Muted text
@@ -164,7 +164,7 @@ void ImGuiLayer::tryInitFromContext() {
     applyVertexNovaStyle();
 
     ImGuiStyle& style = ImGui::GetStyle();
-    style.FontSizeBase = 17.0f;   // Slightly larger default than ImGui's 13
+    style.FontSizeBase = 17.0f;  // Slightly larger default than ImGui's 13
     style.FontScaleMain = font_scale_;
     if (io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable) {
         style.WindowRounding = 0.0f;
@@ -348,8 +348,7 @@ void ImGuiLayer::onGuiRender(const RenderContext& ctx) {
         const ImVec2 current_size = vp->WorkSize;
         bool has_saved_layout = (node && !node->IsEmpty());
         bool size_changed = (current_size.x != last_dock_size_.x || current_size.y != last_dock_size_.y);
-        bool layout_changed =
-            (last_dock_layout_ != viewport_layout_) || dock_layout_dirty_ || size_changed;
+        bool layout_changed = (last_dock_layout_ != viewport_layout_) || dock_layout_dirty_ || size_changed;
 
         if (!has_saved_layout || layout_changed) {
             setupDockLayout(dockspace_id, current_size);
