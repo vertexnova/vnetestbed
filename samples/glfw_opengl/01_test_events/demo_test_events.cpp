@@ -35,6 +35,7 @@
 #include "vertexnova/events/input/input_manager.h"
 #include "vertexnova/events/key_event.h"
 #include "vertexnova/events/mouse_event.h"
+#include "vertexnova/events/touch_event.h"
 #include "vertexnova/events/types.h"
 #include "vertexnova/events/window_event.h"
 
@@ -53,7 +54,7 @@ namespace {
 
 constexpr int kRenderSortKey = 999;  //!< layer sorting order number
 
-enum class EventLogCategory { Keyboard, Mouse, Window };
+enum class EventLogCategory { Keyboard, Mouse, Window, Touch };
 
 struct EventLogEntry {
     EventLogCategory category;
@@ -153,6 +154,30 @@ class EventsLayer : public vne::testbed::ILayer {
                 cat = EventLogCategory::Window;
                 line = "WindowClose";
                 break;
+            case ET::eTouchPress: {
+                cat = EventLogCategory::Touch;
+                const auto& e = static_cast<const vne::events::TouchPressEvent&>(event);
+                setLastTouch(e.touchId(), e.x(), e.y(), LastTouchAction::Press);
+                line = "TouchPress   id=" + std::to_string(e.touchId())
+                       + "  x=" + std::to_string(static_cast<int>(e.x())) + "  y=" + std::to_string(static_cast<int>(e.y()));
+                break;
+            }
+            case ET::eTouchRelease: {
+                cat = EventLogCategory::Touch;
+                const auto& e = static_cast<const vne::events::TouchReleaseEvent&>(event);
+                setLastTouch(e.touchId(), e.x(), e.y(), LastTouchAction::Release);
+                line = "TouchRelease id=" + std::to_string(e.touchId())
+                       + "  x=" + std::to_string(static_cast<int>(e.x())) + "  y=" + std::to_string(static_cast<int>(e.y()));
+                break;
+            }
+            case ET::eTouchMove: {
+                cat = EventLogCategory::Touch;
+                const auto& e = static_cast<const vne::events::TouchMoveEvent&>(event);
+                setLastTouch(e.touchId(), e.x(), e.y(), LastTouchAction::Move);
+                line = "TouchMove    id=" + std::to_string(e.touchId())
+                       + "  x=" + std::to_string(static_cast<int>(e.x())) + "  y=" + std::to_string(static_cast<int>(e.y()));
+                break;
+            }
             default:
                 line = event.toString();
                 break;
@@ -174,15 +199,31 @@ class EventsLayer : public vne::testbed::ILayer {
     [[nodiscard]] int lastKeyCode() const { return last_key_code_; }
     [[nodiscard]] LastKeyAction lastKeyAction() const { return last_key_action_; }
 
+    enum class LastTouchAction { None, Press, Move, Release };
+    [[nodiscard]] uint32_t lastTouchId() const { return last_touch_id_; }
+    [[nodiscard]] double lastTouchX() const { return last_touch_x_; }
+    [[nodiscard]] double lastTouchY() const { return last_touch_y_; }
+    [[nodiscard]] LastTouchAction lastTouchAction() const { return last_touch_action_; }
+
    private:
     void setLastKey(int key_code, LastKeyAction action) {
         last_key_code_ = key_code;
         last_key_action_ = action;
     }
+    void setLastTouch(uint32_t id, double x, double y, LastTouchAction action) {
+        last_touch_id_ = id;
+        last_touch_x_ = x;
+        last_touch_y_ = y;
+        last_touch_action_ = action;
+    }
 
     std::deque<EventLogEntry> log_;
     int last_key_code_{-1};
     LastKeyAction last_key_action_{LastKeyAction::None};
+    uint32_t last_touch_id_{0};
+    double last_touch_x_{0.0};
+    double last_touch_y_{0.0};
+    LastTouchAction last_touch_action_{LastTouchAction::None};
     uint64_t events_total_{0};
     uint32_t events_since_last_update_{0};
     uint32_t events_this_second_{0};
@@ -335,6 +376,24 @@ class EventsSettingsLayer : public vne::testbed::ILayer {
                 const char* rb = vne::events::InputManager::isMouseButtonPressed(1) ? "down" : "up  ";
                 const char* mb = vne::events::InputManager::isMouseButtonPressed(2) ? "down" : "up  ";
                 ImGui::Text("LMB: %s   RMB: %s   MMB: %s", lb, rb, mb);
+            }
+
+            // Touch: LMB emulates touch id 0 on desktop; show last touch on panel
+            if (ImGui::CollapsingHeader("Touch", ImGuiTreeNodeFlags_DefaultOpen)) {
+                ImGui::TextUnformatted("LMB = touch id 0");
+                if (events_layer_) {
+                    const uint32_t tid = events_layer_->lastTouchId();
+                    const double tx = events_layer_->lastTouchX();
+                    const double ty = events_layer_->lastTouchY();
+                    const auto ta = events_layer_->lastTouchAction();
+                    const char* action_str = (ta == EventsLayer::LastTouchAction::Press)   ? "press"
+                                           : (ta == EventsLayer::LastTouchAction::Release) ? "release"
+                                           : (ta == EventsLayer::LastTouchAction::Move)    ? "move"
+                                                                                           : "";
+                    if (action_str[0] != '\0') {
+                        ImGui::Text("Last: id %u  %s  (%.0f, %.0f)", tid, action_str, tx, ty);
+                    }
+                }
             }
         }
     }
