@@ -35,6 +35,20 @@ if(VNE_TESTBED_OPENGLES OR
    VNE_TARGET_PLATFORM STREQUAL "iOS" OR VNE_TARGET_PLATFORM STREQUAL "Android"
    OR VNE_TARGET_PLATFORM STREQUAL "visionOS" OR VNE_TARGET_PLATFORM STREQUAL "Web")
     target_compile_definitions(imgui PRIVATE IMGUI_IMPL_OPENGL_ES3)
+else()
+    # Desktop OpenGL: use GLAD (project's loader) so the backend matches the rest of the codebase.
+    # IMGUI_IMPL_OPENGL_LOADER_GLAD documents the choice; IMGUI_IMPL_OPENGL_LOADER_CUSTOM makes
+    # the backend skip its embedded loader. We force-include glad so the compilation unit sees GL.
+    target_compile_definitions(imgui PRIVATE
+        IMGUI_IMPL_OPENGL_LOADER_GLAD
+        IMGUI_IMPL_OPENGL_LOADER_CUSTOM
+    )
+    if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU" OR CMAKE_CXX_COMPILER_ID STREQUAL "Clang"
+       OR CMAKE_CXX_COMPILER_ID STREQUAL "AppleClang")
+        target_compile_options(imgui PRIVATE -include glad/glad.h)
+    elseif(MSVC)
+        target_compile_options(imgui PRIVATE /FI "glad/glad.h")
+    endif()
 endif()
 
 target_link_libraries(imgui PUBLIC glfw glad::glad)
