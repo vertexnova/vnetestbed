@@ -38,6 +38,16 @@ Tests use Google Test from `deps/external/googletest`. Either:
 2. **FetchContent fallback**  
    If `deps/external/googletest` is not present, the CMake configuration for tests will use FetchContent to download googletest (v1.17.0) at configure time.
 
+### External: ImGui (docking branch)
+
+The ImGui layer (settings panel, viewport layout) requires Dear ImGui from `deps/external/imgui`. It is a git submodule. After cloning or pulling, run:
+
+```bash
+git submodule update --init deps/external/imgui
+```
+
+If the submodule is not initialized, demos will run without the ImGui overlay.
+
 ### Internal: vnecommon and vnelogging
 
 The library optionally links to VertexNova internal dependencies when present:

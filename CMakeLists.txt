@@ -111,15 +111,18 @@ vnetestbed_use_dep(TARGET glfw SUBDIR glfw DEPS_DIR EXTERNAL
   SAVE_RESTORE GLFW_BUILD_DOCS)
 vnetestbed_use_dep(TARGET glad::glad SUBDIR glad DEPS_DIR INTERNAL)
 
-# ImGui (docking branch) - optional, requires glfw + glad
+# ImGui (docking branch) - optional, requires glfw + glad + imgui submodule
+set(VNE_TESTBED_IMGUI_AVAILABLE OFF)
 if(VNE_TESTBED_IMGUI AND TARGET glfw AND TARGET glad::glad)
-    add_subdirectory(${VNE_DEPS_EXTERNAL_DIR}/imgui ${CMAKE_BINARY_DIR}/deps/external/imgui)
-    set(VNE_TESTBED_IMGUI_AVAILABLE ON)
-else()
-    set(VNE_TESTBED_IMGUI_AVAILABLE OFF)
-    if(VNE_TESTBED_IMGUI AND (NOT TARGET glfw OR NOT TARGET glad::glad))
-        message(STATUS "VNE_TESTBED_IMGUI: OFF — requires glfw and glad")
+    if(EXISTS "${VNE_DEPS_EXTERNAL_DIR}/imgui/CMakeLists.txt")
+        add_subdirectory(${VNE_DEPS_EXTERNAL_DIR}/imgui ${CMAKE_BINARY_DIR}/deps/external/imgui)
+        set(VNE_TESTBED_IMGUI_AVAILABLE ON)
+    else()
+        message(STATUS "VNE_TESTBED_IMGUI: OFF — imgui submodule not initialized")
+        message(STATUS "  Run: git submodule update --init deps/external/imgui")
     endif()
+elseif(VNE_TESTBED_IMGUI AND (NOT TARGET glfw OR NOT TARGET glad::glad))
+    message(STATUS "VNE_TESTBED_IMGUI: OFF — requires glfw and glad")
 endif()
 
 vnetestbed_use_dep(TARGET vne::events SUBDIR vneevents DEPS_DIR INTERNAL
