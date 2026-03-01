@@ -85,7 +85,11 @@ class ImGuiLayer : public ILayer {
     [[nodiscard]] bool getShowDemoWindow() const { return show_demo_window_; }
 
     /** @brief Whether scene should render to FBO for viewport display. */
+#if defined(VNE_TESTBED_OPENGL) || defined(VNE_TESTBED_OPENGLES)
     [[nodiscard]] bool useSceneFbo() const { return scene_fbo_ != nullptr && scene_fbo_->isValid(); }
+#else
+    [[nodiscard]] bool useSceneFbo() const { return false; }
+#endif
 
     /** @brief Scene FBO texture id for ImGui::Image; 0 if not available. */
     [[nodiscard]] unsigned int getSceneTextureId() const;

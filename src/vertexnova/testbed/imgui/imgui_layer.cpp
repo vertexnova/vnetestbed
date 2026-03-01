@@ -23,8 +23,6 @@
 #include <imgui_impl_glfw.h>
 #include <imgui_impl_opengl3.h>
 
-#include <cstdio>
-
 namespace vne {
 namespace testbed {
 
@@ -182,37 +180,18 @@ void ImGuiLayer::renderSettingsPanel(const RenderContext& ctx) {
     }
 
     const char* layout_items[] = {"1 Viewport", "2 Viewports", "4 Viewports"};
+    static constexpr ViewportLayout LAYOUTS[] = {
+        ViewportLayout::eOne, ViewportLayout::eTwo, ViewportLayout::eFour};
     int layout_idx = 0;
-    switch (viewport_layout_) {
-    case ViewportLayout::eOne:
-        layout_idx = 0;
-        break;
-    case ViewportLayout::eTwo:
-        layout_idx = 1;
-        break;
-    case ViewportLayout::eFour:
-        layout_idx = 2;
-        break;
-    default:
-        layout_idx = 0;
-        break;
-    }
-
-    if (ImGui::Combo("Viewport Layout", &layout_idx, layout_items, 3)) {
-        switch (layout_idx) {
-        case 0:
-            viewport_layout_ = ViewportLayout::eOne;
-            break;
-        case 1:
-            viewport_layout_ = ViewportLayout::eTwo;
-            break;
-        case 2:
-            viewport_layout_ = ViewportLayout::eFour;
-            break;
-        default:
-            // Ignore invalid indices; keep previous layout.
+    for (int i = 0; i < 3; ++i) {
+        if (LAYOUTS[i] == viewport_layout_) {
+            layout_idx = i;
             break;
         }
+    }
+    if (ImGui::Combo("Viewport Layout", &layout_idx, layout_items, 3)) {
+        layout_idx = (layout_idx >= 0 && layout_idx < 3) ? layout_idx : 0;
+        viewport_layout_ = LAYOUTS[layout_idx];
     }
 
 #if defined(VNE_TESTBED_OPENGL)
