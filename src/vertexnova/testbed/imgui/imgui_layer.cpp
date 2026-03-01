@@ -36,7 +36,11 @@ ImGuiLayer::~ImGuiLayer() = default;
 
 void ImGuiLayer::onAttach(AppContext& ctx) {
     app_ctx_ = &ctx;
-    if (!app_ctx_->window || !app_ctx_->window->getNativeHandle()) {
+    tryInitFromContext();
+}
+
+void ImGuiLayer::tryInitFromContext() {
+    if (initialized_ || !app_ctx_ || !app_ctx_->window || !app_ctx_->window->getNativeHandle()) {
         return;
     }
 
@@ -106,6 +110,7 @@ void ImGuiLayer::onBeginRender(const RenderContext& ctx) {
 
 void ImGuiLayer::onGuiBegin(const RenderContext& ctx) {
     (void)ctx;
+    tryInitFromContext();  // Deferred init if window wasn't ready at onAttach
     if (!initialized_) {
         return;
     }

@@ -112,11 +112,14 @@ vnetestbed_use_dep(TARGET glfw SUBDIR glfw DEPS_DIR EXTERNAL
 vnetestbed_use_dep(TARGET glad::glad SUBDIR glad DEPS_DIR INTERNAL)
 
 # ImGui (docking branch) - optional, requires glfw + glad + imgui submodule
+# Option defined early so it's available for this check
+option(VNE_TESTBED_IMGUI "Build ImGui layer (docking + viewports; requires OpenGL + GLFW)" ON)
 set(VNE_TESTBED_IMGUI_AVAILABLE OFF)
 if(VNE_TESTBED_IMGUI AND TARGET glfw AND TARGET glad::glad)
-    if(EXISTS "${VNE_DEPS_EXTERNAL_DIR}/imgui/CMakeLists.txt")
-        add_subdirectory(${VNE_DEPS_EXTERNAL_DIR}/imgui ${CMAKE_BINARY_DIR}/deps/external/imgui)
+    if(EXISTS "${VNE_DEPS_EXTERNAL_DIR}/imgui/imgui.h")
+        include(${CMAKE_CURRENT_LIST_DIR}/cmake/AddImgui.cmake)
         set(VNE_TESTBED_IMGUI_AVAILABLE ON)
+        message(STATUS "VNE_TESTBED_IMGUI: available — imgui submodule found")
     else()
         message(STATUS "VNE_TESTBED_IMGUI: OFF — imgui submodule not initialized")
         message(STATUS "  Run: git submodule update --init deps/external/imgui")
@@ -170,7 +173,7 @@ endif()
 
 option(VNE_TESTBED_TESTS "Build vnetestbed test suite (turn OFF when used as submodule)" ON)
 option(VNE_TESTBED_EXAMPLES "Build vnetestbed example programs (turn OFF when used as submodule)" OFF)
-option(VNE_TESTBED_IMGUI "Build ImGui layer (docking + viewports; requires OpenGL + GLFW)" ON)
+# VNE_TESTBED_IMGUI defined earlier (before ImGui submodule check)
 option(ENABLE_DOXYGEN "Enable Doxygen documentation builds" OFF)
 option(ENABLE_COVERAGE "Enable code coverage reporting" OFF)
 option(WARNINGS_AS_ERRORS "Treat compiler warnings as errors" OFF)

@@ -97,6 +97,7 @@ class ImGuiLayer : public ILayer {
     [[nodiscard]] unsigned int getSceneTextureId() const;
 
    private:
+    void tryInitFromContext();  // Init ImGui; no-op if already initialized or no window
     void ensureSceneFbo(int width, int height);
     void setupDockLayout(ImGuiID dockspace_id, const ImVec2& size);
 
