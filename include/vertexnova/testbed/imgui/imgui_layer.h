@@ -41,6 +41,7 @@ class ImGuiEventListener;
 #include "vertexnova/testbed/layer.h"
 #include "vertexnova/testbed/render_context.h"
 
+#include <array>
 #include <functional>
 #include <memory>
 #include <vector>
@@ -162,6 +163,13 @@ class ImGuiLayer : public ILayer {
     float settings_panel_width_{320.0f};  ///< Fixed pixel width; viewport absorbs remaining space.
     float font_scale_{1.25f};              ///< Global font scale (style.FontScaleMain); user-adjustable in Settings.
     bool dock_layout_dirty_{false};       ///< True when settings_panel_width_ changed mid-session.
+
+    /// FPS display: rolling average over last N frame times
+    static constexpr size_t kFpsAverageFrames = 10;
+    std::array<float, kFpsAverageFrames> fps_dt_buf_{};
+    size_t fps_buf_index_{0};
+    size_t fps_buf_filled_{0};
+    float fps_dt_sum_{0.0f};
 
 #if defined(VNE_TESTBED_OPENGL) || defined(VNE_TESTBED_OPENGLES)
     std::unique_ptr<gl::Framebuffer> scene_fbo_;

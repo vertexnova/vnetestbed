@@ -286,8 +286,18 @@ void ImGuiLayer::onBeginRender(const RenderContext& ctx) {
 }
 
 void ImGuiLayer::onGuiBegin(const RenderContext& ctx) {
-    (void)ctx;
     tryInitFromContext();  // Deferred init if window wasn't ready at onAttach
+    // Update FPS rolling average (frame time in seconds)
+    if (ctx.frame_info.dt > 0.0f) {
+        if (fps_buf_filled_ == kFpsAverageFrames) {
+            fps_dt_sum_ -= fps_dt_buf_[fps_buf_index_];
+        } else {
+            ++fps_buf_filled_;
+        }
+        fps_dt_buf_[fps_buf_index_] = ctx.frame_info.dt;
+        fps_dt_sum_ += ctx.frame_info.dt;
+        fps_buf_index_ = (fps_buf_index_ + 1) % kFpsAverageFrames;
+    }
     if (!initialized_) {
         return;
     }
@@ -470,10 +480,11 @@ void ImGuiLayer::renderSettingsPanel(const RenderContext& ctx) {
     }
 #endif
 
-    if (ctx.frame_info.dt > 0.0f) {
-        const float fps = 1.0f / ctx.frame_info.dt;
-        ImGui::Text("FPS: %.1f", static_cast<double>(fps));
-        ImGui::Text("Frame: %.3f ms", static_cast<double>(ctx.frame_info.dt * 1000.0f));
+    if (fps_buf_filled_ > 0 && fps_dt_sum_ > 0.0f) {
+        const float avg_fps = static_cast<float>(fps_buf_filled_) / fps_dt_sum_;
+        const float avg_ms = (fps_dt_sum_ / static_cast<float>(fps_buf_filled_)) * 1000.0f;
+        ImGui::Text("FPS: %.1f (avg %zu frames)", static_cast<double>(avg_fps), fps_buf_filled_);
+        ImGui::Text("Frame: %.3f ms", static_cast<double>(avg_ms));
     }
 
     // ---- Scrollable demo content (fills remainder of panel) -----------------
