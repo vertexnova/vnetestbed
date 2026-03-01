@@ -29,7 +29,7 @@ The testbed follows a standard directory layout and builds a static library, tes
 | samples/ | Sample apps (e.g. glfw_opengl/00_hello_testbed, 01_test_events) |
 | cmake/vnecmake/ | CMake modules submodule |
 | deps/internal/, deps/external/ | Internal (vnecommon, vnelogging, vnemath, vnescene, etc.) and external (googletest, glfw, glad) deps |
-| CMake configure + build | Produces libvnetestbed.a, tests, and examples |
+| CMake configure + build | Produces libvnetestbed.a, tests, and samples (if VNE_TESTBED_SAMPLES=ON) |
 
 See the root [README.md](../../../README.md) for prerequisites, dependencies, and build commands.
 
@@ -93,7 +93,7 @@ while (!app_ctx.window->shouldClose()) {
 stack.clear();
 ```
 
-See **examples/02_plugin_runner** for a full runner with GLFW and a stub render adapter. See **examples/03_opengl_renderer** for a full runner using the gl/ backend (OpenGL or OpenGL ES).
+See **samples/glfw_opengl/** for sample runners (e.g. 00_hello_testbed, 02_test_scene) with GLFW and the gl/ backend (OpenGL or OpenGL ES).
 
 The gl/ backend (OpenGL 4.1 or OpenGL ES 3.0) is documented in a separate file: **[OpenGL / OpenGL ES backend](gl_backend.md)** — build options, headers (OpenGLRenderAdapter, OpenGLRenderDevice, OpenGLDebugDraw), context and lifecycle, and example reference.
 
