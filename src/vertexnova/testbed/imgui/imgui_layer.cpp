@@ -182,9 +182,37 @@ void ImGuiLayer::renderSettingsPanel(const RenderContext& ctx) {
     }
 
     const char* layout_items[] = {"1 Viewport", "2 Viewports", "4 Viewports"};
-    int layout_idx = static_cast<int>(viewport_layout_) - 1;
+    int layout_idx = 0;
+    switch (viewport_layout_) {
+    case ViewportLayout::eOne:
+        layout_idx = 0;
+        break;
+    case ViewportLayout::eTwo:
+        layout_idx = 1;
+        break;
+    case ViewportLayout::eFour:
+        layout_idx = 2;
+        break;
+    default:
+        layout_idx = 0;
+        break;
+    }
+
     if (ImGui::Combo("Viewport Layout", &layout_idx, layout_items, 3)) {
-        viewport_layout_ = static_cast<ViewportLayout>(layout_idx + 1);
+        switch (layout_idx) {
+        case 0:
+            viewport_layout_ = ViewportLayout::eOne;
+            break;
+        case 1:
+            viewport_layout_ = ViewportLayout::eTwo;
+            break;
+        case 2:
+            viewport_layout_ = ViewportLayout::eFour;
+            break;
+        default:
+            // Ignore invalid indices; keep previous layout.
+            break;
+        }
     }
 
 #if defined(VNE_TESTBED_OPENGL)
