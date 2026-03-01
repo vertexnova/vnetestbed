@@ -67,7 +67,7 @@ class InteractionTestLayer : public vne::testbed::ILayer {
     InteractionTestLayer()
         : vne::testbed::ILayer("InteractionTestLayer") {
         controllers_.resize(BaseSceneLayer::kMaxViewports);
-        for (int i = 0; i < BaseSceneLayer::kMaxViewports; ++i) {
+        for (size_t i = 0; i < static_cast<size_t>(BaseSceneLayer::kMaxViewports); ++i) {
             controllers_[i] = std::make_unique<vne::interaction::CameraSystemController>(
                 vne::interaction::CameraManipulatorType::eOrbitArcball);
         }
