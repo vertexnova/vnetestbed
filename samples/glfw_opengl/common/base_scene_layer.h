@@ -21,6 +21,7 @@
 #include "vertexnova/testbed/layer.h"
 #include "vertexnova/testbed/render_context.h"
 
+#include "vertexnova/scene/camera/camera.h"
 #include "vertexnova/scene/camera/perspective_camera.h"
 #include "vertexnova/scene/scene_state.h"
 
@@ -190,10 +191,25 @@ class BaseInteractionLayer : public vne::testbed::ILayer, public vne::events::Ev
         }
     }
 
+    /** @brief Set per-viewport cameras by ICamera (use when switching perspective/orthographic so interaction drives
+     * the active camera). */
+    void setCameras(const std::vector<std::shared_ptr<vne::scene::ICamera>>& cameras) {
+        for (size_t i = 0; i < cameras.size() && i < controllers_.size(); ++i) {
+            if (controllers_[i] && cameras[i]) {
+                controllers_[i]->setCamera(cameras[i]);
+            }
+        }
+    }
+
 #ifdef VNE_TESTBED_IMGUI
     /** @brief Set ImGuiLayer for viewport-based hit-testing; only process interaction when mouse is over a viewport. */
     void setImGuiLayer(vne::testbed::ImGuiLayer* layer) { imgui_layer_ = layer; }
 #endif
+
+    /** @brief Enable or disable orbit-arcball camera interaction. When false, onEvent does not drive the controller. */
+    void setInteractionEnabled(bool enabled) { interaction_enabled_ = enabled; }
+    /** @brief Whether camera interaction is enabled. */
+    [[nodiscard]] bool getInteractionEnabled() const { return interaction_enabled_; }
 
     void onAttach(vne::testbed::AppContext& ctx) override {
         const float vpw = ctx.window ? static_cast<float>(ctx.window->getWidth()) : 1280.0f;
@@ -216,7 +232,7 @@ class BaseInteractionLayer : public vne::testbed::ILayer, public vne::events::Ev
     }
 
     void onEvent(const vne::events::Event& event) override {
-        if (controllers_.empty() || !controllers_[0]) {
+        if (!interaction_enabled_ || controllers_.empty() || !controllers_[0]) {
             return;
         }
         using ET = vne::events::EventType;
@@ -322,6 +338,7 @@ class BaseInteractionLayer : public vne::testbed::ILayer, public vne::events::Ev
 
    private:
     std::vector<std::unique_ptr<vne::interaction::CameraSystemController>> controllers_;
+    bool interaction_enabled_{true};
     double last_x_{0.0};
     double last_y_{0.0};
     bool first_mouse_{true};

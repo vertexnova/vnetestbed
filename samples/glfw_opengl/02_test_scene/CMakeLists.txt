@@ -25,3 +25,14 @@ target_compile_definitions(sample_02_test_scene PRIVATE
 set_target_properties(sample_02_test_scene PROPERTIES
     RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin/samples"
 )
+
+# Copy shaders next to the executable so createShader(path, path) can find them
+add_custom_command(TARGET sample_02_test_scene POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different
+        "${CMAKE_CURRENT_SOURCE_DIR}/shaders/scene_vert.glsl"
+        "$<TARGET_FILE_DIR:sample_02_test_scene>/scene_vert.glsl"
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different
+        "${CMAKE_CURRENT_SOURCE_DIR}/shaders/scene_frag.glsl"
+        "$<TARGET_FILE_DIR:sample_02_test_scene>/scene_frag.glsl"
+    COMMENT "Copying 02_test_scene shaders to output directory"
+)

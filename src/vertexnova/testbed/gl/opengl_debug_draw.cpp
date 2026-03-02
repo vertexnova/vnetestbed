@@ -226,11 +226,17 @@ void OpenGLDebugDraw::flush() {
 #if defined(VNE_TESTBED_OPENGL)
     shader_->setFloat("uHalfWidth", 0.004f);
 #endif
-    // Don't write depth so overlapping line quads don't z-fight and flicker
+    // Don't write depth so overlapping line quads don't z-fight
     GLboolean depth_mask_prev = GL_TRUE;
     glGetBooleanv(GL_DEPTH_WRITEMASK, &depth_mask_prev);
     glDepthMask(GL_FALSE);
+    // Disable depth test so debug lines (camera frustum, grid, axes) are always visible and don't flicker
+    GLboolean depth_test_prev = glIsEnabled(GL_DEPTH_TEST);
+    glDisable(GL_DEPTH_TEST);
     glDrawArrays(GL_LINES, 0, static_cast<GLsizei>(vertex_data_.size() / kFloatsPerVertex));
+    if (depth_test_prev) {
+        glEnable(GL_DEPTH_TEST);
+    }
     glDepthMask(depth_mask_prev);
     vao_->unbind();
 
