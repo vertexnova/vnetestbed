@@ -42,6 +42,7 @@
 #include "vertexnova/scene/light/point_light.h"
 #include "vertexnova/scene/light/spot_light.h"
 #include "vertexnova/scene/scene_state.h"
+#include "vertexnova/logging/logging.h"
 
 #ifdef VNE_TESTBED_IMGUI
 #include "vertexnova/testbed/imgui/imgui_layer.h"
@@ -53,12 +54,13 @@
 #include <array>
 #include <cmath>
 #include <filesystem>
-#include <iostream>
 #include <memory>
 #include <string>
 #include <vector>
 
 namespace {
+
+CREATE_VNE_LOGGER_CATEGORY("vnetestbed.samples.test_scene")
 
 /** Resolve shader path: try cwd and cwd/bin/samples so it works from build or bin/samples. */
 static std::filesystem::path resolveShaderPath(const char* filename) {
@@ -272,34 +274,34 @@ class SceneTestLayer : public vne::testbed::ILayer {
         }
 
         // Upload lighting uniforms
-        device_->setVec3(shader_, "u_AmbientColor", ambient_light_->getColor());
+        device_->setVec3(shader_, "u_ambientColor", ambient_light_->getColor());
         device_->setFloat(shader_,
-                          "u_AmbientIntensity",
+                          "u_ambientIntensity",
                           ambient_light_->isEnabled() ? ambient_light_->getIntensity() : 0.f);
 
         const auto& dl = dir_light_;
-        device_->setInt(shader_, "u_DirLightEnabled", dl->isEnabled() ? 1 : 0);
-        device_->setVec3(shader_, "u_DirLightDir", dl->getDirection());
-        device_->setVec3(shader_, "u_DirLightColor", dl->getColor());
-        device_->setFloat(shader_, "u_DirLightIntensity", dl->getIntensity());
+        device_->setInt(shader_, "u_dirLightEnabled", dl->isEnabled() ? 1 : 0);
+        device_->setVec3(shader_, "u_dirLightDir", dl->getDirection());
+        device_->setVec3(shader_, "u_dirLightColor", dl->getColor());
+        device_->setFloat(shader_, "u_dirLightIntensity", dl->getIntensity());
 
         const int npt = static_cast<int>(point_lights_.size());
-        device_->setInt(shader_, "u_NumPointLights", npt);
+        device_->setInt(shader_, "u_numPointLights", npt);
         for (int i = 0; i < npt && i < 4; ++i) {
             const auto& e = point_lights_[static_cast<std::size_t>(i)];
             const std::string idx = "[" + std::to_string(i) + "]";
-            device_->setVec3(shader_, ("u_PtLightPos" + idx).c_str(), e.light->getPosition());
-            device_->setVec3(shader_, ("u_PtLightColor" + idx).c_str(), e.light->getColor());
-            device_->setFloat(shader_, ("u_PtLightIntensity" + idx).c_str(), e.light->getIntensity());
-            device_->setFloat(shader_, ("u_PtLightRange" + idx).c_str(), e.light->getRange());
-            device_->setInt(shader_, ("u_PtLightEnabled" + idx).c_str(), e.enabled ? 1 : 0);
+            device_->setVec3(shader_, ("u_ptLightPos" + idx).c_str(), e.light->getPosition());
+            device_->setVec3(shader_, ("u_ptLightColor" + idx).c_str(), e.light->getColor());
+            device_->setFloat(shader_, ("u_ptLightIntensity" + idx).c_str(), e.light->getIntensity());
+            device_->setFloat(shader_, ("u_ptLightRange" + idx).c_str(), e.light->getRange());
+            device_->setInt(shader_, ("u_ptLightEnabled" + idx).c_str(), e.enabled ? 1 : 0);
         }
-        device_->setInt(shader_, "u_SpotLightEnabled", spot_light_->isEnabled() ? 1 : 0);
-        device_->setVec3(shader_, "u_SpotLightPos", spot_light_->getPosition());
-        device_->setVec3(shader_, "u_SpotLightDir", spot_light_->getDirection());
-        device_->setVec3(shader_, "u_SpotLightColor", spot_light_->getColor());
-        device_->setFloat(shader_, "u_SpotLightIntensity", spot_light_->getIntensity());
-        device_->setFloat(shader_, "u_SpotLightRange", spot_light_->getRange());
+        device_->setInt(shader_, "u_spotLightEnabled", spot_light_->isEnabled() ? 1 : 0);
+        device_->setVec3(shader_, "u_spotLightPos", spot_light_->getPosition());
+        device_->setVec3(shader_, "u_spotLightDir", spot_light_->getDirection());
+        device_->setVec3(shader_, "u_spotLightColor", spot_light_->getColor());
+        device_->setFloat(shader_, "u_spotLightIntensity", spot_light_->getIntensity());
+        device_->setFloat(shader_, "u_spotLightRange", spot_light_->getRange());
         // Enforce outer > inner + eps so (innerCos - outerCos) in shader is never 0 (avoids NaNs)
         float innerDeg = spot_light_inner_deg_;
         float outerDeg = spot_light_outer_deg_;
@@ -313,13 +315,13 @@ class SceneTestLayer : public vne::testbed::ILayer {
         }
         const float innerRad = innerDeg * 3.14159265f / 180.f;
         const float outerRad = outerDeg * 3.14159265f / 180.f;
-        device_->setFloat(shader_, "u_SpotLightInnerCos", std::cos(innerRad));
-        device_->setFloat(shader_, "u_SpotLightOuterCos", std::cos(outerRad));
-        device_->setInt(shader_, "u_UseAttnFormula", use_attn_formula_ ? 1 : 0);
-        device_->setFloat(shader_, "u_AttnConst", attn_const_);
-        device_->setFloat(shader_, "u_AttnLinear", attn_linear_);
-        device_->setFloat(shader_, "u_AttnQuad", attn_quad_);
-        device_->setVec3(shader_, "u_CamPos", cam_pos);
+        device_->setFloat(shader_, "u_spotLightInnerCos", std::cos(innerRad));
+        device_->setFloat(shader_, "u_spotLightOuterCos", std::cos(outerRad));
+        device_->setInt(shader_, "u_useAttnFormula", use_attn_formula_ ? 1 : 0);
+        device_->setFloat(shader_, "u_attnConst", attn_const_);
+        device_->setFloat(shader_, "u_attnLinear", attn_linear_);
+        device_->setFloat(shader_, "u_attnQuad", attn_quad_);
+        device_->setVec3(shader_, "u_camPos", cam_pos);
 
         // Draw cubes
         static const float kOffsets[4][3] = {
@@ -344,8 +346,8 @@ class SceneTestLayer : public vne::testbed::ILayer {
             model[3][2] = kOffsets[i][2];
 
             const vne::math::Mat4f mvp = vp * model;
-            device_->setMat4(shader_, "u_MVP", mvp);
-            device_->setMat4(shader_, "u_Model", model);
+            device_->setMat4(shader_, "u_mvp", mvp);
+            device_->setMat4(shader_, "u_model", model);
             device_->drawIndexed(pipeline_, vbo_, ibo_, kCubeIdxCount, vne::testbed::DrawMode::eTriangles);
         }
     }
@@ -672,8 +674,9 @@ class SceneTestLayer : public vne::testbed::ILayer {
             shader_ = device_->createShader(vert_path, frag_path);
         }
         if (!shader_.isValid()) {
-            std::cerr << "Scene shaders not loaded: ensure " << kSceneVertFilename << " and " << kSceneFragFilename
-                      << " are next to the executable (e.g. run from build bin/samples)." << std::endl;
+            VNE_LOG_ERROR << "Scene shaders not loaded: ensure " << kSceneVertFilename << " and "
+                         << kSceneFragFilename
+                         << " are next to the executable (e.g. run from build bin/samples).";
         }
 
         vne::testbed::PipelineDesc pd{};
