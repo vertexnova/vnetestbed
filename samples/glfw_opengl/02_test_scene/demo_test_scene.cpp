@@ -716,6 +716,18 @@ class SceneTestLayer : public vne::testbed::ILayer {
     [[nodiscard]] const std::vector<std::shared_ptr<vne::scene::PerspectiveCamera>>& getCameras() const {
         return cameras_persp_;
     }
+    /** @brief Returns the currently active camera set (perspective or orthographic) so interaction can drive the visible camera. */
+    [[nodiscard]] std::vector<std::shared_ptr<vne::scene::ICamera>> getActiveCameras() const {
+        std::vector<std::shared_ptr<vne::scene::ICamera>> out;
+        if (use_perspective_) {
+            for (const auto& c : cameras_persp_)
+                if (c) out.push_back(c);
+        } else {
+            for (const auto& c : cameras_ortho_)
+                if (c) out.push_back(c);
+        }
+        return out;
+    }
 
    private:
     // -----------------------------------------------------------------------
@@ -1009,8 +1021,13 @@ class SceneSettingsLayer : public vne::testbed::ILayer {
             }
             if (pos_changed)
                 sl.syncCameraPositionTargetUp();
-            if (proj_changed)
+            if (proj_changed) {
                 sl.rebuildCamera(1280, 720);
+#ifdef VNE_TESTBED_INTERACTION
+                if (interaction_layer_)
+                    interaction_layer_->setCameras(sl.getActiveCameras());
+#endif
+            }
             ImGui::Checkbox("Show camera visuals", &sl.show_camera_visuals_);
             ImGui::Checkbox("Show view matrix", &sl.show_view_matrix_);
             if (sl.show_view_matrix_) {
@@ -1158,9 +1175,9 @@ void RegisterTestSceneDemo(vne::testbed::Application& app) {
     app.getLayerStack().pushLayer(std::unique_ptr<SceneTestLayer>(scene), app.getAppContext());
 
 #ifdef VNE_TESTBED_INTERACTION
-    // Layer 2: orbit-arcball (per-viewport cameras when using 2 or 4 viewports)
+    // Layer 2: orbit-arcball (per-viewport cameras; use active set so ortho/persp switch works)
     auto* interaction = new BaseInteractionLayer("TestSceneInteractionLayer");
-    interaction->setCameras(scene->getCameras());
+    interaction->setCameras(scene->getActiveCameras());
     app.getLayerStack().pushLayer(std::unique_ptr<BaseInteractionLayer>(interaction), app.getAppContext());
 #endif
 

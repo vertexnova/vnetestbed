@@ -21,6 +21,7 @@
 #include "vertexnova/testbed/layer.h"
 #include "vertexnova/testbed/render_context.h"
 
+#include "vertexnova/scene/camera/camera.h"
 #include "vertexnova/scene/camera/perspective_camera.h"
 #include "vertexnova/scene/scene_state.h"
 
@@ -183,6 +184,15 @@ class BaseInteractionLayer : public vne::testbed::ILayer, public vne::events::Ev
 
     /** @brief Set per-viewport cameras (for SceneTestLayer or other custom scene layers). */
     void setCameras(const std::vector<std::shared_ptr<vne::scene::PerspectiveCamera>>& cameras) {
+        for (size_t i = 0; i < cameras.size() && i < controllers_.size(); ++i) {
+            if (controllers_[i] && cameras[i]) {
+                controllers_[i]->setCamera(cameras[i]);
+            }
+        }
+    }
+
+    /** @brief Set per-viewport cameras by ICamera (use when switching perspective/orthographic so interaction drives the active camera). */
+    void setCameras(const std::vector<std::shared_ptr<vne::scene::ICamera>>& cameras) {
         for (size_t i = 0; i < cameras.size() && i < controllers_.size(); ++i) {
             if (controllers_[i] && cameras[i]) {
                 controllers_[i]->setCamera(cameras[i]);
