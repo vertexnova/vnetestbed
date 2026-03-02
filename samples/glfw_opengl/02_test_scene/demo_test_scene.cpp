@@ -720,6 +720,75 @@ class SceneTestLayer : public vne::testbed::ILayer {
         point_lights_.pop_back();
     }
 
+    /** @brief Reset camera, cubes, lights, and UI state to default values. */
+    void resetToDefault() {
+        use_perspective_ = true;
+        fov_ = 60.0f;
+        near_ = 0.1f;
+        far_ = 1000.0f;
+        ortho_half_ = 6.0f;
+        cam_position_[0] = 4.f;
+        cam_position_[1] = 3.f;
+        cam_position_[2] = 6.f;
+        cam_target_[0] = 0.f;
+        cam_target_[1] = 0.f;
+        cam_target_[2] = 0.f;
+        cam_up_[0] = 0.f;
+        cam_up_[1] = 1.f;
+        cam_up_[2] = 0.f;
+        show_view_matrix_ = false;
+        show_projection_matrix_ = false;
+        show_camera_visuals_ = true;
+
+        cube_count_ = 3;
+        cube_rotation_speed_ = 0.5f;
+        cube_angle_ = 0.f;
+
+        ambient_light_enabled_ = true;
+        ambient_light_color_[0] = 0.08f;
+        ambient_light_color_[1] = 0.08f;
+        ambient_light_color_[2] = 0.1f;
+        ambient_light_intensity_ = 1.0f;
+
+        dir_light_enabled_ = true;
+        dir_light_dir_[0] = -0.5f;
+        dir_light_dir_[1] = -1.0f;
+        dir_light_dir_[2] = -0.3f;
+        dir_light_color_[0] = 1.0f;
+        dir_light_color_[1] = 0.97f;
+        dir_light_color_[2] = 0.9f;
+        dir_light_intensity_ = 1.0f;
+
+        spot_light_enabled_ = false;
+        spot_light_pos_[0] = 0.f;
+        spot_light_pos_[1] = 4.f;
+        spot_light_pos_[2] = 4.f;
+        spot_light_dir_[0] = 0.f;
+        spot_light_dir_[1] = -0.7f;
+        spot_light_dir_[2] = -0.7f;
+        spot_light_color_[0] = 1.f;
+        spot_light_color_[1] = 0.9f;
+        spot_light_color_[2] = 0.7f;
+        spot_light_intensity_ = 2.f;
+        spot_light_range_ = 10.f;
+        spot_light_inner_deg_ = 15.f;
+        spot_light_outer_deg_ = 30.f;
+
+        use_attn_formula_ = false;
+        attn_const_ = 1.f;
+        attn_linear_ = 0.09f;
+        attn_quad_ = 0.032f;
+
+        while (!point_lights_.empty())
+            removeLastPointLight();
+
+        rebuildCamera(last_vp_w_, last_vp_h_);
+        syncCameraPositionTargetUp();
+        syncAmbientLight();
+        syncDirLight();
+        syncSpotLight();
+    }
+
     void syncPointLight(std::size_t i) {
         if (i >= point_lights_.size())
             return;
@@ -1126,6 +1195,18 @@ class SceneSettingsLayer : public vne::testbed::ILayer {
         if (!scene_layer_)
             return;
         auto& sl = *scene_layer_;
+
+        if (ImGui::Button("Reset scene to default")) {
+            sl.resetToDefault();
+#ifdef VNE_TESTBED_INTERACTION
+            if (interaction_layer_) {
+                interaction_layer_->setInteractionEnabled(true);
+                interaction_layer_->setCameras(sl.getActiveCameras());
+            }
+#endif
+        }
+        if (ImGui::IsItemHovered())
+            ImGui::SetTooltip("Reset camera, cubes, lights, and options to default values.");
 
         // ---- Camera ----
         if (ImGui::CollapsingHeader("Camera", ImGuiTreeNodeFlags_DefaultOpen)) {
