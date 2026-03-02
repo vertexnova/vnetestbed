@@ -75,7 +75,8 @@ void main() {
         if (dist <= range) {
             vec3 L = normalize(toLight);
             float cosTheta = dot(L, normalize(-u_SpotLightDir));
-            float spot = clamp((cosTheta - u_SpotLightOuterCos) / (u_SpotLightInnerCos - u_SpotLightOuterCos), 0.0, 1.0);
+            float spotDenom = max(u_SpotLightInnerCos - u_SpotLightOuterCos, 1e-6);
+            float spot = clamp((cosTheta - u_SpotLightOuterCos) / spotDenom, 0.0, 1.0);
             float atten;
             if (u_UseAttnFormula != 0) {
                 atten = 1.0 / (u_AttnConst + u_AttnLinear * dist + u_AttnQuad * dist * dist);

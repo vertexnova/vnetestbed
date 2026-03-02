@@ -35,7 +35,6 @@
 #include "vertexnova/testbed/render_context.h"
 #include "vertexnova/testbed/render_device.h"
 
-#include "vertexnova/scene/camera/camera_utils.h"
 #include "vertexnova/scene/camera/orthographic_camera.h"
 #include "vertexnova/scene/camera/perspective_camera.h"
 #include "vertexnova/scene/light/ambient_light.h"
@@ -227,7 +226,8 @@ void main() {
         if (dist <= range) {
             vec3 L = normalize(toLight);
             float cosTheta = dot(L, normalize(-u_SpotLightDir));
-            float spot = clamp((cosTheta - u_SpotLightOuterCos) / (u_SpotLightInnerCos - u_SpotLightOuterCos), 0.0, 1.0);
+            float spotDenom = max(u_SpotLightInnerCos - u_SpotLightOuterCos, 1e-6);
+            float spot = clamp((cosTheta - u_SpotLightOuterCos) / spotDenom, 0.0, 1.0);
             float atten;
             if (u_UseAttnFormula != 0) {
                 atten = 1.0 / (u_AttnConst + u_AttnLinear * dist + u_AttnQuad * dist * dist);
@@ -335,7 +335,8 @@ void main() {
         if (dist <= range) {
             vec3 L = normalize(toLight);
             float cosTheta = dot(L, normalize(-u_SpotLightDir));
-            float spot = clamp((cosTheta - u_SpotLightOuterCos) / (u_SpotLightInnerCos - u_SpotLightOuterCos), 0.0, 1.0);
+            float spotDenom = max(u_SpotLightInnerCos - u_SpotLightOuterCos, 1e-6);
+            float spot = clamp((cosTheta - u_SpotLightOuterCos) / spotDenom, 0.0, 1.0);
             float atten;
             if (u_UseAttnFormula != 0) {
                 atten = 1.0 / (u_AttnConst + u_AttnLinear * dist + u_AttnQuad * dist * dist);
@@ -518,8 +519,19 @@ class SceneTestLayer : public vne::testbed::ILayer {
         device_->setVec3(shader_, "u_SpotLightColor", spot_light_->getColor());
         device_->setFloat(shader_, "u_SpotLightIntensity", spot_light_->getIntensity());
         device_->setFloat(shader_, "u_SpotLightRange", spot_light_->getRange());
-        const float innerRad = spot_light_inner_deg_ * 3.14159265f / 180.f;
-        const float outerRad = spot_light_outer_deg_ * 3.14159265f / 180.f;
+        // Enforce outer > inner + eps so (innerCos - outerCos) in shader is never 0 (avoids NaNs)
+        float innerDeg = spot_light_inner_deg_;
+        float outerDeg = spot_light_outer_deg_;
+        if (outerDeg <= innerDeg + kSpotAngleEpsDeg) {
+            outerDeg = innerDeg + kSpotAngleEpsDeg;
+            spot_light_outer_deg_ = outerDeg;
+        }
+        if (innerDeg > outerDeg - kSpotAngleEpsDeg) {
+            innerDeg = outerDeg - kSpotAngleEpsDeg;
+            spot_light_inner_deg_ = innerDeg;
+        }
+        const float innerRad = innerDeg * 3.14159265f / 180.f;
+        const float outerRad = outerDeg * 3.14159265f / 180.f;
         device_->setFloat(shader_, "u_SpotLightInnerCos", std::cos(innerRad));
         device_->setFloat(shader_, "u_SpotLightOuterCos", std::cos(outerRad));
         device_->setInt(shader_, "u_UseAttnFormula", use_attn_formula_ ? 1 : 0);
@@ -679,6 +691,12 @@ class SceneTestLayer : public vne::testbed::ILayer {
     }
 
     void syncSpotLight() {
+        // Enforce outer > inner + eps so shader (innerCos - outerCos) is never 0
+        if (spot_light_outer_deg_ <= spot_light_inner_deg_ + kSpotAngleEpsDeg)
+            spot_light_outer_deg_ = spot_light_inner_deg_ + kSpotAngleEpsDeg;
+        if (spot_light_inner_deg_ > spot_light_outer_deg_ - kSpotAngleEpsDeg)
+            spot_light_inner_deg_ = spot_light_outer_deg_ - kSpotAngleEpsDeg;
+
         spot_light_->setEnabled(spot_light_enabled_);
         spot_light_->setPosition({spot_light_pos_[0], spot_light_pos_[1], spot_light_pos_[2]});
         vne::math::Vec3f dir(spot_light_dir_[0], spot_light_dir_[1], spot_light_dir_[2]);
@@ -964,6 +982,8 @@ class SceneTestLayer : public vne::testbed::ILayer {
     static constexpr int kGridLines = 20;
     static constexpr float kGridSpacing = 1.0f;
     static constexpr float kGridHalf = kGridLines * kGridSpacing * 0.5f;
+    /** Min separation (degrees) between spot inner/outer so (innerCos - outerCos) != 0 in shader. */
+    static constexpr float kSpotAngleEpsDeg = 0.5f;
 
     // Draw camera debug markers: position cross, target cross, up vector, view direction.
     // No frustum (near/far plane) visualization.
