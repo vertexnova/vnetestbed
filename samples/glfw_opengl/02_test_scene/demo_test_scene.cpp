@@ -461,8 +461,8 @@ class SceneTestLayer : public vne::testbed::ILayer {
             }
             if (show_camera_visuals_) {
                 drawCameraVisuals(vp_idx,
-                                 static_cast<float>(ctx.frame_info.width),
-                                 static_cast<float>(ctx.frame_info.height));
+                                  static_cast<float>(ctx.frame_info.width),
+                                  static_cast<float>(ctx.frame_info.height));
             }
             if (spot_light_enabled_) {
                 const auto p = spot_light_->getPosition();
@@ -473,16 +473,16 @@ class SceneTestLayer : public vne::testbed::ILayer {
                 debug_draw_->line({p.x(), p.y() - s, p.z()}, {p.x(), p.y() + s, p.z()}, lc);
                 debug_draw_->line({p.x(), p.y(), p.z() - s}, {p.x(), p.y(), p.z() + s}, lc);
                 const float dirLen = 1.5f;
-                debug_draw_->line(p,
-                                 {p.x() - d.x() * dirLen, p.y() - d.y() * dirLen, p.z() - d.z() * dirLen},
-                                 lc);
+                debug_draw_->line(p, {p.x() - d.x() * dirLen, p.y() - d.y() * dirLen, p.z() - d.z() * dirLen}, lc);
             }
             debug_draw_->flush();
         }
 
         // Upload lighting uniforms
         device_->setVec3(shader_, "u_AmbientColor", ambient_light_->getColor());
-        device_->setFloat(shader_, "u_AmbientIntensity", ambient_light_->isEnabled() ? ambient_light_->getIntensity() : 0.f);
+        device_->setFloat(shader_,
+                          "u_AmbientIntensity",
+                          ambient_light_->isEnabled() ? ambient_light_->getIntensity() : 0.f);
 
         const auto& dl = dir_light_;
         device_->setInt(shader_, "u_DirLightEnabled", dl->isEnabled() ? 1 : 0);
@@ -717,15 +717,18 @@ class SceneTestLayer : public vne::testbed::ILayer {
     [[nodiscard]] const std::vector<std::shared_ptr<vne::scene::PerspectiveCamera>>& getCameras() const {
         return cameras_persp_;
     }
-    /** @brief Returns the currently active camera set (perspective or orthographic) so interaction can drive the visible camera. */
+    /** @brief Returns the currently active camera set (perspective or orthographic) so interaction can drive the
+     * visible camera. */
     [[nodiscard]] std::vector<std::shared_ptr<vne::scene::ICamera>> getActiveCameras() const {
         std::vector<std::shared_ptr<vne::scene::ICamera>> out;
         if (use_perspective_) {
             for (const auto& c : cameras_persp_)
-                if (c) out.push_back(c);
+                if (c)
+                    out.push_back(c);
         } else {
             for (const auto& c : cameras_ortho_)
-                if (c) out.push_back(c);
+                if (c)
+                    out.push_back(c);
         }
         return out;
     }
@@ -906,9 +909,12 @@ class SceneTestLayer : public vne::testbed::ILayer {
         nearCorners[2] = vne::scene::unproject(*cam, vne::math::Vec3f(vp_width, vp_height, 0.f), vp_width, vp_height);
         nearCorners[3] = vne::scene::unproject(*cam, vne::math::Vec3f(0.f, vp_height, 0.f), vp_width, vp_height);
         farCorners[0] = vne::scene::unproject(*cam, vne::math::Vec3f(0.f, 0.f, visualFarDepth), vp_width, vp_height);
-        farCorners[1] = vne::scene::unproject(*cam, vne::math::Vec3f(vp_width, 0.f, visualFarDepth), vp_width, vp_height);
-        farCorners[2] = vne::scene::unproject(*cam, vne::math::Vec3f(vp_width, vp_height, visualFarDepth), vp_width, vp_height);
-        farCorners[3] = vne::scene::unproject(*cam, vne::math::Vec3f(0.f, vp_height, visualFarDepth), vp_width, vp_height);
+        farCorners[1] =
+            vne::scene::unproject(*cam, vne::math::Vec3f(vp_width, 0.f, visualFarDepth), vp_width, vp_height);
+        farCorners[2] =
+            vne::scene::unproject(*cam, vne::math::Vec3f(vp_width, vp_height, visualFarDepth), vp_width, vp_height);
+        farCorners[3] =
+            vne::scene::unproject(*cam, vne::math::Vec3f(0.f, vp_height, visualFarDepth), vp_width, vp_height);
         for (int i = 0; i < 4; ++i) {
             debug_draw_->line(nearCorners[i], nearCorners[(i + 1) % 4], frustumColor);
             debug_draw_->line(farCorners[i], farCorners[(i + 1) % 4], frustumColor);
@@ -1148,7 +1154,7 @@ class SceneSettingsLayer : public vne::testbed::ILayer {
                         sl.syncPointLight(static_cast<std::size_t>(i));
                     ImGui::TreePop();
                 }
-                    ImGui::PopID();
+                ImGui::PopID();
             }
         }
 
