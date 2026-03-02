@@ -434,9 +434,13 @@ class SceneTestLayer : public vne::testbed::ILayer {
                                ? ctx.active_viewport_index
                                : 0;
 
-        // Aspect / resize
+        // Aspect / resize — only update when the viewport size actually changes
         if (ctx.frame_info.width > 0 && ctx.frame_info.height > 0) {
-            updateCameraAspect(ctx.frame_info.width, ctx.frame_info.height);
+            if (ctx.frame_info.width != last_vp_w_ || ctx.frame_info.height != last_vp_h_) {
+                last_vp_w_ = ctx.frame_info.width;
+                last_vp_h_ = ctx.frame_info.height;
+                updateCameraAspect(last_vp_w_, last_vp_h_);
+            }
         }
 
         const auto vp = activeVP(vp_idx);
@@ -453,16 +457,14 @@ class SceneTestLayer : public vne::testbed::ILayer {
                 if (!e.enabled)
                     continue;
                 const auto p = e.light->getPosition();
-                const float s = 0.15f;
+                const float s = 0.2f;
                 const vne::math::Vec3f lc{e.color[0], e.color[1], e.color[2]};
                 debug_draw_->line({p.x() - s, p.y(), p.z()}, {p.x() + s, p.y(), p.z()}, lc);
                 debug_draw_->line({p.x(), p.y() - s, p.z()}, {p.x(), p.y() + s, p.z()}, lc);
                 debug_draw_->line({p.x(), p.y(), p.z() - s}, {p.x(), p.y(), p.z() + s}, lc);
             }
             if (show_camera_visuals_) {
-                drawCameraVisuals(vp_idx,
-                                  static_cast<float>(ctx.frame_info.width),
-                                  static_cast<float>(ctx.frame_info.height));
+                drawCameraVisuals(vp_idx);
             }
             if (spot_light_enabled_) {
                 const auto p = spot_light_->getPosition();
@@ -473,7 +475,16 @@ class SceneTestLayer : public vne::testbed::ILayer {
                 debug_draw_->line({p.x(), p.y() - s, p.z()}, {p.x(), p.y() + s, p.z()}, lc);
                 debug_draw_->line({p.x(), p.y(), p.z() - s}, {p.x(), p.y(), p.z() + s}, lc);
                 const float dirLen = 1.5f;
-                debug_draw_->line(p, {p.x() - d.x() * dirLen, p.y() - d.y() * dirLen, p.z() - d.z() * dirLen}, lc);
+                const vne::math::Vec3f dirEnd{p.x() + d.x() * dirLen, p.y() + d.y() * dirLen, p.z() + d.z() * dirLen};
+                debug_draw_->line(p, dirEnd, lc);
+                // Small cross at aim point to mark cone direction end
+                const float cs = 0.12f;
+                debug_draw_->line({dirEnd.x() - cs, dirEnd.y(), dirEnd.z()},
+                                  {dirEnd.x() + cs, dirEnd.y(), dirEnd.z()},
+                                  lc);
+                debug_draw_->line({dirEnd.x(), dirEnd.y() - cs, dirEnd.z()},
+                                  {dirEnd.x(), dirEnd.y() + cs, dirEnd.z()},
+                                  lc);
             }
             debug_draw_->flush();
         }
@@ -560,6 +571,8 @@ class SceneTestLayer : public vne::testbed::ILayer {
     bool show_view_matrix_{false};
     bool show_projection_matrix_{false};
     bool show_camera_visuals_{true};
+    int last_vp_w_{1280};
+    int last_vp_h_{720};
 
     int cube_count_{3};
     float cube_rotation_speed_{0.5f};
@@ -589,7 +602,13 @@ class SceneTestLayer : public vne::testbed::ILayer {
 
     std::vector<PointLightEntry> point_lights_;
 
-    void rebuildCamera(int w, int h) { buildCamera(w, h); }
+    void rebuildCamera(int w, int h) {
+        if (w > 0 && h > 0) {
+            last_vp_w_ = w;
+            last_vp_h_ = h;
+        }
+        buildCamera(last_vp_w_, last_vp_h_);
+    }
 
     void syncCameraPositionTargetUp() {
         const vne::math::Vec3f pos{cam_position_[0], cam_position_[1], cam_position_[2]};
@@ -877,49 +896,162 @@ class SceneTestLayer : public vne::testbed::ILayer {
     static constexpr float kGridSpacing = 1.0f;
     static constexpr float kGridHalf = kGridLines * kGridSpacing * 0.5f;
 
-    void drawCameraVisuals(int vp_idx, float vp_width, float vp_height) const {
+    // Analytically compute and draw camera frustum, position/target/up markers.
+    // Uses camera vectors + FOV/ortho params directly — stable across parameter changes,
+    // no dependency on per-frame pixel dimensions or matrix inversion.
+    void drawCameraVisuals(int vp_idx) const {
         vne::scene::ICamera* cam = activeCamera(vp_idx);
-        if (!cam || !debug_draw_ || vp_width < 1.f || vp_height < 1.f)
+        if (!cam || !debug_draw_)
             return;
+
         const vne::math::Vec3f pos = cam->getPosition();
         const vne::math::Vec3f tgt = cam->getTarget();
         const vne::math::Vec3f up = cam->getUp();
-        const float s = 0.2f;
-        const vne::math::Vec3f posColor(1.f, 1.f, 0.3f);
-        const vne::math::Vec3f tgtColor(0.3f, 1.f, 0.3f);
-        const vne::math::Vec3f upColor(0.3f, 0.5f, 1.f);
-        const vne::math::Vec3f dirColor(1.f, 0.5f, 0.2f);
-        const vne::math::Vec3f frustumColor(0.6f, 0.6f, 0.7f);
+
+        // Forward = normalize(tgt - pos)
+        vne::math::Vec3f fwd{tgt.x() - pos.x(), tgt.y() - pos.y(), tgt.z() - pos.z()};
+        const float fwdLen = std::sqrt(fwd.x() * fwd.x() + fwd.y() * fwd.y() + fwd.z() * fwd.z());
+        if (fwdLen < 1e-6f)
+            return;
+        fwd = vne::math::Vec3f{fwd.x() / fwdLen, fwd.y() / fwdLen, fwd.z() / fwdLen};
+
+        // Right = normalize(fwd × up)
+        vne::math::Vec3f right{fwd.y() * up.z() - fwd.z() * up.y(),
+                               fwd.z() * up.x() - fwd.x() * up.z(),
+                               fwd.x() * up.y() - fwd.y() * up.x()};
+        const float rLen = std::sqrt(right.x() * right.x() + right.y() * right.y() + right.z() * right.z());
+        if (rLen < 1e-6f)
+            return;
+        right = vne::math::Vec3f{right.x() / rLen, right.y() / rLen, right.z() / rLen};
+
+        // Ortho-up = right × fwd (re-orthogonalized)
+        const vne::math::Vec3f upOrtho{right.y() * fwd.z() - right.z() * fwd.y(),
+                                       right.z() * fwd.x() - right.x() * fwd.z(),
+                                       right.x() * fwd.y() - right.y() * fwd.x()};
+
+        // Visual frustum in world space at fixed near/far distances from camera
+        const float nearDist = 0.4f;
+        const float farDist = 2.5f;
+        const float aspect =
+            (last_vp_h_ > 0) ? (static_cast<float>(last_vp_w_) / static_cast<float>(last_vp_h_)) : (16.f / 9.f);
+
+        const vne::math::Vec3f frustumColor{0.55f, 0.65f, 0.85f};
+
+        if (use_perspective_) {
+            const float halfFovY = fov_ * (3.14159265f / 180.f) * 0.5f;
+            const float hN = nearDist * std::tan(halfFovY);
+            const float hF = farDist * std::tan(halfFovY);
+            const float wN = hN * aspect;
+            const float wF = hF * aspect;
+
+            const vne::math::Vec3f nC{pos.x() + fwd.x() * nearDist,
+                                      pos.y() + fwd.y() * nearDist,
+                                      pos.z() + fwd.z() * nearDist};
+            const vne::math::Vec3f fC{pos.x() + fwd.x() * farDist,
+                                      pos.y() + fwd.y() * farDist,
+                                      pos.z() + fwd.z() * farDist};
+
+            const vne::math::Vec3f nc[4] = {
+                {nC.x() + right.x() * wN + upOrtho.x() * hN,
+                 nC.y() + right.y() * wN + upOrtho.y() * hN,
+                 nC.z() + right.z() * wN + upOrtho.z() * hN},
+                {nC.x() - right.x() * wN + upOrtho.x() * hN,
+                 nC.y() - right.y() * wN + upOrtho.y() * hN,
+                 nC.z() - right.z() * wN + upOrtho.z() * hN},
+                {nC.x() - right.x() * wN - upOrtho.x() * hN,
+                 nC.y() - right.y() * wN - upOrtho.y() * hN,
+                 nC.z() - right.z() * wN - upOrtho.z() * hN},
+                {nC.x() + right.x() * wN - upOrtho.x() * hN,
+                 nC.y() + right.y() * wN - upOrtho.y() * hN,
+                 nC.z() + right.z() * wN - upOrtho.z() * hN},
+            };
+            const vne::math::Vec3f fc[4] = {
+                {fC.x() + right.x() * wF + upOrtho.x() * hF,
+                 fC.y() + right.y() * wF + upOrtho.y() * hF,
+                 fC.z() + right.z() * wF + upOrtho.z() * hF},
+                {fC.x() - right.x() * wF + upOrtho.x() * hF,
+                 fC.y() - right.y() * wF + upOrtho.y() * hF,
+                 fC.z() - right.z() * wF + upOrtho.z() * hF},
+                {fC.x() - right.x() * wF - upOrtho.x() * hF,
+                 fC.y() - right.y() * wF - upOrtho.y() * hF,
+                 fC.z() - right.z() * wF - upOrtho.z() * hF},
+                {fC.x() + right.x() * wF - upOrtho.x() * hF,
+                 fC.y() + right.y() * wF - upOrtho.y() * hF,
+                 fC.z() + right.z() * wF - upOrtho.z() * hF},
+            };
+            // Near rect, far rect, apex lines from camera pos to far corners
+            for (int i = 0; i < 4; ++i) {
+                debug_draw_->line(nc[i], nc[(i + 1) % 4], frustumColor);
+                debug_draw_->line(fc[i], fc[(i + 1) % 4], frustumColor);
+                debug_draw_->line(pos, fc[i], frustumColor);
+            }
+        } else {
+            // Orthographic: parallel sides, same extents at near and far
+            const float hH = ortho_half_;
+            const float hW = hH * aspect;
+            const vne::math::Vec3f nC{pos.x() + fwd.x() * nearDist,
+                                      pos.y() + fwd.y() * nearDist,
+                                      pos.z() + fwd.z() * nearDist};
+            const vne::math::Vec3f fC{pos.x() + fwd.x() * farDist,
+                                      pos.y() + fwd.y() * farDist,
+                                      pos.z() + fwd.z() * farDist};
+            const vne::math::Vec3f nc[4] = {
+                {nC.x() + right.x() * hW + upOrtho.x() * hH,
+                 nC.y() + right.y() * hW + upOrtho.y() * hH,
+                 nC.z() + right.z() * hW + upOrtho.z() * hH},
+                {nC.x() - right.x() * hW + upOrtho.x() * hH,
+                 nC.y() - right.y() * hW + upOrtho.y() * hH,
+                 nC.z() - right.z() * hW + upOrtho.z() * hH},
+                {nC.x() - right.x() * hW - upOrtho.x() * hH,
+                 nC.y() - right.y() * hW - upOrtho.y() * hH,
+                 nC.z() - right.z() * hW - upOrtho.z() * hH},
+                {nC.x() + right.x() * hW - upOrtho.x() * hH,
+                 nC.y() + right.y() * hW - upOrtho.y() * hH,
+                 nC.z() + right.z() * hW - upOrtho.z() * hH},
+            };
+            const vne::math::Vec3f fc[4] = {
+                {fC.x() + right.x() * hW + upOrtho.x() * hH,
+                 fC.y() + right.y() * hW + upOrtho.y() * hH,
+                 fC.z() + right.z() * hW + upOrtho.z() * hH},
+                {fC.x() - right.x() * hW + upOrtho.x() * hH,
+                 fC.y() - right.y() * hW + upOrtho.y() * hH,
+                 fC.z() - right.z() * hW + upOrtho.z() * hH},
+                {fC.x() - right.x() * hW - upOrtho.x() * hH,
+                 fC.y() - right.y() * hW - upOrtho.y() * hH,
+                 fC.z() - right.z() * hW - upOrtho.z() * hH},
+                {fC.x() + right.x() * hW - upOrtho.x() * hH,
+                 fC.y() + right.y() * hW - upOrtho.y() * hH,
+                 fC.z() + right.z() * hW - upOrtho.z() * hH},
+            };
+            for (int i = 0; i < 4; ++i) {
+                debug_draw_->line(nc[i], nc[(i + 1) % 4], frustumColor);
+                debug_draw_->line(fc[i], fc[(i + 1) % 4], frustumColor);
+                debug_draw_->line(nc[i], fc[i], frustumColor);  // parallel side edges
+            }
+        }
+
+        // Camera position cross (yellow)
+        const float s = 0.25f;
+        const vne::math::Vec3f posColor{1.f, 1.f, 0.3f};
         debug_draw_->line({pos.x() - s, pos.y(), pos.z()}, {pos.x() + s, pos.y(), pos.z()}, posColor);
         debug_draw_->line({pos.x(), pos.y() - s, pos.z()}, {pos.x(), pos.y() + s, pos.z()}, posColor);
         debug_draw_->line({pos.x(), pos.y(), pos.z() - s}, {pos.x(), pos.y(), pos.z() + s}, posColor);
+
+        // Target cross (green)
+        const vne::math::Vec3f tgtColor{0.3f, 1.f, 0.3f};
         debug_draw_->line({tgt.x() - s, tgt.y(), tgt.z()}, {tgt.x() + s, tgt.y(), tgt.z()}, tgtColor);
         debug_draw_->line({tgt.x(), tgt.y() - s, tgt.z()}, {tgt.x(), tgt.y() + s, tgt.z()}, tgtColor);
         debug_draw_->line({tgt.x(), tgt.y(), tgt.z() - s}, {tgt.x(), tgt.y(), tgt.z() + s}, tgtColor);
-        const float upLen = 1.2f;
-        const vne::math::Vec3f upEnd(pos.x() + up.x() * upLen, pos.y() + up.y() * upLen, pos.z() + up.z() * upLen);
-        debug_draw_->line(pos, upEnd, upColor);
-        debug_draw_->line(pos, tgt, dirColor);
-        // Use a short visual far depth (e.g. 4% NDC) so the frustum pyramid is a reasonable size
-        // and doesn't extend to camera far plane (1000), which causes flicker and precision issues.
-        const float visualFarDepth = 0.04f;
-        vne::math::Vec3f nearCorners[4], farCorners[4];
-        nearCorners[0] = vne::scene::unproject(*cam, vne::math::Vec3f(0.f, 0.f, 0.f), vp_width, vp_height);
-        nearCorners[1] = vne::scene::unproject(*cam, vne::math::Vec3f(vp_width, 0.f, 0.f), vp_width, vp_height);
-        nearCorners[2] = vne::scene::unproject(*cam, vne::math::Vec3f(vp_width, vp_height, 0.f), vp_width, vp_height);
-        nearCorners[3] = vne::scene::unproject(*cam, vne::math::Vec3f(0.f, vp_height, 0.f), vp_width, vp_height);
-        farCorners[0] = vne::scene::unproject(*cam, vne::math::Vec3f(0.f, 0.f, visualFarDepth), vp_width, vp_height);
-        farCorners[1] =
-            vne::scene::unproject(*cam, vne::math::Vec3f(vp_width, 0.f, visualFarDepth), vp_width, vp_height);
-        farCorners[2] =
-            vne::scene::unproject(*cam, vne::math::Vec3f(vp_width, vp_height, visualFarDepth), vp_width, vp_height);
-        farCorners[3] =
-            vne::scene::unproject(*cam, vne::math::Vec3f(0.f, vp_height, visualFarDepth), vp_width, vp_height);
-        for (int i = 0; i < 4; ++i) {
-            debug_draw_->line(nearCorners[i], nearCorners[(i + 1) % 4], frustumColor);
-            debug_draw_->line(farCorners[i], farCorners[(i + 1) % 4], frustumColor);
-            debug_draw_->line(nearCorners[i], farCorners[i], frustumColor);
-        }
+
+        // Up vector arrow (blue) from camera position, using re-orthogonalized up
+        const float upLen = 1.0f;
+        const vne::math::Vec3f upEnd{pos.x() + upOrtho.x() * upLen,
+                                     pos.y() + upOrtho.y() * upLen,
+                                     pos.z() + upOrtho.z() * upLen};
+        debug_draw_->line(pos, upEnd, {0.3f, 0.5f, 1.f});
+
+        // Look direction line: pos → tgt (orange)
+        debug_draw_->line(pos, tgt, {1.f, 0.5f, 0.2f});
     }
 
     void drawGrid() const {
@@ -1032,7 +1164,7 @@ class SceneSettingsLayer : public vne::testbed::ILayer {
             if (pos_changed)
                 sl.syncCameraPositionTargetUp();
             if (proj_changed) {
-                sl.rebuildCamera(1280, 720);
+                sl.rebuildCamera(sl.last_vp_w_, sl.last_vp_h_);
 #ifdef VNE_TESTBED_INTERACTION
                 if (interaction_layer_)
                     interaction_layer_->setCameras(sl.getActiveCameras());
