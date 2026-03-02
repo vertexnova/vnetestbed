@@ -1,13 +1,13 @@
 # 02 - Test Scene
 
-Everything from **01_test_events** (grid, axes, orbit camera, Events panel) plus a full **Scene** demo: perspective/ortho camera, rotating cubes, and configurable lighting (ambient, directional, spot, point lights). Use this sample to exercise vnescene cameras/lights, IRenderDevice indexed drawing, and Blinn-Phong GLSL with shaders loaded from files (with embedded fallback).
+Everything from **01_test_events** (grid, axes, orbit camera, Events panel) plus a full **Scene** demo: perspective/ortho camera, rotating cubes, and configurable lighting (ambient, directional, spot, point lights). Use this sample to exercise vnescene cameras/lights, IRenderDevice indexed drawing, and Blinn-Phong GLSL. **Shaders are fully in files** for both OpenGL (desktop) and OpenGL ES; the correct pair is chosen at runtime by backend.
 
 ## What This Sample Shows
 
 1. **Camera**: Switch at runtime between `PerspectiveCamera` and `OrthographicCamera`; FOV, near/far (perspective) or half-extent (ortho); position, target, up. Optional debug visuals (position cross, target cross, up vector, view direction).
 2. **Cubes**: 3–4 rotating cubes drawn with `IRenderDevice::drawIndexed`; per-cube model matrix display in the Settings panel.
 3. **Lighting**: Ambient and directional lights; one spot light (position, direction, inner/outer angles, range); up to 4 point lights (add/remove, orbit radius/speed). Optional attenuation formula (constant + linear×d + quadratic×d²) for point/spot.
-4. **Shaders**: Vertex and fragment shaders loaded from `shaders/scene_vert.glsl` and `shaders/scene_frag.glsl` when found (e.g. next to the executable); embedded source used as fallback if files are missing.
+4. **Shaders**: All shader code lives in `shaders/`. For **OpenGL** (desktop) the sample loads `scene_vert.glsl` and `scene_frag.glsl` (#version 410 core). For **OpenGL ES** it loads `scene_vert_es.glsl` and `scene_frag_es.glsl` (#version 300 es). Files are copied next to the executable by the build; if they are missing, the scene will not draw and an error is logged.
 5. **Interaction**: Toggle VNE camera interaction (orbit/pan/zoom) on or off; reset scene to default (camera, cubes, lights, options).
 
 ## ImGui Settings Panel Sections
@@ -77,11 +77,12 @@ Exit with **ESC** or by closing the window. Use the Settings panel to change cam
 - **PerspectiveCamera / OrthographicCamera**: vnescene cameras with view and projection matrices; aspect ratio updated on viewport resize.
 - **SceneState**: Holds ambient, directional, spot, and point lights; cleared and repopulated each frame from ImGui state.
 - **Spot light angles**: Inner/outer angles are clamped so outer > inner + ε (CPU and shader epsilon guard) to keep the spot falloff denominator non-zero and avoid NaNs.
-- **Shaders from files**: `createShader(vertPath, fragPath)` with paths resolved from cwd or `bin/samples`; embedded GLSL used if files are not found.
+- **Shaders from files**: Shader code is only in files (no embedded fallback). Desktop build uses `scene_vert.glsl` / `scene_frag.glsl`; OpenGL ES build uses `scene_vert_es.glsl` / `scene_frag_es.glsl`. Paths are resolved from cwd or `bin/samples`.
 - **Libraries**: vne::testbed, vne::scene, vne::events, vne::interaction (optional).
 
 ## Code Structure
 
 - `demo_test_scene.cpp`: Registers the demo, pushes `BaseSceneLayer` (with camera, cubes, lights, and scene shader), optional `BaseInteractionLayer`, `EventsLayer`, and `TestSceneSettingsLayer` (Camera, Interaction, Cubes, Ambient, Directional Light, Point Lights, Spot Light, Attenuation panels).
-- `shaders/scene_vert.glsl`, `shaders/scene_frag.glsl`: Vertex and fragment shaders (position, normal, color; Blinn-Phong with ambient, directional, point, spot).
+- `shaders/scene_vert.glsl`, `shaders/scene_frag.glsl`: OpenGL (410 core) vertex and fragment shaders.
+- `shaders/scene_vert_es.glsl`, `shaders/scene_frag_es.glsl`: OpenGL ES (300 es) vertex and fragment shaders (same lighting, with `precision mediump float` and ES-compatible syntax).
 - `../common/base_scene_layer.h`: Shared scene and interaction layer base used by 00, 01, 02, 03.
