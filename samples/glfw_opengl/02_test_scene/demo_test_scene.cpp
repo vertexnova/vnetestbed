@@ -672,8 +672,7 @@ class SceneTestLayer : public vne::testbed::ILayer {
             shader_ = device_->createShader(vert_path, frag_path);
         }
         if (!shader_.isValid()) {
-            std::cerr << "Scene shaders not loaded: ensure " << kSceneVertFilename
-                      << " and " << kSceneFragFilename
+            std::cerr << "Scene shaders not loaded: ensure " << kSceneVertFilename << " and " << kSceneFragFilename
                       << " are next to the executable (e.g. run from build bin/samples)." << std::endl;
         }
 
