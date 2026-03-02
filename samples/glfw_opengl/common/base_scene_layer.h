@@ -195,6 +195,11 @@ class BaseInteractionLayer : public vne::testbed::ILayer, public vne::events::Ev
     void setImGuiLayer(vne::testbed::ImGuiLayer* layer) { imgui_layer_ = layer; }
 #endif
 
+    /** @brief Enable or disable orbit-arcball camera interaction. When false, onEvent does not drive the controller. */
+    void setInteractionEnabled(bool enabled) { interaction_enabled_ = enabled; }
+    /** @brief Whether camera interaction is enabled. */
+    [[nodiscard]] bool getInteractionEnabled() const { return interaction_enabled_; }
+
     void onAttach(vne::testbed::AppContext& ctx) override {
         const float vpw = ctx.window ? static_cast<float>(ctx.window->getWidth()) : 1280.0f;
         const float vph = ctx.window ? static_cast<float>(ctx.window->getHeight()) : 720.0f;
@@ -216,7 +221,7 @@ class BaseInteractionLayer : public vne::testbed::ILayer, public vne::events::Ev
     }
 
     void onEvent(const vne::events::Event& event) override {
-        if (controllers_.empty() || !controllers_[0]) {
+        if (!interaction_enabled_ || controllers_.empty() || !controllers_[0]) {
             return;
         }
         using ET = vne::events::EventType;
@@ -322,6 +327,7 @@ class BaseInteractionLayer : public vne::testbed::ILayer, public vne::events::Ev
 
    private:
     std::vector<std::unique_ptr<vne::interaction::CameraSystemController>> controllers_;
+    bool interaction_enabled_{true};
     double last_x_{0.0};
     double last_y_{0.0};
     bool first_mouse_{true};
