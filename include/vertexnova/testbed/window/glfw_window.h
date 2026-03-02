@@ -97,6 +97,18 @@ class GlfwWindow : public IWindow {
     void setEventForwarding(bool enable);
     bool isEventForwarding() const { return event_forwarding_; }
 
+    /**
+     * @brief Enable/disable synthesizing touch events from LMB (desktop touch emulation). Off by default.
+     *
+     * When enabled, left mouse button generates TouchPressEvent, TouchMoveEvent (on every cursor move
+     * while LMB is down), and TouchReleaseEvent. Consumers receive both mouse and touch events for
+     * the same interaction; TouchMove can significantly increase event volume. Intended for samples
+     * that need to exercise or display touch event handling (e.g. test_events demo). Other apps should
+     * leave this disabled to avoid duplicate handling and extra events.
+     */
+    void setTouchEmulationEnabled(bool enable) { touch_emulation_enabled_ = enable; }
+    bool isTouchEmulationEnabled() const { return touch_emulation_enabled_; }
+
     /** @brief Refresh DPI scale from GLFW (e.g. after resize). */
     void updateDPIScale();
 
@@ -120,6 +132,7 @@ class GlfwWindow : public IWindow {
 
     GLFWwindow* window_{nullptr};
     bool event_forwarding_{false};
+    bool touch_emulation_enabled_{false};
     bool vsync_enabled_{true};
     float dpi_scale_{1.0f};
     // Per-window key repeat counter; avoids sharing state across multiple windows.

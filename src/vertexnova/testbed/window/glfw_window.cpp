@@ -24,6 +24,7 @@
 #include "vertexnova/events/event_manager.h"
 #include "vertexnova/events/key_event.h"
 #include "vertexnova/events/mouse_event.h"
+#include "vertexnova/events/touch_event.h"
 #include "vertexnova/events/window_event.h"
 #include "vertexnova/events/input/input.h"
 #include "vertexnova/events/types.h"
@@ -174,9 +175,19 @@ void GlfwWindow::cbMouseButton(GLFWwindow* w, int button, int action, int mods) 
     if (action == GLFW_PRESS) {
         mgr.pushEvent(std::make_unique<vne::events::MouseButtonPressedEvent>(b, modifiers));
         vne::events::Input::updateMouseButtonState(static_cast<int>(b), true);
+        if (self->touch_emulation_enabled_ && button == GLFW_MOUSE_BUTTON_LEFT) {
+            double x = 0, y = 0;
+            glfwGetCursorPos(w, &x, &y);
+            mgr.pushEvent(std::make_unique<vne::events::TouchPressEvent>(0, x, y));
+        }
     } else {
         mgr.pushEvent(std::make_unique<vne::events::MouseButtonReleasedEvent>(b, modifiers));
         vne::events::Input::updateMouseButtonState(static_cast<int>(b), false);
+        if (self->touch_emulation_enabled_ && button == GLFW_MOUSE_BUTTON_LEFT) {
+            double x = 0, y = 0;
+            glfwGetCursorPos(w, &x, &y);
+            mgr.pushEvent(std::make_unique<vne::events::TouchReleaseEvent>(0, x, y));
+        }
     }
 }
 
@@ -207,8 +218,13 @@ void GlfwWindow::cbCursorPos(GLFWwindow* w, double x, double y) {
         return;
     }
     const uint8_t modifiers = queryGlfwModifiers(w);
-    vne::events::EventManager::instance().pushEvent(std::make_unique<vne::events::MouseMovedEvent>(x, y, modifiers));
+    auto& mgr = vne::events::EventManager::instance();
+    mgr.pushEvent(std::make_unique<vne::events::MouseMovedEvent>(x, y, modifiers));
     vne::events::Input::updateMousePosition(static_cast<int>(x), static_cast<int>(y));
+    // Touch emulation (opt-in): one TouchMoveEvent per cursor move while LMB is down.
+    if (self->touch_emulation_enabled_ && glfwGetMouseButton(w, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS) {
+        mgr.pushEvent(std::make_unique<vne::events::TouchMoveEvent>(0, x, y));
+    }
 }
 
 void GlfwWindow::cbScroll(GLFWwindow* w, double xoff, double yoff) {

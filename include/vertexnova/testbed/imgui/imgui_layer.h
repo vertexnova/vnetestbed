@@ -44,6 +44,7 @@ class ImGuiEventListener;
 #include <array>
 #include <functional>
 #include <memory>
+#include <string>
 #include <vector>
 
 #if defined(VNE_TESTBED_OPENGL) || defined(VNE_TESTBED_OPENGLES)
@@ -148,6 +149,14 @@ class ImGuiLayer : public ILayer {
      * @return 0..(N-1) for viewport index, or -1 if not over any scene viewport
      */
     [[nodiscard]] int getHoveredViewportIndex(float mouse_x, float mouse_y) const;
+
+    /**
+     * @brief Get the window title for a viewport index (e.g. "Viewport", "Viewport 1", "Viewport 2").
+     * @param index 0-based viewport index
+     * @return Title for the current layout (owned copy); empty string if index out of range.
+     *         Caller may store or use the returned string without lifetime concerns.
+     */
+    [[nodiscard]] std::string getViewportName(int index) const;
 
    private:
     void tryInitFromContext();  // Init ImGui; no-op if already initialized or no window
