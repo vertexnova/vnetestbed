@@ -558,6 +558,7 @@ class SceneTestLayer : public vne::testbed::ILayer {
     float cam_target_[3]{0.f, 0.f, 0.f};
     float cam_up_[3]{0.f, 1.f, 0.f};
     bool show_view_matrix_{false};
+    bool show_projection_matrix_{false};
     bool show_camera_visuals_{true};
 
     int cube_count_{3};
@@ -896,15 +897,18 @@ class SceneTestLayer : public vne::testbed::ILayer {
         const vne::math::Vec3f upEnd(pos.x() + up.x() * upLen, pos.y() + up.y() * upLen, pos.z() + up.z() * upLen);
         debug_draw_->line(pos, upEnd, upColor);
         debug_draw_->line(pos, tgt, dirColor);
+        // Use a short visual far depth (e.g. 4% NDC) so the frustum pyramid is a reasonable size
+        // and doesn't extend to camera far plane (1000), which causes flicker and precision issues.
+        const float visualFarDepth = 0.04f;
         vne::math::Vec3f nearCorners[4], farCorners[4];
         nearCorners[0] = vne::scene::unproject(*cam, vne::math::Vec3f(0.f, 0.f, 0.f), vp_width, vp_height);
         nearCorners[1] = vne::scene::unproject(*cam, vne::math::Vec3f(vp_width, 0.f, 0.f), vp_width, vp_height);
         nearCorners[2] = vne::scene::unproject(*cam, vne::math::Vec3f(vp_width, vp_height, 0.f), vp_width, vp_height);
         nearCorners[3] = vne::scene::unproject(*cam, vne::math::Vec3f(0.f, vp_height, 0.f), vp_width, vp_height);
-        farCorners[0] = vne::scene::unproject(*cam, vne::math::Vec3f(0.f, 0.f, 1.f), vp_width, vp_height);
-        farCorners[1] = vne::scene::unproject(*cam, vne::math::Vec3f(vp_width, 0.f, 1.f), vp_width, vp_height);
-        farCorners[2] = vne::scene::unproject(*cam, vne::math::Vec3f(vp_width, vp_height, 1.f), vp_width, vp_height);
-        farCorners[3] = vne::scene::unproject(*cam, vne::math::Vec3f(0.f, vp_height, 1.f), vp_width, vp_height);
+        farCorners[0] = vne::scene::unproject(*cam, vne::math::Vec3f(0.f, 0.f, visualFarDepth), vp_width, vp_height);
+        farCorners[1] = vne::scene::unproject(*cam, vne::math::Vec3f(vp_width, 0.f, visualFarDepth), vp_width, vp_height);
+        farCorners[2] = vne::scene::unproject(*cam, vne::math::Vec3f(vp_width, vp_height, visualFarDepth), vp_width, vp_height);
+        farCorners[3] = vne::scene::unproject(*cam, vne::math::Vec3f(0.f, vp_height, visualFarDepth), vp_width, vp_height);
         for (int i = 0; i < 4; ++i) {
             debug_draw_->line(nearCorners[i], nearCorners[(i + 1) % 4], frustumColor);
             debug_draw_->line(farCorners[i], farCorners[(i + 1) % 4], frustumColor);
@@ -1030,6 +1034,7 @@ class SceneSettingsLayer : public vne::testbed::ILayer {
             }
             ImGui::Checkbox("Show camera visuals", &sl.show_camera_visuals_);
             ImGui::Checkbox("Show view matrix", &sl.show_view_matrix_);
+            ImGui::Checkbox("Show projection matrix", &sl.show_projection_matrix_);
             if (sl.show_view_matrix_) {
                 if (vne::scene::ICamera* cam2 = sl.activeCamera(0)) {
                     vne::math::Mat4f view = cam2->getViewMatrix();
@@ -1040,6 +1045,19 @@ class SceneSettingsLayer : public vne::testbed::ILayer {
                                     static_cast<double>(view[1][row]),
                                     static_cast<double>(view[2][row]),
                                     static_cast<double>(view[3][row]));
+                    }
+                }
+            }
+            if (sl.show_projection_matrix_) {
+                if (vne::scene::ICamera* cam2 = sl.activeCamera(0)) {
+                    vne::math::Mat4f proj = cam2->getProjectionMatrix();
+                    ImGui::Text("Projection matrix (column-major):");
+                    for (size_t row = 0; row < 4u; ++row) {
+                        ImGui::Text("%.4f  %.4f  %.4f  %.4f",
+                                    static_cast<double>(proj[0][row]),
+                                    static_cast<double>(proj[1][row]),
+                                    static_cast<double>(proj[2][row]),
+                                    static_cast<double>(proj[3][row]));
                     }
                 }
             }

@@ -234,9 +234,8 @@ void OpenGLDebugDraw::flush() {
     GLboolean depth_test_prev = glIsEnabled(GL_DEPTH_TEST);
     glDisable(GL_DEPTH_TEST);
     glDrawArrays(GL_LINES, 0, static_cast<GLsizei>(vertex_data_.size() / kFloatsPerVertex));
-    if (depth_test_prev) {
+    if (depth_test_prev)
         glEnable(GL_DEPTH_TEST);
-    }
     glDepthMask(depth_mask_prev);
     vao_->unbind();
 
