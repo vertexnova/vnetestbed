@@ -965,9 +965,8 @@ class SceneTestLayer : public vne::testbed::ILayer {
     static constexpr float kGridSpacing = 1.0f;
     static constexpr float kGridHalf = kGridLines * kGridSpacing * 0.5f;
 
-    // Analytically compute and draw camera frustum, position/target/up markers.
-    // Uses camera vectors + FOV/ortho params directly — stable across parameter changes,
-    // no dependency on per-frame pixel dimensions or matrix inversion.
+    // Draw camera debug markers: position cross, target cross, up vector, view direction.
+    // No frustum (near/far plane) visualization.
     void drawCameraVisuals(int vp_idx) const {
         vne::scene::ICamera* cam = activeCamera(vp_idx);
         if (!cam || !debug_draw_)
@@ -993,111 +992,10 @@ class SceneTestLayer : public vne::testbed::ILayer {
             return;
         right = vne::math::Vec3f{right.x() / rLen, right.y() / rLen, right.z() / rLen};
 
-        // Ortho-up = right × fwd (re-orthogonalized)
+        // Ortho-up = right × fwd (re-orthogonalized), used for up-vector arrow
         const vne::math::Vec3f upOrtho{right.y() * fwd.z() - right.z() * fwd.y(),
                                        right.z() * fwd.x() - right.x() * fwd.z(),
                                        right.x() * fwd.y() - right.y() * fwd.x()};
-
-        // Visual frustum in world space at fixed near/far distances from camera
-        const float nearDist = 0.4f;
-        const float farDist = 2.5f;
-        const float aspect =
-            (last_vp_h_ > 0) ? (static_cast<float>(last_vp_w_) / static_cast<float>(last_vp_h_)) : (16.f / 9.f);
-
-        const vne::math::Vec3f frustumColor{0.55f, 0.65f, 0.85f};
-
-        if (use_perspective_) {
-            const float halfFovY = fov_ * (3.14159265f / 180.f) * 0.5f;
-            const float hN = nearDist * std::tan(halfFovY);
-            const float hF = farDist * std::tan(halfFovY);
-            const float wN = hN * aspect;
-            const float wF = hF * aspect;
-
-            const vne::math::Vec3f nC{pos.x() + fwd.x() * nearDist,
-                                      pos.y() + fwd.y() * nearDist,
-                                      pos.z() + fwd.z() * nearDist};
-            const vne::math::Vec3f fC{pos.x() + fwd.x() * farDist,
-                                      pos.y() + fwd.y() * farDist,
-                                      pos.z() + fwd.z() * farDist};
-
-            const vne::math::Vec3f nc[4] = {
-                {nC.x() + right.x() * wN + upOrtho.x() * hN,
-                 nC.y() + right.y() * wN + upOrtho.y() * hN,
-                 nC.z() + right.z() * wN + upOrtho.z() * hN},
-                {nC.x() - right.x() * wN + upOrtho.x() * hN,
-                 nC.y() - right.y() * wN + upOrtho.y() * hN,
-                 nC.z() - right.z() * wN + upOrtho.z() * hN},
-                {nC.x() - right.x() * wN - upOrtho.x() * hN,
-                 nC.y() - right.y() * wN - upOrtho.y() * hN,
-                 nC.z() - right.z() * wN - upOrtho.z() * hN},
-                {nC.x() + right.x() * wN - upOrtho.x() * hN,
-                 nC.y() + right.y() * wN - upOrtho.y() * hN,
-                 nC.z() + right.z() * wN - upOrtho.z() * hN},
-            };
-            const vne::math::Vec3f fc[4] = {
-                {fC.x() + right.x() * wF + upOrtho.x() * hF,
-                 fC.y() + right.y() * wF + upOrtho.y() * hF,
-                 fC.z() + right.z() * wF + upOrtho.z() * hF},
-                {fC.x() - right.x() * wF + upOrtho.x() * hF,
-                 fC.y() - right.y() * wF + upOrtho.y() * hF,
-                 fC.z() - right.z() * wF + upOrtho.z() * hF},
-                {fC.x() - right.x() * wF - upOrtho.x() * hF,
-                 fC.y() - right.y() * wF - upOrtho.y() * hF,
-                 fC.z() - right.z() * wF - upOrtho.z() * hF},
-                {fC.x() + right.x() * wF - upOrtho.x() * hF,
-                 fC.y() + right.y() * wF - upOrtho.y() * hF,
-                 fC.z() + right.z() * wF - upOrtho.z() * hF},
-            };
-            // Near rect, far rect, apex lines from camera pos to far corners
-            for (int i = 0; i < 4; ++i) {
-                debug_draw_->line(nc[i], nc[(i + 1) % 4], frustumColor);
-                debug_draw_->line(fc[i], fc[(i + 1) % 4], frustumColor);
-                debug_draw_->line(pos, fc[i], frustumColor);
-            }
-        } else {
-            // Orthographic: parallel sides, same extents at near and far
-            const float hH = ortho_half_;
-            const float hW = hH * aspect;
-            const vne::math::Vec3f nC{pos.x() + fwd.x() * nearDist,
-                                      pos.y() + fwd.y() * nearDist,
-                                      pos.z() + fwd.z() * nearDist};
-            const vne::math::Vec3f fC{pos.x() + fwd.x() * farDist,
-                                      pos.y() + fwd.y() * farDist,
-                                      pos.z() + fwd.z() * farDist};
-            const vne::math::Vec3f nc[4] = {
-                {nC.x() + right.x() * hW + upOrtho.x() * hH,
-                 nC.y() + right.y() * hW + upOrtho.y() * hH,
-                 nC.z() + right.z() * hW + upOrtho.z() * hH},
-                {nC.x() - right.x() * hW + upOrtho.x() * hH,
-                 nC.y() - right.y() * hW + upOrtho.y() * hH,
-                 nC.z() - right.z() * hW + upOrtho.z() * hH},
-                {nC.x() - right.x() * hW - upOrtho.x() * hH,
-                 nC.y() - right.y() * hW - upOrtho.y() * hH,
-                 nC.z() - right.z() * hW - upOrtho.z() * hH},
-                {nC.x() + right.x() * hW - upOrtho.x() * hH,
-                 nC.y() + right.y() * hW - upOrtho.y() * hH,
-                 nC.z() + right.z() * hW - upOrtho.z() * hH},
-            };
-            const vne::math::Vec3f fc[4] = {
-                {fC.x() + right.x() * hW + upOrtho.x() * hH,
-                 fC.y() + right.y() * hW + upOrtho.y() * hH,
-                 fC.z() + right.z() * hW + upOrtho.z() * hH},
-                {fC.x() - right.x() * hW + upOrtho.x() * hH,
-                 fC.y() - right.y() * hW + upOrtho.y() * hH,
-                 fC.z() - right.z() * hW + upOrtho.z() * hH},
-                {fC.x() - right.x() * hW - upOrtho.x() * hH,
-                 fC.y() - right.y() * hW - upOrtho.y() * hH,
-                 fC.z() - right.z() * hW - upOrtho.z() * hH},
-                {fC.x() + right.x() * hW - upOrtho.x() * hH,
-                 fC.y() + right.y() * hW - upOrtho.y() * hH,
-                 fC.z() + right.z() * hW - upOrtho.z() * hH},
-            };
-            for (int i = 0; i < 4; ++i) {
-                debug_draw_->line(nc[i], nc[(i + 1) % 4], frustumColor);
-                debug_draw_->line(fc[i], fc[(i + 1) % 4], frustumColor);
-                debug_draw_->line(nc[i], fc[i], frustumColor);  // parallel side edges
-            }
-        }
 
         // Camera position cross (yellow)
         const float s = 0.25f;
