@@ -82,7 +82,8 @@ Exit with **ESC** or by closing the window. Use the Settings panel to change cam
 
 ## Code Structure
 
-- `demo_test_scene.cpp`: Registers the demo, pushes `BaseSceneLayer` (with camera, cubes, lights, and scene shader), optional `BaseInteractionLayer`, `EventsLayer`, and `TestSceneSettingsLayer` (Camera, Interaction, Cubes, Ambient, Directional Light, Point Lights, Spot Light, Attenuation panels).
+- `demo_test_scene.h`: Declarations for `PointLightEntry`, `SceneTestLayer`, `SceneSettingsLayer`, and `RegisterTestSceneDemo`.
+- `demo_test_scene.cpp`: Registers the demo, implements scene and settings layers (camera, cubes, lights, scene shader), optional `BaseInteractionLayer`, and ImGui panels (Camera, Interaction, Cubes, Ambient, Directional Light, Point Lights, Spot Light, Attenuation).
 - `shaders/scene_vert.glsl`, `shaders/scene_frag.glsl`: OpenGL (410 core) vertex and fragment shaders.
 - `shaders/scene_vert_es.glsl`, `shaders/scene_frag_es.glsl`: OpenGL ES (300 es) vertex and fragment shaders (same lighting, with `precision mediump float` and ES-compatible syntax).
 - `../common/base_scene_layer.h`: Shared scene and interaction layer base used by 00, 01, 02, 03.
