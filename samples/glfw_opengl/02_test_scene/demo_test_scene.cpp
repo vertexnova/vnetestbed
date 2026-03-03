@@ -324,12 +324,6 @@ class SceneTestLayer : public vne::testbed::ILayer {
         device_->setVec3(shader_, "u_camPos", cam_pos);
 
         // Draw cubes
-        static const float kOffsets[4][3] = {
-            {0.f, 0.5f, 0.f},
-            {2.5f, 0.5f, 0.f},
-            {-2.5f, 0.5f, 0.f},
-            {0.f, 0.5f, 2.5f},
-        };
         for (int i = 0; i < cube_count_; ++i) {
             const float angle = cube_angle_ + static_cast<float>(i) * 1.0472f;  // 60°
             const float c = std::cos(angle);
@@ -341,9 +335,9 @@ class SceneTestLayer : public vne::testbed::ILayer {
             model[2][0] = s_a;
             model[0][2] = -s_a;
             model[2][2] = c;
-            model[3][0] = kOffsets[i][0];
-            model[3][1] = kOffsets[i][1];
-            model[3][2] = kOffsets[i][2];
+            model[3][0] = cube_position_[i][0];
+            model[3][1] = cube_position_[i][1];
+            model[3][2] = cube_position_[i][2];
 
             const vne::math::Mat4f mvp = vp * model;
             device_->setMat4(shader_, "u_mvp", mvp);
@@ -360,6 +354,8 @@ class SceneTestLayer : public vne::testbed::ILayer {
     float near_{0.1f};
     float far_{1000.0f};
     float ortho_half_{6.0f};
+    float ortho_near_{-100.0f};
+    float ortho_far_{100.0f};
     float cam_position_[3]{4.f, 3.f, 6.f};
     float cam_target_[3]{0.f, 0.f, 0.f};
     float cam_up_[3]{0.f, 1.f, 0.f};
@@ -371,6 +367,13 @@ class SceneTestLayer : public vne::testbed::ILayer {
 
     int cube_count_{3};
     float cube_rotation_speed_{0.5f};
+    /** Per-cube translation (world position); indices 0..3. */
+    float cube_position_[4][3] = {
+        {0.f, 0.5f, 0.f},
+        {2.5f, 0.5f, 0.f},
+        {-2.5f, 0.5f, 0.f},
+        {0.f, 0.5f, 2.5f},
+    };
 
     bool ambient_light_enabled_{true};
     float ambient_light_color_[3]{0.08f, 0.08f, 0.1f};
@@ -427,14 +430,8 @@ class SceneTestLayer : public vne::testbed::ILayer {
         }
     }
 
-    /** @brief Model matrix for cube i (same as world transform; no hierarchy). */
+    /** @brief Model matrix for cube i (rotation Y + translation from cube_position_). */
     [[nodiscard]] vne::math::Mat4f getCubeModelMatrix(int i) const {
-        static const float kOffsets[4][3] = {
-            {0.f, 0.5f, 0.f},
-            {2.5f, 0.5f, 0.f},
-            {-2.5f, 0.5f, 0.f},
-            {0.f, 0.5f, 2.5f},
-        };
         if (i < 0 || i >= 4)
             return vne::math::Mat4f::identity();
         const float angle = cube_angle_ + static_cast<float>(i) * 1.0472f;
@@ -445,9 +442,9 @@ class SceneTestLayer : public vne::testbed::ILayer {
         model[2][0] = s_a;
         model[0][2] = -s_a;
         model[2][2] = c;
-        model[3][0] = kOffsets[i][0];
-        model[3][1] = kOffsets[i][1];
-        model[3][2] = kOffsets[i][2];
+        model[3][0] = cube_position_[i][0];
+        model[3][1] = cube_position_[i][1];
+        model[3][2] = cube_position_[i][2];
         return model;
     }
 
@@ -528,6 +525,8 @@ class SceneTestLayer : public vne::testbed::ILayer {
         near_ = 0.1f;
         far_ = 1000.0f;
         ortho_half_ = 6.0f;
+        ortho_near_ = -100.0f;
+        ortho_far_ = 100.0f;
         cam_position_[0] = 4.f;
         cam_position_[1] = 3.f;
         cam_position_[2] = 6.f;
@@ -544,6 +543,18 @@ class SceneTestLayer : public vne::testbed::ILayer {
         cube_count_ = 3;
         cube_rotation_speed_ = 0.5f;
         cube_angle_ = 0.f;
+        cube_position_[0][0] = 0.f;
+        cube_position_[0][1] = 0.5f;
+        cube_position_[0][2] = 0.f;
+        cube_position_[1][0] = 2.5f;
+        cube_position_[1][1] = 0.5f;
+        cube_position_[1][2] = 0.f;
+        cube_position_[2][0] = -2.5f;
+        cube_position_[2][1] = 0.5f;
+        cube_position_[2][2] = 0.f;
+        cube_position_[3][0] = 0.f;
+        cube_position_[3][1] = 0.5f;
+        cube_position_[3][2] = 2.5f;
 
         ambient_light_enabled_ = true;
         ambient_light_color_[0] = 0.08f;
@@ -647,8 +658,8 @@ class SceneTestLayer : public vne::testbed::ILayer {
                                                                           hw,
                                                                           -ortho_half_,
                                                                           ortho_half_,
-                                                                          -100.f,
-                                                                          100.f,
+                                                                          ortho_near_,
+                                                                          ortho_far_,
                                                                           "OrthoCamera" + std::to_string(i));
             ortho->setPosition({cam_position_[0], cam_position_[1], cam_position_[2]});
             ortho->setTarget({cam_target_[0], cam_target_[1], cam_target_[2]});
@@ -940,10 +951,12 @@ class SceneSettingsLayer : public vne::testbed::ILayer {
             pos_changed |= ImGui::SliderFloat3("Up", sl.cam_up_, -1.f, 1.f);
             if (sl.use_perspective_) {
                 proj_changed |= ImGui::SliderFloat("FOV", &sl.fov_, 20.f, 120.f);
-                proj_changed |= ImGui::SliderFloat("Near", &sl.near_, 0.01f, 10.f);
-                proj_changed |= ImGui::SliderFloat("Far", &sl.far_, 100.f, 5000.f);
+                proj_changed |= ImGui::SliderFloat("Near", &sl.near_, -5.f, 10.f);
+                proj_changed |= ImGui::SliderFloat("Far", &sl.far_, -5000.f, 5000.f);
             } else {
                 proj_changed |= ImGui::SliderFloat("Half-extent", &sl.ortho_half_, 1.f, 20.f);
+                proj_changed |= ImGui::SliderFloat("Near##ortho", &sl.ortho_near_, -500.f, 500.f);
+                proj_changed |= ImGui::SliderFloat("Far##ortho", &sl.ortho_far_, -500.f, 500.f);
             }
             if (pos_changed)
                 sl.syncCameraPositionTargetUp();
@@ -998,14 +1011,17 @@ class SceneSettingsLayer : public vne::testbed::ILayer {
 
         // ---- Cubes ----
         if (ImGui::CollapsingHeader("Cubes", ImGuiTreeNodeFlags_DefaultOpen)) {
-            ImGui::SliderInt("Count", &sl.cube_count_, 3, 4);
-            ImGui::SliderFloat("Rotation speed", &sl.cube_rotation_speed_, 0.f, 4.f);
+            ImGui::SliderInt("Count##cubes", &sl.cube_count_, 0, 4);
+            ImGui::SliderFloat("Rotation speed##cubes", &sl.cube_rotation_speed_, 0.f, 4.f);
             for (int i = 0; i < 4; ++i) {
+                ImGui::PushID(i);
                 const std::string label = "Cube " + std::to_string(i + 1);
                 if (ImGui::CollapsingHeader(label.c_str())) {
                     const bool active = (i < sl.cube_count_);
                     if (!active)
                         ImGui::TextDisabled("(not drawn)");
+                    else
+                        ImGui::SliderFloat3("Position", sl.cube_position_[i], -120.f, 120.f);
                     vne::math::Mat4f model = sl.getCubeModelMatrix(i);
                     ImGui::Text("Model matrix (column-major):");
                     for (size_t row = 0; row < 4u; ++row) {
@@ -1015,8 +1031,8 @@ class SceneSettingsLayer : public vne::testbed::ILayer {
                                     static_cast<double>(model[2][row]),
                                     static_cast<double>(model[3][row]));
                     }
-                    ImGui::Text("Model-to-world: same (no hierarchy)");
                 }
+                ImGui::PopID();
             }
         }
 
