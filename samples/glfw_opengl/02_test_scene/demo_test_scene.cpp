@@ -198,34 +198,31 @@ void SceneTestLayer::onRender(const vne::testbed::RenderContext& ctx) {
         drawAxes();
 
         // Draw point-light positions as small crosses
+        constexpr float kCrossSize = 0.2f;
+        const vne::math::Vec3f kAxis[3] = {vne::math::Vec3f::xAxis(),
+                                           vne::math::Vec3f::yAxis(),
+                                           vne::math::Vec3f::zAxis()};
         for (const auto& e : point_lights) {
             if (!e.enabled)
                 continue;
-            const auto p = e.light->getPosition();
-            const float s = 0.2f;
-            const vne::math::Vec3f lc{e.color[0], e.color[1], e.color[2]};
-            debug_draw_->line({p.x() - s, p.y(), p.z()}, {p.x() + s, p.y(), p.z()}, lc);
-            debug_draw_->line({p.x(), p.y() - s, p.z()}, {p.x(), p.y() + s, p.z()}, lc);
-            debug_draw_->line({p.x(), p.y(), p.z() - s}, {p.x(), p.y(), p.z() + s}, lc);
+            const vne::math::Vec3f p = e.light->getPosition();
+            const vne::math::Vec3f lc(e.color[0], e.color[1], e.color[2]);
+            for (const auto& ax : kAxis)
+                debug_draw_->line(p - ax * kCrossSize, p + ax * kCrossSize, lc);
         }
-        if (show_camera_visuals) {
+        if (show_camera_visuals)
             drawCameraVisuals(vp_idx);
-        }
         if (spot_light_enabled) {
-            const auto p = spot_light_->getPosition();
-            const auto d = spot_light_->getDirection();
-            const float s = 0.2f;
+            const vne::math::Vec3f p = spot_light_->getPosition();
+            const vne::math::Vec3f d = spot_light_->getDirection();
             const vne::math::Vec3f lc(spot_light_color[0], spot_light_color[1], spot_light_color[2]);
-            debug_draw_->line({p.x() - s, p.y(), p.z()}, {p.x() + s, p.y(), p.z()}, lc);
-            debug_draw_->line({p.x(), p.y() - s, p.z()}, {p.x(), p.y() + s, p.z()}, lc);
-            debug_draw_->line({p.x(), p.y(), p.z() - s}, {p.x(), p.y(), p.z() + s}, lc);
-            const float dirLen = 1.5f;
-            const vne::math::Vec3f dirEnd{p.x() + d.x() * dirLen, p.y() + d.y() * dirLen, p.z() + d.z() * dirLen};
-            debug_draw_->line(p, dirEnd, lc);
-            // Small cross at aim point to mark cone direction end
-            const float cs = 0.12f;
-            debug_draw_->line({dirEnd.x() - cs, dirEnd.y(), dirEnd.z()}, {dirEnd.x() + cs, dirEnd.y(), dirEnd.z()}, lc);
-            debug_draw_->line({dirEnd.x(), dirEnd.y() - cs, dirEnd.z()}, {dirEnd.x(), dirEnd.y() + cs, dirEnd.z()}, lc);
+            for (const auto& ax : kAxis)
+                debug_draw_->line(p - ax * kCrossSize, p + ax * kCrossSize, lc);
+            const vne::math::Vec3f dir_end = p + d * 1.5f;
+            debug_draw_->line(p, dir_end, lc);
+            constexpr float kAimCross = 0.12f;
+            for (const auto& ax : kAxis)
+                debug_draw_->line(dir_end - ax * kAimCross, dir_end + ax * kAimCross, lc);
         }
         debug_draw_->flush();
     }
@@ -282,20 +279,7 @@ void SceneTestLayer::onRender(const vne::testbed::RenderContext& ctx) {
 
     // Draw cubes
     for (int i = 0; i < cube_count; ++i) {
-        const float angle = cube_angle_ + static_cast<float>(i) * 1.0472f;  // 60°
-        const float c = std::cos(angle);
-        const float s_a = std::sin(angle);
-        // Build model matrix: translate + rotate Y
-        vne::math::Mat4f model = vne::math::Mat4f::identity();
-        // Column-major Mat4f: columns[col][row]
-        model[0][0] = c;
-        model[2][0] = s_a;
-        model[0][2] = -s_a;
-        model[2][2] = c;
-        model[3][0] = cube_position[i][0];
-        model[3][1] = cube_position[i][1];
-        model[3][2] = cube_position[i][2];
-
+        const vne::math::Mat4f model = getCubeModelMatrix(i);
         const vne::math::Mat4f mvp = vp * model;
         device_->setMat4(shader_, "u_mvp", mvp);
         device_->setMat4(shader_, "u_model", model);
@@ -337,17 +321,8 @@ void SceneTestLayer::syncCameraPositionTargetUp() {
     if (i < 0 || i >= 4)
         return vne::math::Mat4f::identity();
     const float angle = cube_angle_ + static_cast<float>(i) * 1.0472f;
-    const float c = std::cos(angle);
-    const float s_a = std::sin(angle);
-    vne::math::Mat4f model = vne::math::Mat4f::identity();
-    model[0][0] = c;
-    model[2][0] = s_a;
-    model[0][2] = -s_a;
-    model[2][2] = c;
-    model[3][0] = cube_position[i][0];
-    model[3][1] = cube_position[i][1];
-    model[3][2] = cube_position[i][2];
-    return model;
+    const vne::math::Vec3f trans(cube_position[i][0], cube_position[i][1], cube_position[i][2]);
+    return vne::math::Mat4f::translate(trans) * vne::math::Mat4f::rotateY(angle);
 }
 
 vne::scene::ICamera* SceneTestLayer::activeCamera(int vp_idx) const {
@@ -373,7 +348,6 @@ void SceneTestLayer::syncDirLight() {
 }
 
 void SceneTestLayer::syncSpotLight() {
-    // Enforce outer > inner + eps so shader (innerCos - outerCos) is never 0
     if (spot_light_outer_deg <= spot_light_inner_deg + kSpotAngleEpsDeg)
         spot_light_outer_deg = spot_light_inner_deg + kSpotAngleEpsDeg;
     if (spot_light_inner_deg > spot_light_outer_deg - kSpotAngleEpsDeg)
@@ -382,11 +356,7 @@ void SceneTestLayer::syncSpotLight() {
     spot_light_->setEnabled(spot_light_enabled);
     spot_light_->setPosition({spot_light_pos[0], spot_light_pos[1], spot_light_pos[2]});
     vne::math::Vec3f dir(spot_light_dir[0], spot_light_dir[1], spot_light_dir[2]);
-    float len = std::sqrt(dir.x() * dir.x() + dir.y() * dir.y() + dir.z() * dir.z());
-    if (len < 1e-6f)
-        dir = vne::math::Vec3f(0.f, -1.f, 0.f);
-    else
-        dir = vne::math::Vec3f(dir.x() / len, dir.y() / len, dir.z() / len);
+    dir = (dir.length() < 1e-6f) ? vne::math::Vec3f(0.f, -1.f, 0.f) : dir.normalized();
     spot_light_->setDirection(dir);
     spot_light_->setColor({spot_light_color[0], spot_light_color[1], spot_light_color[2]});
     spot_light_->setIntensity(spot_light_intensity);
@@ -614,12 +584,7 @@ void SceneTestLayer::buildLights() {
     scene_state_.addLight(dir_light_);
 
     vne::math::Vec3f spot_dir(spot_light_dir[0], spot_light_dir[1], spot_light_dir[2]);
-    float len = std::sqrt(spot_dir.x() * spot_dir.x() + spot_dir.y() * spot_dir.y() + spot_dir.z() * spot_dir.z());
-    if (len < vne::math::kFloatEpsilon) {
-        spot_dir = vne::math::Vec3f(0.f, -1.f, 0.f);
-    } else {
-        spot_dir = vne::math::Vec3f(spot_dir.x() / len, spot_dir.y() / len, spot_dir.z() / len);
-    }
+    spot_dir = (spot_dir.length() < 1e-6f) ? vne::math::Vec3f(0.f, -1.f, 0.f) : spot_dir.normalized();
     spot_light_ = std::make_shared<vne::scene::SpotLight>(
         vne::math::Vec3f{spot_light_pos[0], spot_light_pos[1], spot_light_pos[2]},
         spot_dir,
@@ -677,68 +642,41 @@ vne::math::Vec3f SceneTestLayer::getActiveCameraPosition(int vp_idx) const {
 
 void SceneTestLayer::drawCameraVisuals(int vp_idx) const {
     vne::scene::ICamera* cam = activeCamera(vp_idx);
-    if (!cam || !debug_draw_) {
+    if (!cam || !debug_draw_)
         return;
-    }
     const vne::math::Vec3f pos = cam->getPosition();
     const vne::math::Vec3f tgt = cam->getTarget();
     const vne::math::Vec3f up = cam->getUp();
 
-    // Forward = normalize(tgt - pos)
-    vne::math::Vec3f fwd{tgt.x() - pos.x(), tgt.y() - pos.y(), tgt.z() - pos.z()};
-    const float fwdLen = std::sqrt(fwd.x() * fwd.x() + fwd.y() * fwd.y() + fwd.z() * fwd.z());
-    if (fwdLen < 1e-6f)
+    const vne::math::Vec3f fwd_vec = tgt - pos;
+    if (fwd_vec.lengthSquared() < 1e-12f)
         return;
-    fwd = vne::math::Vec3f{fwd.x() / fwdLen, fwd.y() / fwdLen, fwd.z() / fwdLen};
-
-    // Right = normalize(fwd × up)
-    vne::math::Vec3f right{fwd.y() * up.z() - fwd.z() * up.y(),
-                           fwd.z() * up.x() - fwd.x() * up.z(),
-                           fwd.x() * up.y() - fwd.y() * up.x()};
-    const float rLen = std::sqrt(right.x() * right.x() + right.y() * right.y() + right.z() * right.z());
-    if (rLen < 1e-6f)
+    const vne::math::Vec3f fwd = fwd_vec.normalized();
+    vne::math::Vec3f right = fwd.cross(up).normalized();
+    if (right.lengthSquared() < 1e-12f)
         return;
-    right = vne::math::Vec3f{right.x() / rLen, right.y() / rLen, right.z() / rLen};
+    const vne::math::Vec3f up_ortho = right.cross(fwd);
 
-    // Ortho-up = right × fwd (re-orthogonalized)
-    const vne::math::Vec3f upOrtho{right.y() * fwd.z() - right.z() * fwd.y(),
-                                   right.z() * fwd.x() - right.x() * fwd.z(),
-                                   right.x() * fwd.y() - right.y() * fwd.x()};
-
-    // Camera position cross (yellow)
     constexpr float s = 0.25f;
-    const vne::math::Vec3f posColor{1.f, 1.f, 0.3f};
-    debug_draw_->line({pos.x() - s, pos.y(), pos.z()}, {pos.x() + s, pos.y(), pos.z()}, posColor);
-    debug_draw_->line({pos.x(), pos.y() - s, pos.z()}, {pos.x(), pos.y() + s, pos.z()}, posColor);
-    debug_draw_->line({pos.x(), pos.y(), pos.z() - s}, {pos.x(), pos.y(), pos.z() + s}, posColor);
-
-    // Target cross (green)
-    const vne::math::Vec3f tgtColor{0.3f, 1.f, 0.3f};
-    debug_draw_->line({tgt.x() - s, tgt.y(), tgt.z()}, {tgt.x() + s, tgt.y(), tgt.z()}, tgtColor);
-    debug_draw_->line({tgt.x(), tgt.y() - s, tgt.z()}, {tgt.x(), tgt.y() + s, tgt.z()}, tgtColor);
-    debug_draw_->line({tgt.x(), tgt.y(), tgt.z() - s}, {tgt.x(), tgt.y(), tgt.z() + s}, tgtColor);
-
-    // Look direction line: pos → tgt (orange)
+    const vne::math::Vec3f pos_color{1.f, 1.f, 0.3f};
+    const vne::math::Vec3f tgt_color{0.3f, 1.f, 0.3f};
+    using V = vne::math::Vec3f;
+    debug_draw_->line(pos - V::xAxis() * s, pos + V::xAxis() * s, pos_color);
+    debug_draw_->line(pos - V::yAxis() * s, pos + V::yAxis() * s, pos_color);
+    debug_draw_->line(pos - V::zAxis() * s, pos + V::zAxis() * s, pos_color);
+    debug_draw_->line(tgt - V::xAxis() * s, tgt + V::xAxis() * s, tgt_color);
+    debug_draw_->line(tgt - V::yAxis() * s, tgt + V::yAxis() * s, tgt_color);
+    debug_draw_->line(tgt - V::zAxis() * s, tgt + V::zAxis() * s, tgt_color);
     debug_draw_->line(pos, tgt, {1.f, 0.5f, 0.2f});
 
     if (show_cam_axes) {
-        constexpr float axLen = 1.0f;
-        // Up    — blue
-        debug_draw_->line(pos,
-                          {pos.x() + upOrtho.x() * axLen, pos.y() + upOrtho.y() * axLen, pos.z() + upOrtho.z() * axLen},
-                          {0.3f, 0.5f, 1.f});
-        // Right — red
-        debug_draw_->line(pos,
-                          {pos.x() + right.x() * axLen, pos.y() + right.y() * axLen, pos.z() + right.z() * axLen},
-                          {1.f, 0.3f, 0.3f});
-        // Forward — yellow-green
-        debug_draw_->line(pos,
-                          {pos.x() + fwd.x() * axLen, pos.y() + fwd.y() * axLen, pos.z() + fwd.z() * axLen},
-                          {0.8f, 1.f, 0.2f});
+        constexpr float ax_len = 1.0f;
+        debug_draw_->line(pos, pos + up_ortho * ax_len, {0.3f, 0.5f, 1.f});
+        debug_draw_->line(pos, pos + right * ax_len, {1.f, 0.3f, 0.3f});
+        debug_draw_->line(pos, pos + fwd * ax_len, {0.8f, 1.f, 0.2f});
     }
-
     if (show_frustum)
-        drawFrustum(pos, fwd, right, upOrtho);
+        drawFrustum(pos, fwd, right, up_ortho);
 }
 
 void SceneTestLayer::drawFrustum(vne::math::Vec3f pos,
@@ -755,17 +693,8 @@ void SceneTestLayer::drawFrustum(vne::math::Vec3f pos,
     const float nearD = std::max(near_plane, 0.05f);
     const float farD = std::min(far_plane, 10.0f);
 
-    // Helper: point along the look direction at distance d from pos
-    auto along = [&](float d) -> vne::math::Vec3f {
-        return {pos.x() + fwd.x() * d, pos.y() + fwd.y() * d, pos.z() + fwd.z() * d};
-    };
-
-    // Helper: offset a plane-centre by (rr * right + uu * up)
-    auto corner = [&](vne::math::Vec3f c, float rr, float uu) -> vne::math::Vec3f {
-        return {c.x() + right.x() * rr + up.x() * uu,
-                c.y() + right.y() * rr + up.y() * uu,
-                c.z() + right.z() * rr + up.z() * uu};
-    };
+    const auto along = [&](float d) { return pos + fwd * d; };
+    const auto corner = [&](const vne::math::Vec3f& c, float rr, float uu) { return c + right * rr + up * uu; };
 
     const vne::math::Vec3f nearCol{0.9f, 0.9f, 0.3f};  // yellow — near plane
     const vne::math::Vec3f farCol{0.3f, 0.8f, 1.0f};   // cyan   — far  plane
