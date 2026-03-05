@@ -83,59 +83,59 @@ class SceneTestLayer : public vne::testbed::ILayer {
     [[nodiscard]] const std::vector<std::shared_ptr<vne::scene::PerspectiveCamera>>& getCameras() const;
     [[nodiscard]] std::vector<std::shared_ptr<vne::scene::ICamera>> getActiveCameras() const;
 
-    // 5. Public data (Settings panel / ImGui bindings)
-    bool use_perspective_{true};
-    float fov_{60.0f};
-    float near_{0.1f};
-    float far_{1000.0f};
-    float ortho_half_{6.0f};
-    float ortho_near_{-100.0f};
-    float ortho_far_{100.0f};
-    float cam_position_[3]{4.f, 3.f, 6.f};
-    float cam_target_[3]{0.f, 0.f, 0.f};
-    float cam_up_[3]{0.f, 1.f, 0.f};
-    bool show_view_matrix_{false};
-    bool show_projection_matrix_{false};
-    bool show_camera_visuals_{true};
-    bool show_frustum_{true};
-    bool show_cam_axes_{true};
-    bool show_near_far_planes_{true};
-    int last_vp_w_{1280};
-    int last_vp_h_{720};
+    // 5. Public data (Settings panel / ImGui bindings) — snake_case, no trailing underscore
+    bool use_perspective{true};
+    float fov{60.0f};
+    float near_plane{0.1f};
+    float far_plane{1000.0f};
+    float ortho_half{6.0f};
+    float ortho_near{-100.0f};
+    float ortho_far{100.0f};
+    float cam_position[3]{4.f, 3.f, 6.f};
+    float cam_target[3]{0.f, 0.f, 0.f};
+    float cam_up[3]{0.f, 1.f, 0.f};
+    bool show_view_matrix{false};
+    bool show_projection_matrix{false};
+    bool show_camera_visuals{true};
+    bool show_frustum{true};
+    bool show_cam_axes{true};
+    bool show_near_far_planes{true};
+    int last_vp_w{1280};
+    int last_vp_h{720};
 
-    int cube_count_{3};
-    float cube_rotation_speed_{0.5f};
-    float cube_position_[4][3] = {
+    int cube_count{3};
+    float cube_rotation_speed{0.5f};
+    float cube_position[4][3] = {
         {0.f, 0.5f, 0.f},
         {2.5f, 0.5f, 0.f},
         {-2.5f, 0.5f, 0.f},
         {0.f, 0.5f, 2.5f},
     };
 
-    bool ambient_light_enabled_{true};
-    float ambient_light_color_[3]{0.08f, 0.08f, 0.1f};
-    float ambient_light_intensity_{1.0f};
+    bool ambient_light_enabled{true};
+    float ambient_light_color[3]{0.08f, 0.08f, 0.1f};
+    float ambient_light_intensity{1.0f};
 
-    bool dir_light_enabled_{true};
-    float dir_light_dir_[3]{-0.5f, -1.0f, -0.3f};
-    float dir_light_color_[3]{1.0f, 0.97f, 0.9f};
-    float dir_light_intensity_{1.0f};
+    bool dir_light_enabled{true};
+    float dir_light_dir[3]{-0.5f, -1.0f, -0.3f};
+    float dir_light_color[3]{1.0f, 0.97f, 0.9f};
+    float dir_light_intensity{1.0f};
 
-    bool spot_light_enabled_{false};
-    float spot_light_pos_[3]{0.f, 4.f, 4.f};
-    float spot_light_dir_[3]{0.f, -0.7f, -0.7f};
-    float spot_light_color_[3]{1.f, 0.9f, 0.7f};
-    float spot_light_intensity_{2.f};
-    float spot_light_range_{10.f};
-    float spot_light_inner_deg_{15.f};
-    float spot_light_outer_deg_{30.f};
+    bool spot_light_enabled{false};
+    float spot_light_pos[3]{0.f, 4.f, 4.f};
+    float spot_light_dir[3]{0.f, -0.7f, -0.7f};
+    float spot_light_color[3]{1.f, 0.9f, 0.7f};
+    float spot_light_intensity{2.f};
+    float spot_light_range{10.f};
+    float spot_light_inner_deg{15.f};
+    float spot_light_outer_deg{30.f};
 
-    bool use_attn_formula_{false};
-    float attn_const_{1.f};
-    float attn_linear_{0.09f};
-    float attn_quad_{0.032f};
+    bool use_attn_formula{false};
+    float attn_const{1.f};
+    float attn_linear{0.09f};
+    float attn_quad{0.032f};
 
-    std::vector<PointLightEntry> point_lights_;
+    std::vector<PointLightEntry> point_lights;
 
    private:
     // Private constants
