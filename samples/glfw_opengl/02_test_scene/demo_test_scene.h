@@ -1,12 +1,14 @@
+#pragma once
 /* ---------------------------------------------------------------------
  * Copyright (c) 2026 Ajeet Singh Yadav. All rights reserved.
  * Licensed under the Apache License, Version 2.0 (the "License")
  *
- * Sample 02_test_scene — declarations
+ * Author:    Ajeet Singh Yadav
+ * Created:   January 2026
+ *
+ * Sample 02_test_scene — declarations (SceneTestLayer, SceneSettingsLayer).
  * ----------------------------------------------------------------------
  */
-
-#pragma once
 
 #include "vertexnova/testbed/layer.h"
 #include "vertexnova/testbed/render_context.h"
@@ -53,16 +55,35 @@ struct PointLightEntry {
 // ---------------------------------------------------------------------------
 class SceneTestLayer : public vne::testbed::ILayer {
    public:
+    // 1. Types and constants
     static constexpr int kMaxViewports = 4;
 
+    // 2. Constructors and destructor
     SceneTestLayer();
 
+    // 3. Public methods (ILayer overrides)
     void onAttach(vne::testbed::AppContext& ctx) override;
     void onDetach() override;
     void onUpdate(float dt) override;
     void onRender(const vne::testbed::RenderContext& ctx) override;
 
-    // Accessors for the Settings panel
+    // 4. Public methods (camera, cubes, lights, reset)
+    void rebuildCamera(int w, int h);
+    void syncCameraPositionTargetUp();
+    [[nodiscard]] vne::math::Mat4f getCubeModelMatrix(int i) const;
+    [[nodiscard]] vne::scene::ICamera* activeCamera(int vp_idx) const;
+    void syncAmbientLight();
+    void syncDirLight();
+    void syncSpotLight();
+    void addPointLight();
+    void removeLastPointLight();
+    void resetToDefault();
+    void syncPointLight(std::size_t i);
+    [[nodiscard]] std::shared_ptr<vne::scene::PerspectiveCamera> cameraPersp() const;
+    [[nodiscard]] const std::vector<std::shared_ptr<vne::scene::PerspectiveCamera>>& getCameras() const;
+    [[nodiscard]] std::vector<std::shared_ptr<vne::scene::ICamera>> getActiveCameras() const;
+
+    // 5. Public data (Settings panel / ImGui bindings)
     bool use_perspective_{true};
     float fov_{60.0f};
     float near_{0.1f};
@@ -116,28 +137,14 @@ class SceneTestLayer : public vne::testbed::ILayer {
 
     std::vector<PointLightEntry> point_lights_;
 
-    void rebuildCamera(int w, int h);
-    void syncCameraPositionTargetUp();
-    [[nodiscard]] vne::math::Mat4f getCubeModelMatrix(int i) const;
-    [[nodiscard]] vne::scene::ICamera* activeCamera(int vp_idx) const;
-    void syncAmbientLight();
-    void syncDirLight();
-    void syncSpotLight();
-    void addPointLight();
-    void removeLastPointLight();
-    void resetToDefault();
-
-    void syncPointLight(std::size_t i);
-    [[nodiscard]] std::shared_ptr<vne::scene::PerspectiveCamera> cameraPersp() const;
-    [[nodiscard]] const std::vector<std::shared_ptr<vne::scene::PerspectiveCamera>>& getCameras() const;
-    [[nodiscard]] std::vector<std::shared_ptr<vne::scene::ICamera>> getActiveCameras() const;
-
    private:
+    // Private constants
     static constexpr int kGridLines = 20;
     static constexpr float kGridSpacing = 1.0f;
     static constexpr float kGridHalf = kGridLines * kGridSpacing * 0.5f;
     static constexpr float kSpotAngleEpsDeg = 0.5f;
 
+    // Private methods
     void buildCamera(int w, int h);
     void buildGeometry();
     void buildLights();
@@ -149,7 +156,7 @@ class SceneTestLayer : public vne::testbed::ILayer {
     void drawGrid() const;
     void drawAxes() const;
 
-   private:
+    // Private members
     vne::testbed::IRenderDevice* device_{nullptr};
     vne::testbed::IDebugDraw* debug_draw_{nullptr};
     vne::testbed::ShaderHandle shader_{};

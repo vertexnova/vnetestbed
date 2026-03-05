@@ -2,30 +2,10 @@
  * Copyright (c) 2026 Ajeet Singh Yadav. All rights reserved.
  * Licensed under the Apache License, Version 2.0 (the "License")
  *
- * Sample 02_test_scene
- * --------------------
- * Everything from 01_test_events plus a full Scene panel:
- *   • Switch between PerspectiveCamera and OrthographicCamera at runtime
- *   • 1–4 rotating cubes drawn with IRenderDevice (indexed geometry)
- *   • Directional light + up to 4 point lights, all configurable via ImGui
- *   • Each light has enable/disable, color, intensity controls
- *   • Point lights orbit the cubes at adjustable radius and speed
+ * Author:    Ajeet Singh Yadav
+ * Created:   January 2026
  *
- * What you can test here:
- *   • vnescene PerspectiveCamera vs OrthographicCamera — parallel lines prove ortho
- *   • SceneState::addLight / clearLights lifecycle
- *   • DirectionalLight and PointLight APIs (setColor, setIntensity, setPosition)
- *   • IRenderDevice::createIndexBuffer + drawIndexed
- *   • Basic Blinn-Phong lighting in GLSL validates light→GPU data flow
- *
- * ImGui Settings panel sections:
- *   [Camera]      type switcher, FOV/near/far (perspective) or half-extents (ortho)
- *   [Cubes]       count (1-4), rotation speed
- *   [Lights]      directional enable/dir/color/intensity,
- *                 add/remove point lights (max 4), per-light color/intensity/orbit
- *
- * Libraries exercised: vne::testbed, vne::scene, vne::events,
- *                      vne::interaction (optional)
+ * Sample 02_test_scene — implementation (camera, cubes, lights, ImGui panels).
  * ----------------------------------------------------------------------
  */
 
@@ -51,10 +31,9 @@ namespace {
 
 CREATE_VNE_LOGGER_CATEGORY("vnetestbed.samples.test_scene")
 
-// Constants
+// File-scope constants (anonymous namespace, kPascalCase per CODING_GUIDELINES)
 constexpr int kDefaultWidth = 1280;
 constexpr int kDefaultHeight = 720;
-
 constexpr float kDefaultAspectRatio = 16.0f / 9.0f;
 
 /** Resolve shader path: try cwd and cwd/bin/samples so it works from build or bin/samples. */
@@ -127,16 +106,15 @@ const uint32_t kCubeIdx[] = {
 
 constexpr uint32_t kCubeIdxCount = 36u;
 
-// Shader filenames by backend: desktop GL uses scene_vert.glsl / scene_frag.glsl,
-// OpenGL ES uses scene_vert_es.glsl / scene_frag_es.glsl. All shader code lives in
-// shaders/ (no embedded fallback).
+// Shader filenames by backend (kPascalCase constants in anonymous namespace)
 #if defined(VNE_TESTBED_OPENGL)
-const char* kSceneVertFilename = "scene_vert.glsl";
-const char* kSceneFragFilename = "scene_frag.glsl";
+constexpr const char* kSceneVertFilename = "scene_vert.glsl";
+constexpr const char* kSceneFragFilename = "scene_frag.glsl";
 #else
-const char* kSceneVertFilename = "scene_vert_es.glsl";
-const char* kSceneFragFilename = "scene_frag_es.glsl";
+constexpr const char* kSceneVertFilename = "scene_vert_es.glsl";
+constexpr const char* kSceneFragFilename = "scene_frag_es.glsl";
 #endif
+
 }  // namespace
 
 // ---------------------------------------------------------------------------
