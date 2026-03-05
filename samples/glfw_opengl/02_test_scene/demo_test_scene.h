@@ -22,7 +22,6 @@
 #include <vertexnova/math/core/core.h>
 
 #include <memory>
-#include <string>
 #include <vector>
 
 namespace vne::scene {
@@ -77,6 +76,9 @@ class SceneTestLayer : public vne::testbed::ILayer {
     bool show_view_matrix_{false};
     bool show_projection_matrix_{false};
     bool show_camera_visuals_{true};
+    bool show_frustum_{true};
+    bool show_cam_axes_{true};
+    bool show_near_far_planes_{true};
     int last_vp_w_{1280};
     int last_vp_h_{720};
 
@@ -140,12 +142,14 @@ class SceneTestLayer : public vne::testbed::ILayer {
     void buildGeometry();
     void buildLights();
     void updateCameraAspect(int w, int h);
-    [[nodiscard]] vne::math::Mat4f activeVP(int vp_idx) const;
-    [[nodiscard]] vne::math::Vec3f activePosition(int vp_idx) const;
+    [[nodiscard]] vne::math::Mat4f getActiveViewProjectionMatrix(int vp_idx) const;
+    [[nodiscard]] vne::math::Vec3f getActiveCameraPosition(int vp_idx) const;
     void drawCameraVisuals(int vp_idx) const;
+    void drawFrustum(vne::math::Vec3f pos, vne::math::Vec3f fwd, vne::math::Vec3f right, vne::math::Vec3f up) const;
     void drawGrid() const;
     void drawAxes() const;
 
+   private:
     vne::testbed::IRenderDevice* device_{nullptr};
     vne::testbed::IDebugDraw* debug_draw_{nullptr};
     vne::testbed::ShaderHandle shader_{};
