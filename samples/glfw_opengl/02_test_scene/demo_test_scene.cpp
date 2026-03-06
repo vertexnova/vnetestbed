@@ -257,20 +257,20 @@ void SceneTestLayer::onRender(const vne::testbed::RenderContext& ctx) {
     device_->setFloat(shader_, "u_spotLightIntensity", spot_light_->getIntensity());
     device_->setFloat(shader_, "u_spotLightRange", spot_light_->getRange());
     // Enforce outer > inner + eps so (innerCos - outerCos) in shader is never 0 (avoids NaNs)
-    float innerDeg = spot_light_inner_deg;
-    float outerDeg = spot_light_outer_deg;
-    if (outerDeg <= innerDeg + kSpotAngleEpsDeg) {
-        outerDeg = innerDeg + kSpotAngleEpsDeg;
-        spot_light_outer_deg = outerDeg;
+    float inner_deg = spot_light_inner_deg;
+    float outer_deg = spot_light_outer_deg;
+    if (outer_deg <= inner_deg + kSpotAngleEpsDeg) {
+        outer_deg = inner_deg + kSpotAngleEpsDeg;
+        spot_light_outer_deg = outer_deg;
     }
-    if (innerDeg > outerDeg - kSpotAngleEpsDeg) {
-        innerDeg = outerDeg - kSpotAngleEpsDeg;
-        spot_light_inner_deg = innerDeg;
+    if (inner_deg > outer_deg - kSpotAngleEpsDeg) {
+        inner_deg = outer_deg - kSpotAngleEpsDeg;
+        spot_light_inner_deg = inner_deg;
     }
-    const float innerRad = innerDeg * 3.14159265f / 180.f;
-    const float outerRad = outerDeg * 3.14159265f / 180.f;
-    device_->setFloat(shader_, "u_spotLightInnerCos", std::cos(innerRad));
-    device_->setFloat(shader_, "u_spotLightOuterCos", std::cos(outerRad));
+    const float inner_rad = inner_deg * 3.14159265f / 180.f;
+    const float outer_rad = outer_deg * 3.14159265f / 180.f;
+    device_->setFloat(shader_, "u_spotLightInnerCos", std::cos(inner_rad));
+    device_->setFloat(shader_, "u_spotLightOuterCos", std::cos(outer_rad));
     device_->setInt(shader_, "u_useAttnFormula", use_attn_formula ? 1 : 0);
     device_->setFloat(shader_, "u_attnConst", attn_const);
     device_->setFloat(shader_, "u_attnLinear", attn_linear);
@@ -690,94 +690,86 @@ void SceneTestLayer::drawFrustum(vne::math::Vec3f pos,
     //
     // Cap far at 10 world units so the frustum stays scene-visible
     // when the user orbits around with the interaction layer.
-    const float nearD = std::max(near_plane, 0.05f);
-    const float farD = std::min(far_plane, 10.0f);
+    const float near_dist = std::max(near_plane, 0.05f);
+    const float far_dist = std::min(far_plane, 10.0f);
 
     const auto along = [&](float d) { return pos + fwd * d; };
     const auto corner = [&](const vne::math::Vec3f& c, float rr, float uu) { return c + right * rr + up * uu; };
 
-    const vne::math::Vec3f nearCol{0.9f, 0.9f, 0.3f};  // yellow — near plane
-    const vne::math::Vec3f farCol{0.3f, 0.8f, 1.0f};   // cyan   — far  plane
-    const vne::math::Vec3f edgeCol{0.7f, 0.7f, 0.7f};  // gray   — connecting edges
+    const vne::math::Vec3f near_col{0.9f, 0.9f, 0.3f};  // yellow — near plane
+    const vne::math::Vec3f far_col{0.3f, 0.8f, 1.0f};   // cyan   — far  plane
+    const vne::math::Vec3f edge_col{0.7f, 0.7f, 0.7f};  // gray   — connecting edges
 
     const float aspect = (last_vp_h > 0) ? (static_cast<float>(last_vp_w) / static_cast<float>(last_vp_h)) : 1.f;
 
     if (use_perspective) {
         // Tangent of half-FOV gives the slope; multiply by distance to get half-extents.
-        // Same formula as reference: tangent = tan(fovY/2), nearHeight = nearPlane * tangent
-        const float halfFovRad = fov * 0.5f * 3.14159265f / 180.f;
-        const float tanHalf = std::tan(halfFovRad);
+        const float half_fov_rad = fov * 0.5f * 3.14159265f / 180.f;
+        const float tan_half = std::tan(half_fov_rad);
 
-        const float nH = tanHalf * nearD;
-        const float nW = nH * aspect;
-        const float fH = tanHalf * farD;
-        const float fW = fH * aspect;
+        const float near_half_h = tan_half * near_dist;
+        const float near_half_w = near_half_h * aspect;
+        const float far_half_h = tan_half * far_dist;
+        const float far_half_w = far_half_h * aspect;
 
-        const vne::math::Vec3f nc = along(nearD);
-        const vne::math::Vec3f fc = along(farD);
+        const vne::math::Vec3f near_center = along(near_dist);
+        const vne::math::Vec3f far_center = along(far_dist);
 
-        const vne::math::Vec3f nTL = corner(nc, -nW, nH);
-        const vne::math::Vec3f nTR = corner(nc, nW, nH);
-        const vne::math::Vec3f nBL = corner(nc, -nW, -nH);
-        const vne::math::Vec3f nBR = corner(nc, nW, -nH);
+        const vne::math::Vec3f near_tl = corner(near_center, -near_half_w, near_half_h);
+        const vne::math::Vec3f near_tr = corner(near_center, near_half_w, near_half_h);
+        const vne::math::Vec3f near_bl = corner(near_center, -near_half_w, -near_half_h);
+        const vne::math::Vec3f near_br = corner(near_center, near_half_w, -near_half_h);
 
-        const vne::math::Vec3f fTL = corner(fc, -fW, fH);
-        const vne::math::Vec3f fTR = corner(fc, fW, fH);
-        const vne::math::Vec3f fBL = corner(fc, -fW, -fH);
-        const vne::math::Vec3f fBR = corner(fc, fW, -fH);
+        const vne::math::Vec3f far_tl = corner(far_center, -far_half_w, far_half_h);
+        const vne::math::Vec3f far_tr = corner(far_center, far_half_w, far_half_h);
+        const vne::math::Vec3f far_bl = corner(far_center, -far_half_w, -far_half_h);
+        const vne::math::Vec3f far_br = corner(far_center, far_half_w, -far_half_h);
 
-        // Near plane rect
-        debug_draw_->line(nTL, nTR, nearCol);
-        debug_draw_->line(nTR, nBR, nearCol);
-        debug_draw_->line(nBR, nBL, nearCol);
-        debug_draw_->line(nBL, nTL, nearCol);
+        debug_draw_->line(near_tl, near_tr, near_col);
+        debug_draw_->line(near_tr, near_br, near_col);
+        debug_draw_->line(near_br, near_bl, near_col);
+        debug_draw_->line(near_bl, near_tl, near_col);
 
-        // Far plane rect
-        debug_draw_->line(fTL, fTR, farCol);
-        debug_draw_->line(fTR, fBR, farCol);
-        debug_draw_->line(fBR, fBL, farCol);
-        debug_draw_->line(fBL, fTL, farCol);
+        debug_draw_->line(far_tl, far_tr, far_col);
+        debug_draw_->line(far_tr, far_br, far_col);
+        debug_draw_->line(far_br, far_bl, far_col);
+        debug_draw_->line(far_bl, far_tl, far_col);
 
-        // 4 frustum edges from apex (camera position) to far corners
-        debug_draw_->line(pos, fTL, edgeCol);
-        debug_draw_->line(pos, fTR, edgeCol);
-        debug_draw_->line(pos, fBL, edgeCol);
-        debug_draw_->line(pos, fBR, edgeCol);
+        debug_draw_->line(pos, far_tl, edge_col);
+        debug_draw_->line(pos, far_tr, edge_col);
+        debug_draw_->line(pos, far_bl, edge_col);
+        debug_draw_->line(pos, far_br, edge_col);
     } else {
-        // Orthographic: constant extents across all depths — box shape.
-        const float hw = ortho_half * aspect;
-        const float hh = ortho_half;
+        const float half_w = ortho_half * aspect;
+        const float half_h = ortho_half;
 
-        const vne::math::Vec3f nc = along(nearD);
-        const vne::math::Vec3f fc = along(farD);
+        const vne::math::Vec3f near_center = along(near_dist);
+        const vne::math::Vec3f far_center = along(far_dist);
 
-        const vne::math::Vec3f nTL = corner(nc, -hw, hh);
-        const vne::math::Vec3f nTR = corner(nc, hw, hh);
-        const vne::math::Vec3f nBL = corner(nc, -hw, -hh);
-        const vne::math::Vec3f nBR = corner(nc, hw, -hh);
+        const vne::math::Vec3f near_tl = corner(near_center, -half_w, half_h);
+        const vne::math::Vec3f near_tr = corner(near_center, half_w, half_h);
+        const vne::math::Vec3f near_bl = corner(near_center, -half_w, -half_h);
+        const vne::math::Vec3f near_br = corner(near_center, half_w, -half_h);
 
-        const vne::math::Vec3f fTL = corner(fc, -hw, hh);
-        const vne::math::Vec3f fTR = corner(fc, hw, hh);
-        const vne::math::Vec3f fBL = corner(fc, -hw, -hh);
-        const vne::math::Vec3f fBR = corner(fc, hw, -hh);
+        const vne::math::Vec3f far_tl = corner(far_center, -half_w, half_h);
+        const vne::math::Vec3f far_tr = corner(far_center, half_w, half_h);
+        const vne::math::Vec3f far_bl = corner(far_center, -half_w, -half_h);
+        const vne::math::Vec3f far_br = corner(far_center, half_w, -half_h);
 
-        // Near plane rect
-        debug_draw_->line(nTL, nTR, nearCol);
-        debug_draw_->line(nTR, nBR, nearCol);
-        debug_draw_->line(nBR, nBL, nearCol);
-        debug_draw_->line(nBL, nTL, nearCol);
+        debug_draw_->line(near_tl, near_tr, near_col);
+        debug_draw_->line(near_tr, near_br, near_col);
+        debug_draw_->line(near_br, near_bl, near_col);
+        debug_draw_->line(near_bl, near_tl, near_col);
 
-        // Far plane rect
-        debug_draw_->line(fTL, fTR, farCol);
-        debug_draw_->line(fTR, fBR, farCol);
-        debug_draw_->line(fBR, fBL, farCol);
-        debug_draw_->line(fBL, fTL, farCol);
+        debug_draw_->line(far_tl, far_tr, far_col);
+        debug_draw_->line(far_tr, far_br, far_col);
+        debug_draw_->line(far_br, far_bl, far_col);
+        debug_draw_->line(far_bl, far_tl, far_col);
 
-        // Parallel edges (box, not pyramid)
-        debug_draw_->line(nTL, fTL, edgeCol);
-        debug_draw_->line(nTR, fTR, edgeCol);
-        debug_draw_->line(nBL, fBL, edgeCol);
-        debug_draw_->line(nBR, fBR, edgeCol);
+        debug_draw_->line(near_tl, far_tl, edge_col);
+        debug_draw_->line(near_tr, far_tr, edge_col);
+        debug_draw_->line(near_bl, far_bl, edge_col);
+        debug_draw_->line(near_br, far_br, edge_col);
     }
 }
 
@@ -856,25 +848,25 @@ void SceneSettingsLayer::renderPanel() {
     // ---- Camera ----
     if (ImGui::CollapsingHeader("Camera", ImGuiTreeNodeFlags_DefaultOpen)) {
         if (vne::scene::ICamera* cam = sl.activeCamera(0)) {
-            vne::math::Vec3f p = cam->getPosition();
-            vne::math::Vec3f t = cam->getTarget();
-            vne::math::Vec3f u = cam->getUp();
-            sl.cam_position[0] = p.x();
-            sl.cam_position[1] = p.y();
-            sl.cam_position[2] = p.z();
-            sl.cam_target[0] = t.x();
-            sl.cam_target[1] = t.y();
-            sl.cam_target[2] = t.z();
-            sl.cam_up[0] = u.x();
-            sl.cam_up[1] = u.y();
-            sl.cam_up[2] = u.z();
+            const vne::math::Vec3f pos = cam->getPosition();
+            const vne::math::Vec3f tgt = cam->getTarget();
+            const vne::math::Vec3f up = cam->getUp();
+            sl.cam_position[0] = pos.x();
+            sl.cam_position[1] = pos.y();
+            sl.cam_position[2] = pos.z();
+            sl.cam_target[0] = tgt.x();
+            sl.cam_target[1] = tgt.y();
+            sl.cam_target[2] = tgt.z();
+            sl.cam_up[0] = up.x();
+            sl.cam_up[1] = up.y();
+            sl.cam_up[2] = up.z();
         }
         bool pos_changed = false;
         bool proj_changed = false;
         const char* types[] = {"Perspective", "Orthographic"};
-        int type_idx = sl.use_perspective ? 0 : 1;
-        if (ImGui::Combo("Type", &type_idx, types, 2)) {
-            sl.use_perspective = (type_idx == 0);
+        int type_index = sl.use_perspective ? 0 : 1;
+        if (ImGui::Combo("Type", &type_index, types, 2)) {
+            sl.use_perspective = (type_index == 0);
             proj_changed = true;
         }
         pos_changed |= ImGui::SliderFloat3("Position", sl.cam_position, -20.f, 20.f);
@@ -1011,8 +1003,8 @@ void SceneSettingsLayer::renderPanel() {
         for (int i = 0; i < npt; ++i) {
             auto& e = sl.point_lights[static_cast<std::size_t>(i)];
             ImGui::PushID(i);
-            const std::string hdr = "Point Light " + std::to_string(i + 1);
-            if (ImGui::TreeNode(hdr.c_str())) {
+            const std::string point_light_label = "Point Light " + std::to_string(i + 1);
+            if (ImGui::TreeNode(point_light_label.c_str())) {
                 bool s = false;
                 s |= ImGui::Checkbox("Enabled##pt", &e.enabled);
                 s |= ImGui::ColorEdit3("Color##pt", e.color);
