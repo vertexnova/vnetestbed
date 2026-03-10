@@ -7,7 +7,7 @@ if(NOT TARGET vne::scene)
     return()
 endif()
 
-add_executable(sample_02_test_scene demo_test_scene.cpp)
+add_executable(sample_02_test_scene demo_test_scene.cpp demo_test_scene.h)
 add_sample_platform_sources(sample_02_test_scene)
 
 target_link_libraries(sample_02_test_scene PRIVATE

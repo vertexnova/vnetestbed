@@ -74,6 +74,9 @@ _deps/
 .DS_Store
 ._*
 
+# ImGui layout (machine/resolution-specific; generated per-user)
+vnetestbed_imgui.ini
+
 # Test output
 test_dir/
 logs/
