@@ -37,6 +37,7 @@ class Application;
 namespace vne::testbed {
 class ImGuiLayer;
 }
+class BaseInteractionLayer;  // from samples/glfw_opengl/common/base_scene_layer.h (global scope)
 #endif
 
 namespace vne::samples::test_scene {
@@ -181,7 +182,6 @@ class SceneTestLayer : public vne::testbed::ILayer {
 // SceneSettingsLayer — ImGui panel
 // ---------------------------------------------------------------------------
 #ifdef VNE_TESTBED_IMGUI
-class BaseInteractionLayer;
 class SceneSettingsLayer : public vne::testbed::ILayer {
    public:
     SceneSettingsLayer();
