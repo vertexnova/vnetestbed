@@ -119,6 +119,8 @@ constexpr const char* kSceneFragFilename = "scene_frag_es.glsl";
 
 }  // namespace
 
+namespace vne::samples::test_scene {
+
 // ---------------------------------------------------------------------------
 // SceneTestLayer implementation
 // ---------------------------------------------------------------------------
@@ -685,15 +687,16 @@ void SceneTestLayer::drawFrustum(vne::math::Vec3f pos,
                                  vne::math::Vec3f fwd,
                                  vne::math::Vec3f right,
                                  vne::math::Vec3f up) const {
-    // Draw frustum using actual camera clip distances, matching the
+    // Draw frustum using the camera clip distances, matching the
     // reference (matrixModelView_mac) technique: compute vertices in
     // camera-local space (apex at origin, planes along -Z) then
     // transform to world space via pos/fwd/right/up basis vectors.
     //
-    // Cap far at 10 world units so the frustum stays scene-visible
-    // when the user orbits around with the interaction layer.
+    // Clamp near to a small positive value and ensure far is beyond near
+    // so the frustum visualization stays well-defined even for
+    // misconfigured clip planes.
     const float near_dist = std::max(near_plane, 0.05f);
-    const float far_dist = std::min(far_plane, 10.0f);
+    const float far_dist = std::max(far_plane, near_dist + 0.01f);
 
     const auto along = [&](float d) { return pos + fwd * d; };
     const auto corner = [&](const vne::math::Vec3f& c, float rr, float uu) { return c + right * rr + up * uu; };
@@ -741,6 +744,13 @@ void SceneTestLayer::drawFrustum(vne::math::Vec3f pos,
         debug_draw_->line(pos, far_tr, edge_col);
         debug_draw_->line(pos, far_bl, edge_col);
         debug_draw_->line(pos, far_br, edge_col);
+
+        if (show_near_far_planes) {
+            debug_draw_->line(near_tl, near_br, near_col);
+            debug_draw_->line(near_tr, near_bl, near_col);
+            debug_draw_->line(far_tl, far_br, far_col);
+            debug_draw_->line(far_tr, far_bl, far_col);
+        }
     } else {
         const float half_w = ortho_half * aspect;
         const float half_h = ortho_half;
@@ -772,6 +782,13 @@ void SceneTestLayer::drawFrustum(vne::math::Vec3f pos,
         debug_draw_->line(near_tr, far_tr, edge_col);
         debug_draw_->line(near_bl, far_bl, edge_col);
         debug_draw_->line(near_br, far_br, edge_col);
+
+        if (show_near_far_planes) {
+            debug_draw_->line(near_tl, near_br, near_col);
+            debug_draw_->line(near_tr, near_bl, near_col);
+            debug_draw_->line(far_tl, far_br, far_col);
+            debug_draw_->line(far_tr, far_bl, far_col);
+        }
     }
 }
 
@@ -1079,3 +1096,5 @@ void RegisterTestSceneDemo(vne::testbed::Application& app) {
 }
 
 VNETESTBED_REGISTER_DEMO("test_scene", RegisterTestSceneDemo)
+
+}  // namespace vne::samples::test_scene

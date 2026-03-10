@@ -39,6 +39,8 @@ class ImGuiLayer;
 }
 #endif
 
+namespace vne::samples::test_scene {
+
 struct PointLightEntry {
     std::shared_ptr<vne::scene::PointLight> light;
     float orbit_radius{3.0f};
@@ -205,3 +207,5 @@ class SceneSettingsLayer : public vne::testbed::ILayer {
 #endif
 
 void RegisterTestSceneDemo(vne::testbed::Application& app);
+
+}  // namespace vne::samples::test_scene
