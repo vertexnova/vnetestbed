@@ -23,12 +23,6 @@
 [submodule "deps/internal/vnemath"]
 	path = deps/internal/vnemath
 	url = https://github.com/vertexnova/vnemath.git
-[submodule "deps/internal/vnescene"]
-	path = deps/internal/vnescene
-	url = https://github.com/vertexnova/vnescene.git
-[submodule "deps/internal/vneinteraction"]
-	path = deps/internal/vneinteraction
-	url = https://github.com/vertexnova/vneinteraction.git
 [submodule "deps/external/imgui"]
 	path = deps/external/imgui
 	url = https://github.com/ocornut/imgui.git
