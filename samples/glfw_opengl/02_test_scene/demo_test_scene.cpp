@@ -24,8 +24,10 @@
 #include "vertexnova/logging/logging.h"
 #include "vertexnova/math/math.h"
 
+#include <algorithm>
 #include <cmath>
 #include <filesystem>
+#include <string>
 
 namespace {
 
