@@ -35,14 +35,18 @@
 #include "vertexnova/testbed/render_context.h"
 
 #include "vertexnova/events/event.h"
+#include "vertexnova/events/input/input.h"
 #include "vertexnova/events/key_event.h"
 #include "vertexnova/events/mouse_event.h"
 #include "vertexnova/events/types.h"
 
+#include "vertexnova/interaction/arcball_manipulator.h"
+#include "vertexnova/interaction/camera_manipulator_factory.h"
 #include "vertexnova/interaction/camera_system_controller.h"
-#include "vertexnova/interaction/fps_fly_manipulator.h"
+#include "vertexnova/interaction/fly_manipulator.h"
+#include "vertexnova/interaction/fps_manipulator.h"
 #include "vertexnova/interaction/interaction_types.h"
-#include "vertexnova/interaction/orbit_arcball_manipulator.h"
+#include "vertexnova/interaction/orbit_manipulator.h"
 
 #ifdef VNE_TESTBED_IMGUI
 #include "vertexnova/testbed/imgui/imgui_layer.h"
@@ -67,9 +71,11 @@ class InteractionTestLayer : public vne::testbed::ILayer {
     InteractionTestLayer()
         : vne::testbed::ILayer("InteractionTestLayer") {
         controllers_.resize(BaseSceneLayer::kMaxViewports);
+        vne::interaction::CameraManipulatorFactory factory;
         for (size_t i = 0; i < static_cast<size_t>(BaseSceneLayer::kMaxViewports); ++i) {
-            controllers_[i] = std::make_unique<vne::interaction::CameraSystemController>(
-                vne::interaction::CameraManipulatorType::eOrbitArcball);
+            auto ctrl = std::make_unique<vne::interaction::CameraSystemController>();
+            ctrl->setManipulator(factory.create(vne::interaction::CameraManipulatorType::eOrbit));
+            controllers_[i] = std::move(ctrl);
         }
     }
 
@@ -175,8 +181,13 @@ class InteractionTestLayer : public vne::testbed::ILayer {
             }
             case ET::eMouseScrolled: {
                 const auto& e = static_cast<const vne::events::MouseScrolledEvent&>(event);
+                const auto [mx, my] = vne::events::Input::mousePosition();
+                last_x_ = static_cast<double>(mx);
+                last_y_ = static_cast<double>(my);
                 controller->handleMouseScroll(static_cast<float>(e.xOffset()),
                                               static_cast<float>(e.yOffset()),
+                                              static_cast<float>(last_x_),
+                                              static_cast<float>(last_y_),
                                               kFixedDt);
                 break;
             }
@@ -199,9 +210,10 @@ class InteractionTestLayer : public vne::testbed::ILayer {
     // Control API for the Settings panel
     // -----------------------------------------------------------------------
     void setManipulatorType(vne::interaction::CameraManipulatorType type) {
+        current_manipulator_type_ = type;
         for (auto& ctrl : controllers_) {
             if (ctrl) {
-                ctrl->setManipulator(type);
+                ctrl->setManipulator(factory_.create(type));
                 if (camera_)
                     ctrl->setCamera(camera_);
             }
@@ -209,20 +221,20 @@ class InteractionTestLayer : public vne::testbed::ILayer {
     }
 
     [[nodiscard]] vne::interaction::CameraManipulatorType getManipulatorType() const {
-        return controllers_.empty() || !controllers_[0] ? vne::interaction::CameraManipulatorType::eOrbitArcball
-                                                        : controllers_[0]->getManipulatorType();
+        return current_manipulator_type_;
     }
 
     void setZoomMethod(vne::interaction::ZoomMethod method) {
         for (auto& ctrl : controllers_) {
             if (!ctrl)
                 continue;
-            auto* m = ctrl->getManipulator();
+            auto m = ctrl->getManipulator();
             if (!m)
                 continue;
-            auto* orbit = dynamic_cast<vne::interaction::OrbitArcballManipulator*>(m);
-            if (orbit)
+            if (auto* orbit = dynamic_cast<vne::interaction::OrbitManipulator*>(m.get()))
                 orbit->setZoomMethod(method);
+            else if (auto* arc = dynamic_cast<vne::interaction::ArcballManipulator*>(m.get()))
+                arc->setZoomMethod(method);
         }
     }
 
@@ -230,11 +242,10 @@ class InteractionTestLayer : public vne::testbed::ILayer {
         for (auto& ctrl : controllers_) {
             if (!ctrl)
                 continue;
-            auto* m = ctrl->getManipulator();
+            auto m = ctrl->getManipulator();
             if (!m)
                 continue;
-            auto* orbit = dynamic_cast<vne::interaction::OrbitArcballManipulator*>(m);
-            if (orbit)
+            if (auto* orbit = dynamic_cast<vne::interaction::OrbitManipulator*>(m.get()))
                 orbit->setViewDirection(dir);
         }
     }
@@ -255,12 +266,13 @@ class InteractionTestLayer : public vne::testbed::ILayer {
         for (auto& ctrl : controllers_) {
             if (!ctrl)
                 continue;
-            auto* m = ctrl->getManipulator();
+            auto m = ctrl->getManipulator();
             if (!m)
                 continue;
-            auto* fps = dynamic_cast<vne::interaction::FpsFlyManipulator*>(m);
-            if (fps)
+            if (auto* fps = dynamic_cast<vne::interaction::FpsManipulator*>(m.get()))
                 fps->setMoveSpeed(s);
+            else if (auto* fly = dynamic_cast<vne::interaction::FlyManipulator*>(m.get()))
+                fly->setMoveSpeed(s);
         }
     }
 
@@ -268,12 +280,13 @@ class InteractionTestLayer : public vne::testbed::ILayer {
         for (auto& ctrl : controllers_) {
             if (!ctrl)
                 continue;
-            auto* m = ctrl->getManipulator();
+            auto m = ctrl->getManipulator();
             if (!m)
                 continue;
-            auto* fps = dynamic_cast<vne::interaction::FpsFlyManipulator*>(m);
-            if (fps)
+            if (auto* fps = dynamic_cast<vne::interaction::FpsManipulator*>(m.get()))
                 fps->setMouseSensitivity(s);
+            else if (auto* fly = dynamic_cast<vne::interaction::FlyManipulator*>(m.get()))
+                fly->setMouseSensitivity(s);
         }
     }
 
@@ -285,6 +298,8 @@ class InteractionTestLayer : public vne::testbed::ILayer {
    private:
     std::shared_ptr<vne::scene::PerspectiveCamera> camera_;
     std::vector<std::unique_ptr<vne::interaction::CameraSystemController>> controllers_;
+    vne::interaction::CameraManipulatorFactory factory_;
+    vne::interaction::CameraManipulatorType current_manipulator_type_{vne::interaction::CameraManipulatorType::eOrbit};
     double last_x_{0.0};
     double last_y_{0.0};
     bool first_mouse_{true};
@@ -329,28 +344,34 @@ class InteractionSettingsLayer : public vne::testbed::ILayer {
         // ---- Manipulator type ----
         if (ImGui::CollapsingHeader("Manipulator", ImGuiTreeNodeFlags_DefaultOpen)) {
             using MT = vne::interaction::CameraManipulatorType;
-            const char* types[] = {"OrbitArcball", "FpsFly", "OrthoPanZoom", "Follow"};
-            const MT values[] = {MT::eOrbitArcball, MT::eFpsFly, MT::eOrthoPanZoom, MT::eFollow};
+            const char* types[] = {"Orbit", "Arcball", "Fps", "Fly", "OrthoPanZoom", "Follow"};
+            const MT values[] = {MT::eOrbit, MT::eArcball, MT::eFps, MT::eFly, MT::eOrthoPanZoom, MT::eFollow};
             int idx = 0;
             const MT cur = il.getManipulatorType();
-            for (int i = 0; i < 4; ++i) {
+            for (int i = 0; i < 6; ++i) {
                 if (values[i] == cur) {
                     idx = i;
                     break;
                 }
             }
-            if (ImGui::Combo("Type", &idx, types, 4)) {
+            if (ImGui::Combo("Type", &idx, types, 6)) {
                 il.setManipulatorType(values[idx]);
             }
 
             ImGui::Spacing();
             // Controls hint per manipulator
             switch (il.getManipulatorType()) {
-                case MT::eOrbitArcball:
+                case MT::eOrbit:
                     ImGui::TextDisabled("LMB rotate  RMB pan  Scroll zoom");
                     break;
-                case MT::eFpsFly:
+                case MT::eArcball:
+                    ImGui::TextDisabled("LMB rotate  RMB pan  Scroll zoom (arcball)");
+                    break;
+                case MT::eFps:
                     ImGui::TextDisabled("RMB + WASD/QE move  Mouse look");
+                    break;
+                case MT::eFly:
+                    ImGui::TextDisabled("RMB + WASD/QE move  Mouse look (fly)");
                     break;
                 case MT::eOrthoPanZoom:
                     ImGui::TextDisabled("LMB/RMB pan  Scroll zoom (no rotate)");
@@ -361,8 +382,10 @@ class InteractionSettingsLayer : public vne::testbed::ILayer {
             }
         }
 
-        // ---- Zoom method (OrbitArcball only) ----
-        if (il.getManipulatorType() == vne::interaction::CameraManipulatorType::eOrbitArcball) {
+        // ---- Zoom method (Orbit / Arcball only) ----
+        const auto cur_type = il.getManipulatorType();
+        if (cur_type == vne::interaction::CameraManipulatorType::eOrbit
+            || cur_type == vne::interaction::CameraManipulatorType::eArcball) {
             if (ImGui::CollapsingHeader("Zoom Method (Orbit)", ImGuiTreeNodeFlags_DefaultOpen)) {
                 using ZM = vne::interaction::ZoomMethod;
                 const char* znames[] = {"DollyToCoi", "SceneScale", "ChangeFov"};
@@ -377,8 +400,9 @@ class InteractionSettingsLayer : public vne::testbed::ILayer {
             }
         }
 
-        // ---- View direction presets (OrbitArcball only) ----
-        if (il.getManipulatorType() == vne::interaction::CameraManipulatorType::eOrbitArcball) {
+        // ---- View direction presets (Orbit / Arcball only) ----
+        if (cur_type == vne::interaction::CameraManipulatorType::eOrbit
+            || cur_type == vne::interaction::CameraManipulatorType::eArcball) {
             if (ImGui::CollapsingHeader("View Direction", ImGuiTreeNodeFlags_DefaultOpen)) {
                 using VD = vne::interaction::ViewDirection;
                 struct {
@@ -403,9 +427,10 @@ class InteractionSettingsLayer : public vne::testbed::ILayer {
             }
         }
 
-        // ---- FpsFly controls (when active) ----
-        if (il.getManipulatorType() == vne::interaction::CameraManipulatorType::eFpsFly) {
-            if (ImGui::CollapsingHeader("FpsFly Settings", ImGuiTreeNodeFlags_DefaultOpen)) {
+        // ---- Fps / Fly controls (when active) ----
+        if (cur_type == vne::interaction::CameraManipulatorType::eFps
+            || cur_type == vne::interaction::CameraManipulatorType::eFly) {
+            if (ImGui::CollapsingHeader("Fps/Fly Settings", ImGuiTreeNodeFlags_DefaultOpen)) {
                 if (ImGui::SliderFloat("Move speed##fps", &fps_speed_, 0.5f, 20.f)) {
                     il.setFpsSpeed(fps_speed_);
                 }
