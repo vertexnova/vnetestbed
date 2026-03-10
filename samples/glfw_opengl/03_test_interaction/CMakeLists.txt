@@ -7,7 +7,7 @@ if(NOT TARGET vne::scene OR NOT TARGET vne::interaction)
     return()
 endif()
 
-add_executable(sample_03_test_interaction demo_test_interaction.cpp)
+add_executable(sample_03_test_interaction demo_test_interaction.cpp demo_test_interaction.h)
 add_sample_platform_sources(sample_03_test_interaction)
 
 target_link_libraries(sample_03_test_interaction PRIVATE
