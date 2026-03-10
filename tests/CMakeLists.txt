@@ -13,11 +13,22 @@ if(NOT TARGET vnetestbed)
 endif()
 
 #==============================================================================
-# Setup Google Test
+# Setup Google Test (reuse from dependency if already in build, else add from deps/external)
 #==============================================================================
-if(EXISTS "${PROJECT_SOURCE_DIR}/deps/external/googletest/CMakeLists.txt")
+if(TARGET gtest)
+    message(STATUS "Using existing Google Test from dependency")
+    set(GTEST_LIBRARIES gtest_main gmock)
+    set(GTEST_INCLUDE_DIRS "")
+    if(NOT COMMAND gtest_add_tests)
+        find_package(GTest QUIET)
+        if(GTest_FOUND)
+            include(GoogleTest)
+        endif()
+    endif()
+elseif(EXISTS "${PROJECT_SOURCE_DIR}/deps/external/googletest/CMakeLists.txt")
     message(STATUS "Using Google Test from deps/external/googletest (v1.17.0)")
-    add_subdirectory(${PROJECT_SOURCE_DIR}/deps/external/googletest ${CMAKE_BINARY_DIR}/deps/external/googletest)
+    # Use a unique binary dir to avoid conflict with googletest's internal add_subdirectory(googletest)
+    add_subdirectory(${PROJECT_SOURCE_DIR}/deps/external/googletest ${CMAKE_CURRENT_BINARY_DIR}/googletest_dist)
     include(GoogleTest)
     set(GTEST_LIBRARIES gtest_main gmock)
     set(GTEST_INCLUDE_DIRS

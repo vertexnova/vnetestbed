@@ -31,6 +31,7 @@
 #include "vertexnova/events/key_event.h"
 #include "vertexnova/events/mouse_event.h"
 #include "vertexnova/events/types.h"
+#include "vertexnova/interaction/camera_manipulator_factory.h"
 #include "vertexnova/interaction/camera_system_controller.h"
 #endif
 
@@ -164,9 +165,11 @@ class BaseInteractionLayer : public vne::testbed::ILayer, public vne::events::Ev
     explicit BaseInteractionLayer(const char* name = "BaseInteractionLayer")
         : vne::testbed::ILayer(name) {
         controllers_.resize(BaseSceneLayer::kMaxViewports);
+        vne::interaction::CameraManipulatorFactory factory;
         for (size_t i = 0; i < static_cast<size_t>(BaseSceneLayer::kMaxViewports); ++i) {
-            controllers_[i] = std::make_unique<vne::interaction::CameraSystemController>(
-                vne::interaction::CameraManipulatorType::eOrbitArcball);
+            auto ctrl = std::make_unique<vne::interaction::CameraSystemController>();
+            ctrl->setManipulator(factory.create(vne::interaction::CameraManipulatorType::eOrbit));
+            controllers_[i] = std::move(ctrl);
         }
     }
 
@@ -207,7 +210,13 @@ class BaseInteractionLayer : public vne::testbed::ILayer, public vne::events::Ev
 #endif
 
     /** @brief Enable or disable orbit-arcball camera interaction. When false, onEvent does not drive the controller. */
-    void setInteractionEnabled(bool enabled) { interaction_enabled_ = enabled; }
+    void setInteractionEnabled(bool enabled) {
+        interaction_enabled_ = enabled;
+        for (auto& ctrl : controllers_) {
+            if (ctrl)
+                ctrl->setEnabled(enabled);
+        }
+    }
     /** @brief Whether camera interaction is enabled. */
     [[nodiscard]] bool getInteractionEnabled() const { return interaction_enabled_; }
 
@@ -308,6 +317,8 @@ class BaseInteractionLayer : public vne::testbed::ILayer, public vne::events::Ev
                 const auto& e = static_cast<const vne::events::MouseScrolledEvent&>(event);
                 controller->handleMouseScroll(static_cast<float>(e.xOffset()),
                                               static_cast<float>(e.yOffset()),
+                                              static_cast<float>(last_x_),
+                                              static_cast<float>(last_y_),
                                               kFixedDt);
                 break;
             }
