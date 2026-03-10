@@ -876,8 +876,8 @@ void SceneSettingsLayer::renderPanel() {
         pos_changed |= ImGui::SliderFloat3("Up", sl.cam_up, -1.f, 1.f);
         if (sl.use_perspective) {
             proj_changed |= ImGui::SliderFloat("FOV", &sl.fov, 20.f, 120.f);
-            proj_changed |= ImGui::SliderFloat("Near", &sl.near_plane, -5.f, 10.f);
-            proj_changed |= ImGui::SliderFloat("Far", &sl.far_plane, -5000.f, 5000.f);
+            proj_changed |= ImGui::SliderFloat("Near", &sl.near_plane, 0.01f, 10.f);
+            proj_changed |= ImGui::SliderFloat("Far", &sl.far_plane, sl.near_plane + 0.01f, 5000.f);
         } else {
             proj_changed |= ImGui::SliderFloat("Half-extent", &sl.ortho_half, 1.f, 20.f);
             proj_changed |= ImGui::SliderFloat("Near##ortho", &sl.ortho_near, -500.f, 500.f);
