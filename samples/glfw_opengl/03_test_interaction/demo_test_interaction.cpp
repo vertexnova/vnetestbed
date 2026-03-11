@@ -33,7 +33,7 @@
 #include <imgui.h>
 #endif
 
-#ifdef VNE_TESTBED_HAVE_VNEIO
+#ifdef VNE_TESTBED_VNEIO
 #include "vertexnova/testbed/utils/mesh_layer.h"
 #endif
 
@@ -413,7 +413,7 @@ void InteractionSettingsLayer::onDetach() {
 }
 
 void InteractionSettingsLayer::loadMesh(const std::filesystem::path& path) {
-#ifdef VNE_TESTBED_HAVE_VNEIO
+#ifdef VNE_TESTBED_VNEIO
     if (mesh_layer_) {
         mesh_layer_->reloadMesh(path.string());
     }
@@ -785,7 +785,7 @@ void InteractionSettingsLayer::renderManipulatorSettings() {
 
 void InteractionSettingsLayer::renderMeshBrowser() {
     if (ImGui::CollapsingHeader("Mesh Browser", ImGuiTreeNodeFlags_DefaultOpen)) {
-#ifndef VNE_TESTBED_HAVE_VNEIO
+#ifndef VNE_TESTBED_VNEIO
         ImGui::TextDisabled("(mesh loading requires vneio)");
         return;
 #else
@@ -843,12 +843,12 @@ void InteractionSettingsLayer::renderMeshBrowser() {
             ImGui::PopID();
         }
         ImGui::EndChild();
-#endif  // VNE_TESTBED_HAVE_VNEIO
+#endif  // VNE_TESTBED_VNEIO
     }
 }
 
 void InteractionSettingsLayer::renderLightingSettings() {
-#ifdef VNE_TESTBED_HAVE_VNEIO
+#ifdef VNE_TESTBED_VNEIO
     if (!mesh_layer_) {
         return;
     }
@@ -943,7 +943,7 @@ void InteractionSettingsLayer::renderLightingSettings() {
 }
 
 void InteractionSettingsLayer::renderMeshTransform() {
-#ifdef VNE_TESTBED_HAVE_VNEIO
+#ifdef VNE_TESTBED_VNEIO
     if (!mesh_layer_) {
         return;
     }
@@ -1004,7 +1004,7 @@ void RegisterTestInteractionDemo(vne::testbed::Application& app) {
     interaction->setSceneLayer(scene);
     app.getLayerStack().pushLayer(std::unique_ptr<InteractionTestLayer>(interaction), app.getAppContext());
 
-#ifdef VNE_TESTBED_HAVE_VNEIO
+#ifdef VNE_TESTBED_VNEIO
     // Default mesh: box.ply so there's something to see on startup.
     auto* mesh_layer = new vne::testbed::MeshLayer();
     mesh_layer->setMeshPath(vne::samples::common::getTestdataPath("resources/meshes/box.ply"));
@@ -1023,7 +1023,7 @@ void RegisterTestInteractionDemo(vne::testbed::Application& app) {
     settings->setInteractionLayer(interaction);
     settings->setSceneLayer(scene);
 
-#ifdef VNE_TESTBED_HAVE_VNEIO
+#ifdef VNE_TESTBED_VNEIO
     // Connect mesh layer to the settings panel for the mesh browser.
     settings->setMeshLayer(mesh_layer);
     // Point the browser at the testdata meshes directory.

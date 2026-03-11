@@ -28,7 +28,7 @@ target_compile_definitions(sample_03_test_interaction PRIVATE
     "VNETESTBED_TESTDATA_DIR=\"${VNETESTBED_TESTDATA_ROOT}\""
 )
 if(VNE_TESTBED_HAVE_VNEIO)
-    target_compile_definitions(sample_03_test_interaction PRIVATE VNE_TESTBED_HAVE_VNEIO)
+    target_compile_definitions(sample_03_test_interaction PRIVATE VNE_TESTBED_VNEIO)
 endif()
 
 set_target_properties(sample_03_test_interaction PROPERTIES
