@@ -140,10 +140,9 @@ void InteractionTestLayer::onEvent(const vne::events::Event& event) {
         viewport_index = idx;
     }
 #endif
-    auto* controller =
-        (viewport_index >= 0 && viewport_index < static_cast<int>(controllers_.size()))
-            ? controllers_[static_cast<size_t>(viewport_index)].get()
-            : controllers_[0].get();
+    auto* controller = (viewport_index >= 0 && viewport_index < static_cast<int>(controllers_.size()))
+                           ? controllers_[static_cast<size_t>(viewport_index)].get()
+                           : controllers_[0].get();
     if (!controller) {
         return;
     }

@@ -54,7 +54,7 @@ class CoreRenderer;
 struct AppContext {
     IWindow* window{nullptr};
     IRenderAdapter* renderer{nullptr};
-    IRenderDevice* device{nullptr};  ///< Backend-agnostic resource factory + draw.
+    IRenderDevice* device{nullptr};       ///< Backend-agnostic resource factory + draw.
     CoreRenderer* coreRenderer{nullptr};  ///< Registry of mesh, debug, and future volume/slice renderers.
     IDebugDraw* debugDraw{nullptr};
 

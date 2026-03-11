@@ -123,8 +123,9 @@ void LayerStack::onRender(const RenderContext& ctx) {
             sorted_layers.emplace_back(layer->getRenderSortKey(), layer.get());
         }
     }
-    std::stable_sort(sorted_layers.begin(), sorted_layers.end(),
-                     [](const auto& a, const auto& b) { return a.first < b.first; });
+    std::stable_sort(sorted_layers.begin(), sorted_layers.end(), [](const auto& a, const auto& b) {
+        return a.first < b.first;
+    });
     for (const auto& p : sorted_layers) {
         if (p.second) {
             p.second->onRender(ctx);
@@ -137,8 +138,9 @@ void LayerStack::onRender(const RenderContext& ctx) {
             sorted_overlays.emplace_back(overlay->getRenderSortKey(), overlay.get());
         }
     }
-    std::stable_sort(sorted_overlays.begin(), sorted_overlays.end(),
-                     [](const auto& a, const auto& b) { return a.first < b.first; });
+    std::stable_sort(sorted_overlays.begin(), sorted_overlays.end(), [](const auto& a, const auto& b) {
+        return a.first < b.first;
+    });
     for (const auto& p : sorted_overlays) {
         if (p.second) {
             p.second->onRender(ctx);
@@ -154,8 +156,9 @@ void LayerStack::onRenderLayersOnly(const RenderContext& ctx) {
             sorted_layers.emplace_back(layer->getRenderSortKey(), layer.get());
         }
     }
-    std::stable_sort(sorted_layers.begin(), sorted_layers.end(),
-                     [](const auto& a, const auto& b) { return a.first < b.first; });
+    std::stable_sort(sorted_layers.begin(), sorted_layers.end(), [](const auto& a, const auto& b) {
+        return a.first < b.first;
+    });
     for (const auto& p : sorted_layers) {
         if (p.second) {
             p.second->onRender(ctx);

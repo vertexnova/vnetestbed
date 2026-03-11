@@ -56,12 +56,12 @@ void MeshRenderer::shutdown() {
 }
 
 void MeshRenderer::drawMesh(IRenderDevice* device,
-                             vne::scene::ICamera* camera,
-                             BufferHandle vbo,
-                             BufferHandle ibo,
-                             uint32_t index_count,
-                             const vne::math::Mat4f& model,
-                             const PhongLightParams& lights) {
+                            vne::scene::ICamera* camera,
+                            BufferHandle vbo,
+                            BufferHandle ibo,
+                            uint32_t index_count,
+                            const vne::math::Mat4f& model,
+                            const PhongLightParams& lights) {
     if (!device || !camera || !phong_material_.isReady() || !vbo.isValid() || !ibo.isValid() || index_count == 0) {
         return;
     }

@@ -30,9 +30,9 @@
 #include "vertexnova/testbed/gl/opengl_render_adapter.h"
 #include "vertexnova/testbed/gl/opengl_render_device.h"
 #include "vertexnova/testbed/gl/texture2d.h"  // complete type for TextureSlot destruction when impl_ is destroyed in this TU
-#include "vertexnova/testbed/gl/index_buffer.h"  // complete type for OpenGLRenderDevice::BufferSlot
+#include "vertexnova/testbed/gl/index_buffer.h"   // complete type for OpenGLRenderDevice::BufferSlot
 #include "vertexnova/testbed/gl/vertex_array.h"   // complete type for DebugRenderer member
-#include "vertexnova/testbed/gl/vertex_buffer.h" // complete type for DebugRenderer member
+#include "vertexnova/testbed/gl/vertex_buffer.h"  // complete type for DebugRenderer member
 #include "vertexnova/testbed/gl/shader.h"         // complete type for DebugRenderer member
 #include "vertexnova/testbed/window/glfw_window.h"
 #include "vertexnova/testbed/window/glfw_window_descriptor.h"

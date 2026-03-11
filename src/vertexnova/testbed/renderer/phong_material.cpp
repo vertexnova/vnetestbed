@@ -338,10 +338,22 @@ void PhongMaterial::setUniforms(IRenderDevice* device,
     device->setInt(shader_, "u_dirLightEnabled", lights.dir_light_enabled ? 1 : 0);
 
     static const char* kPtPos[] = {"u_ptLightPos[0]", "u_ptLightPos[1]", "u_ptLightPos[2]", "u_ptLightPos[3]"};
-    static const char* kPtColor[] = {"u_ptLightColor[0]", "u_ptLightColor[1]", "u_ptLightColor[2]", "u_ptLightColor[3]"};
-    static const char* kPtIntensity[] = {"u_ptLightIntensity[0]", "u_ptLightIntensity[1]", "u_ptLightIntensity[2]", "u_ptLightIntensity[3]"};
-    static const char* kPtRange[] = {"u_ptLightRange[0]", "u_ptLightRange[1]", "u_ptLightRange[2]", "u_ptLightRange[3]"};
-    static const char* kPtEnabled[] = {"u_ptLightEnabled[0]", "u_ptLightEnabled[1]", "u_ptLightEnabled[2]", "u_ptLightEnabled[3]"};
+    static const char* kPtColor[] = {"u_ptLightColor[0]",
+                                     "u_ptLightColor[1]",
+                                     "u_ptLightColor[2]",
+                                     "u_ptLightColor[3]"};
+    static const char* kPtIntensity[] = {"u_ptLightIntensity[0]",
+                                         "u_ptLightIntensity[1]",
+                                         "u_ptLightIntensity[2]",
+                                         "u_ptLightIntensity[3]"};
+    static const char* kPtRange[] = {"u_ptLightRange[0]",
+                                     "u_ptLightRange[1]",
+                                     "u_ptLightRange[2]",
+                                     "u_ptLightRange[3]"};
+    static const char* kPtEnabled[] = {"u_ptLightEnabled[0]",
+                                       "u_ptLightEnabled[1]",
+                                       "u_ptLightEnabled[2]",
+                                       "u_ptLightEnabled[3]"};
     int num_point = 0;
     for (int i = 0; i < PhongLightParams::kMaxPointLights; ++i) {
         const auto& pt = lights.point_lights[i];

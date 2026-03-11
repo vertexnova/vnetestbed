@@ -85,8 +85,7 @@ class InteractionTestLayer : public vne::testbed::ILayer {
     std::shared_ptr<vne::scene::PerspectiveCamera> camera_;
     std::vector<std::unique_ptr<vne::interaction::CameraSystemController>> controllers_;
     vne::interaction::CameraManipulatorFactory factory_;
-    vne::interaction::CameraManipulatorType current_manipulator_type_{
-        vne::interaction::CameraManipulatorType::eOrbit};
+    vne::interaction::CameraManipulatorType current_manipulator_type_{vne::interaction::CameraManipulatorType::eOrbit};
     double last_x_{0.0};
     double last_y_{0.0};
     bool first_mouse_{true};

@@ -45,8 +45,9 @@ bool CoreRenderer::init(IRenderDevice* device) {
     if (!device || initialized_) {
         return false;
     }
-    std::stable_sort(entries_.begin(), entries_.end(),
-                     [](const Entry& a, const Entry& b) { return a.sort_key < b.sort_key; });
+    std::stable_sort(entries_.begin(), entries_.end(), [](const Entry& a, const Entry& b) {
+        return a.sort_key < b.sort_key;
+    });
 #ifdef VNE_TESTBED_LOGGING
     VNE_LOG_DEBUG << "CoreRenderer: init " << entries_.size() << " renderers";
 #endif

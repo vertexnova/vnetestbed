@@ -131,8 +131,7 @@ void MeshLayer::onRender(const RenderContext& ctx) {
     }
     if (ctx.frame_info.width > 0 && ctx.frame_info.height > 0) {
         if (auto* persp = dynamic_cast<vne::scene::PerspectiveCamera*>(camera.get())) {
-            persp->setAspectRatio(static_cast<float>(ctx.frame_info.width)
-                                  / static_cast<float>(ctx.frame_info.height));
+            persp->setAspectRatio(static_cast<float>(ctx.frame_info.width) / static_cast<float>(ctx.frame_info.height));
         }
         camera->updateProjectionMatrix();
     }
