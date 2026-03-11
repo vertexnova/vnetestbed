@@ -113,8 +113,10 @@ class BaseSceneLayer : public vne::testbed::ILayer {
             }
         }
         debug_draw_->setViewProjectionMatrix(camera->getViewProjectionMatrix());
-        drawGrid();
-        drawAxes();
+        if (show_grid_)
+            drawGrid();
+        if (show_axes_)
+            drawAxes();
         debug_draw_->flush();
     }
 
@@ -169,6 +171,8 @@ class BaseSceneLayer : public vne::testbed::ILayer {
         return cameras_;
     }
 
+    bool show_grid_{true};
+    bool show_axes_{true};
     bool use_perspective_{true};
     float fov_{60.0f};
     float near_plane_{0.1f};

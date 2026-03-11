@@ -450,6 +450,12 @@ void InteractionSettingsLayer::renderPanel() {
     }
     auto& il = *interaction_layer_;
 
+    // ---- Scene (grid, axes) ----
+    if (scene_layer_ && ImGui::CollapsingHeader("Scene", ImGuiTreeNodeFlags_DefaultOpen)) {
+        ImGui::Checkbox("Show grid", &scene_layer_->show_grid_);
+        ImGui::Checkbox("Show axes", &scene_layer_->show_axes_);
+    }
+
     // ---- Camera (perspective / orthographic) ----
     renderCameraSettings();
 
