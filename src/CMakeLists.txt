@@ -42,6 +42,7 @@ set(SOURCE_FILES
     vertexnova/testbed/logging_guard.cpp
     vertexnova/testbed/layer.cpp
     vertexnova/testbed/layer_stack.cpp
+    vertexnova/testbed/utils/mesh_layer.cpp
 )
 
 set(HEADER_FILES
@@ -58,6 +59,7 @@ set(HEADER_FILES
     ${VNE_INCLUDE_DIR}/vertexnova/testbed/render_device.h
     ${VNE_INCLUDE_DIR}/vertexnova/testbed/debug_draw.h
     ${VNE_INCLUDE_DIR}/vertexnova/testbed/window.h
+    ${VNE_INCLUDE_DIR}/vertexnova/testbed/utils/mesh_layer.h
 )
 
 # ImGui layer (when imgui submodule + OpenGL available)

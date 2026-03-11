@@ -32,11 +32,30 @@
 #include <imgui.h>
 #endif
 
-#include "../common/base_scene_layer.h"
+#ifdef VNE_TESTBED_HAVE_VNEIO
+#include "vertexnova/testbed/utils/mesh_layer.h"
+#endif
 
+#include "../common/base_scene_layer.h"
+#include "../common/path_utils.h"
+
+#include <cmath>
+#include <filesystem>
 #include <memory>
 #include <string>
 #include <vector>
+
+namespace {
+
+#if defined(VNE_TESTBED_OPENGL)
+constexpr const char* kSceneVertFilename = "scene_vert.glsl";
+constexpr const char* kSceneFragFilename = "scene_frag.glsl";
+#else
+constexpr const char* kSceneVertFilename = "scene_vert_es.glsl";
+constexpr const char* kSceneFragFilename = "scene_frag_es.glsl";
+#endif
+
+}  // namespace
 
 namespace vne::samples::test_interaction {
 
@@ -461,6 +480,15 @@ void RegisterTestInteractionDemo(vne::testbed::Application& app) {
     auto* interaction = new InteractionTestLayer();
     interaction->setSceneLayer(scene);
     app.getLayerStack().pushLayer(std::unique_ptr<InteractionTestLayer>(interaction), app.getAppContext());
+
+#ifdef VNE_TESTBED_HAVE_VNEIO
+    auto* mesh_layer = new vne::testbed::MeshLayer();
+    mesh_layer->setMeshPath(vne::samples::common::getTestdataPath("resources/meshes/box.ply"));
+    mesh_layer->setCameraProvider([scene](int i) { return scene->getCamera(i); });
+    mesh_layer->setShaderPaths(vne::samples::common::resolveShaderPath(kSceneVertFilename),
+                              vne::samples::common::resolveShaderPath(kSceneFragFilename));
+    app.getLayerStack().pushLayer(std::unique_ptr<vne::testbed::MeshLayer>(mesh_layer), app.getAppContext());
+#endif
 
 #ifdef VNE_TESTBED_IMGUI
     auto* settings = new InteractionSettingsLayer();
