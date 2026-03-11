@@ -690,6 +690,11 @@ void InteractionSettingsLayer::renderManipulatorSettings() {
             if (m) {
                 if (auto* orbit = dynamic_cast<vne::interaction::OrbitManipulator*>(m.get())) {
                     if (ImGui::TreeNodeEx("Orbit Settings", ImGuiTreeNodeFlags_DefaultOpen)) {
+                        using RPM = vne::interaction::RotationPivotMode;
+                        int pivot_idx = static_cast<int>(orbit->getPivotMode());
+                        const char* pivot_names[] = {"COI (pan moves pivot)", "View center (pan end updates COI)", "Fixed world (pan translates eye+target)"};
+                        if (ImGui::Combo("Rotation pivot##orb", &pivot_idx, pivot_names, 3))
+                            orbit->setPivotMode(static_cast<RPM>(pivot_idx));
                         float rs = orbit->getRotationSpeed();
                         if (ImGui::SliderFloat("Rotation speed##orb", &rs, 0.1f, 5.f))
                             orbit->setRotationSpeed(rs);
@@ -712,6 +717,11 @@ void InteractionSettingsLayer::renderManipulatorSettings() {
                     }
                 } else if (auto* arc = dynamic_cast<vne::interaction::ArcballManipulator*>(m.get())) {
                     if (ImGui::TreeNodeEx("Arcball Settings", ImGuiTreeNodeFlags_DefaultOpen)) {
+                        using RPM = vne::interaction::RotationPivotMode;
+                        int pivot_idx = static_cast<int>(arc->getPivotMode());
+                        const char* pivot_names[] = {"COI (pan moves pivot)", "View center (pan end updates COI)", "Fixed world (pan translates eye+target)"};
+                        if (ImGui::Combo("Rotation pivot##arc", &pivot_idx, pivot_names, 3))
+                            arc->setPivotMode(static_cast<RPM>(pivot_idx));
                         float rs = arc->getRotationSpeed();
                         if (ImGui::SliderFloat("Rotation speed##arc", &rs, 0.1f, 5.f))
                             arc->setRotationSpeed(rs);
