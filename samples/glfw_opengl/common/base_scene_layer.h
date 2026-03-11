@@ -22,6 +22,7 @@
 #include "vertexnova/testbed/render_context.h"
 
 #include "vertexnova/scene/camera/camera.h"
+#include "vertexnova/scene/camera/orthographic_camera.h"
 #include "vertexnova/scene/camera/perspective_camera.h"
 #include "vertexnova/scene/scene_state.h"
 
@@ -48,8 +49,8 @@ class ImGuiLayer;
 #include <vector>
 
 // ---------------------------------------------------------------------------
-// BaseSceneLayer — grid + axes + perspective camera
-// Exposes getCamera() / getCamera(i) so interaction layers can share cameras.
+// BaseSceneLayer — grid + axes + perspective or orthographic camera
+// Exposes getCamera() / getCamera(i) / getActiveCameras() for interaction layers.
 // Supports per-viewport cameras for 2 or 4 viewport layouts.
 // ---------------------------------------------------------------------------
 class BaseSceneLayer : public vne::testbed::ILayer {
@@ -63,21 +64,9 @@ class BaseSceneLayer : public vne::testbed::ILayer {
         : vne::testbed::ILayer(name) {}
 
     void onAttach(vne::testbed::AppContext& ctx) override {
-        cameras_.resize(kMaxViewports);
-        for (size_t i = 0; i < static_cast<size_t>(kMaxViewports); ++i) {
-            auto cam = std::make_shared<vne::scene::PerspectiveCamera>(60.0f,
-                                                                       1280.0f,
-                                                                       720.0f,
-                                                                       0.1f,
-                                                                       1000.0f,
-                                                                       std::string("BaseCamera") + std::to_string(i));
-            cam->setPosition({4.0f, 3.0f, 6.0f});
-            cam->setTarget({0.0f, 0.0f, 0.0f});
-            cam->setGraphicsApi(vne::math::GraphicsApi::eOpenGL);
-            cam->updateMatrices();
-            cameras_[i] = std::move(cam);
-        }
-        scene_state_.setActiveCamera(cameras_[0]);
+        buildCameras(1280, 720);
+        scene_state_.setActiveCamera(use_perspective_ ? std::static_pointer_cast<vne::scene::ICamera>(cameras_[0])
+                                                      : std::static_pointer_cast<vne::scene::ICamera>(cameras_ortho_[0]));
         debug_draw_ = ctx.debugDraw;
     }
 
@@ -85,29 +74,43 @@ class BaseSceneLayer : public vne::testbed::ILayer {
         debug_draw_ = nullptr;
         scene_state_.setActiveCamera(nullptr);
         cameras_.clear();
+        cameras_ortho_.clear();
     }
 
     void onUpdate(float /*dt*/) override {
         for (auto& cam : cameras_) {
-            if (cam) {
+            if (cam)
                 cam->updateMatrices();
-            }
+        }
+        for (auto& cam : cameras_ortho_) {
+            if (cam)
+                cam->updateMatrices();
         }
     }
 
     void onRender(const vne::testbed::RenderContext& ctx) override {
         const int idx =
-            (ctx.active_viewport_index >= 0 && ctx.active_viewport_index < static_cast<int>(cameras_.size()))
-                ? ctx.active_viewport_index
-                : 0;
-        auto& camera = cameras_[static_cast<size_t>(idx)];
+            (ctx.active_viewport_index >= 0 && ctx.active_viewport_index < kMaxViewports) ? ctx.active_viewport_index : 0;
+        vne::scene::ICamera* camera = getActiveCamera(idx);
         if (!camera || !debug_draw_) {
             return;
         }
         if (ctx.frame_info.width > 0 && ctx.frame_info.height > 0) {
-            camera->setAspectRatio(static_cast<float>(ctx.frame_info.width)
-                                   / static_cast<float>(ctx.frame_info.height));
-            camera->updateProjectionMatrix();
+            last_vp_w_ = ctx.frame_info.width;
+            last_vp_h_ = ctx.frame_info.height;
+            const float aspect = static_cast<float>(ctx.frame_info.width) / static_cast<float>(ctx.frame_info.height);
+            if (use_perspective_) {
+                if (auto* p = dynamic_cast<vne::scene::PerspectiveCamera*>(camera)) {
+                    p->setAspectRatio(aspect);
+                    p->updateProjectionMatrix();
+                }
+            } else {
+                if (auto* o = dynamic_cast<vne::scene::OrthographicCamera*>(camera)) {
+                    const float hw = ortho_half_ * aspect;
+                    o->setBounds(-hw, hw, -ortho_half_, ortho_half_, ortho_near_, ortho_far_);
+                    o->updateProjectionMatrix();
+                }
+            }
         }
         debug_draw_->setViewProjectionMatrix(camera->getViewProjectionMatrix());
         drawGrid();
@@ -115,20 +118,153 @@ class BaseSceneLayer : public vne::testbed::ILayer {
         debug_draw_->flush();
     }
 
-    [[nodiscard]] std::shared_ptr<vne::scene::PerspectiveCamera> getCamera() const {
+    /** @brief Active camera for viewport (ICamera for perspective or orthographic). */
+    [[nodiscard]] vne::scene::ICamera* getActiveCamera(int index) const {
+        const size_t i = static_cast<size_t>(index >= 0 && index < kMaxViewports ? index : 0);
+        if (use_perspective_ && i < cameras_.size() && cameras_[i])
+            return cameras_[i].get();
+        if (!use_perspective_ && i < cameras_ortho_.size() && cameras_ortho_[i])
+            return cameras_ortho_[i].get();
+        return nullptr;
+    }
+
+    /** @brief Active cameras as ICamera for interaction layer. */
+    [[nodiscard]] std::vector<std::shared_ptr<vne::scene::ICamera>> getActiveCameras() const {
+        std::vector<std::shared_ptr<vne::scene::ICamera>> out;
+        if (use_perspective_) {
+            for (const auto& c : cameras_)
+                if (c)
+                    out.push_back(c);
+        } else {
+            for (const auto& c : cameras_ortho_)
+                if (c)
+                    out.push_back(c);
+        }
+        return out;
+    }
+
+    [[nodiscard]] std::shared_ptr<vne::scene::ICamera> getCamera(int index) const {
+        vne::scene::ICamera* cam = getActiveCamera(index);
+        if (!cam)
+            return nullptr;
+        if (use_perspective_) {
+            const size_t i = static_cast<size_t>(index >= 0 && index < kMaxViewports ? index : 0);
+            if (i < cameras_.size() && cameras_[i])
+                return cameras_[i];
+        } else {
+            const size_t i = static_cast<size_t>(index >= 0 && index < kMaxViewports ? index : 0);
+            if (i < cameras_ortho_.size() && cameras_ortho_[i])
+                return cameras_ortho_[i];
+        }
+        return nullptr;
+    }
+
+    [[nodiscard]] std::shared_ptr<vne::scene::PerspectiveCamera> getPerspectiveCamera(int index) const {
+        if (index >= 0 && index < static_cast<int>(cameras_.size()))
+            return cameras_[static_cast<size_t>(index)];
         return cameras_.empty() ? nullptr : cameras_[0];
     }
-    [[nodiscard]] std::shared_ptr<vne::scene::PerspectiveCamera> getCamera(int index) const {
-        if (index >= 0 && index < static_cast<int>(cameras_.size())) {
-            return cameras_[static_cast<size_t>(index)];
-        }
-        return getCamera();
-    }
+
     [[nodiscard]] const std::vector<std::shared_ptr<vne::scene::PerspectiveCamera>>& getCameras() const {
         return cameras_;
     }
 
+    bool use_perspective_{true};
+    float fov_{60.0f};
+    float near_plane_{0.1f};
+    float far_plane_{1000.0f};
+    float ortho_half_{6.0f};
+    float ortho_near_{-100.0f};
+    float ortho_far_{100.0f};
+    int last_vp_w_{1280};
+    int last_vp_h_{720};
+    float cam_position_[3]{4.f, 3.f, 6.f};
+    float cam_target_[3]{0.f, 0.f, 0.f};
+    float cam_up_[3]{0.f, 1.f, 0.f};
+
+    void setUsePerspective(bool use_persp) {
+        if (use_perspective_ == use_persp)
+            return;
+        syncCameraPositionTargetUp();
+        const vne::math::Vec3f pos(cam_position_[0], cam_position_[1], cam_position_[2]);
+        const vne::math::Vec3f tgt(cam_target_[0], cam_target_[1], cam_target_[2]);
+        const vne::math::Vec3f up(cam_up_[0], cam_up_[1], cam_up_[2]);
+        use_perspective_ = use_persp;
+        if (use_perspective_) {
+            for (auto& c : cameras_)
+                if (c) {
+                    c->setPosition(pos);
+                    c->setTarget(tgt);
+                    c->setUp(up);
+                    c->updateMatrices();
+                }
+        } else {
+            for (auto& c : cameras_ortho_)
+                if (c) {
+                    c->setPosition(pos);
+                    c->setTarget(tgt);
+                    c->setUp(up);
+                    c->updateMatrices();
+                }
+        }
+        scene_state_.setActiveCamera(
+            use_perspective_ ? std::static_pointer_cast<vne::scene::ICamera>(cameras_[0])
+                            : std::static_pointer_cast<vne::scene::ICamera>(cameras_ortho_[0]));
+    }
+
+    void syncCameraPositionTargetUp() {
+        vne::scene::ICamera* active = getActiveCamera(0);
+        if (!active)
+            return;
+        cam_position_[0] = active->getPosition().x();
+        cam_position_[1] = active->getPosition().y();
+        cam_position_[2] = active->getPosition().z();
+        cam_target_[0] = active->getTarget().x();
+        cam_target_[1] = active->getTarget().y();
+        cam_target_[2] = active->getTarget().z();
+        cam_up_[0] = active->getUp().x();
+        cam_up_[1] = active->getUp().y();
+        cam_up_[2] = active->getUp().z();
+    }
+
+    void rebuildCameras(int w, int h) {
+        buildCameras(w, h);
+        scene_state_.setActiveCamera(
+            use_perspective_ ? std::static_pointer_cast<vne::scene::ICamera>(cameras_[0])
+                            : std::static_pointer_cast<vne::scene::ICamera>(cameras_ortho_[0]));
+    }
+
    private:
+    void buildCameras(int w, int h) {
+        const float aspect = (h > 0) ? (static_cast<float>(w) / static_cast<float>(h)) : (16.0f / 9.0f);
+        cameras_.resize(static_cast<size_t>(kMaxViewports));
+        cameras_ortho_.resize(static_cast<size_t>(kMaxViewports));
+        const vne::math::Vec3f pos(cam_position_[0], cam_position_[1], cam_position_[2]);
+        const vne::math::Vec3f tgt(cam_target_[0], cam_target_[1], cam_target_[2]);
+        const vne::math::Vec3f up(cam_up_[0], cam_up_[1], cam_up_[2]);
+        for (int i = 0; i < kMaxViewports; ++i) {
+            auto persp = std::make_shared<vne::scene::PerspectiveCamera>(
+                fov_, static_cast<float>(w), static_cast<float>(h), near_plane_, far_plane_,
+                "BaseCamera" + std::to_string(i));
+            persp->setPosition(pos);
+            persp->setTarget(tgt);
+            persp->setUp(up);
+            persp->setGraphicsApi(vne::math::GraphicsApi::eOpenGL);
+            persp->updateMatrices();
+            cameras_[static_cast<size_t>(i)] = std::move(persp);
+
+            const float hw = ortho_half_ * aspect;
+            auto ortho = std::make_shared<vne::scene::OrthographicCamera>(
+                -hw, hw, -ortho_half_, ortho_half_, ortho_near_, ortho_far_,
+                "OrthoCamera" + std::to_string(i));
+            ortho->setPosition(pos);
+            ortho->setTarget(tgt);
+            ortho->setUp(up);
+            ortho->setGraphicsApi(vne::math::GraphicsApi::eOpenGL);
+            ortho->updateMatrices();
+            cameras_ortho_[static_cast<size_t>(i)] = std::move(ortho);
+        }
+    }
     void drawGrid() const {
         // Lighter than viewport clear (#4A4A4C) so grid is visible
         const vne::math::Vec3f col{0.50f, 0.50f, 0.52f};
@@ -147,6 +283,7 @@ class BaseSceneLayer : public vne::testbed::ILayer {
     }
 
     std::vector<std::shared_ptr<vne::scene::PerspectiveCamera>> cameras_;
+    std::vector<std::shared_ptr<vne::scene::OrthographicCamera>> cameras_ortho_;
     vne::scene::SceneState scene_state_;
     vne::testbed::IDebugDraw* debug_draw_{nullptr};
 };
@@ -181,7 +318,7 @@ class BaseInteractionLayer : public vne::testbed::ILayer, public vne::events::Ev
 
     void setSceneLayer(const BaseSceneLayer* scene) {
         if (scene) {
-            setCameras(scene->getCameras());
+            setCameras(scene->getActiveCameras());
         }
     }
 

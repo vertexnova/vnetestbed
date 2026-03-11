@@ -26,6 +26,7 @@
 #include "vertexnova/interaction/fly_manipulator.h"
 #include "vertexnova/interaction/fps_manipulator.h"
 #include "vertexnova/interaction/orbit_manipulator.h"
+#include "vertexnova/interaction/ortho_pan_zoom_manipulator.h"
 
 #ifdef VNE_TESTBED_IMGUI
 #include "vertexnova/testbed/imgui/imgui_layer.h"
@@ -65,23 +66,36 @@ InteractionTestLayer::InteractionTestLayer()
     }
 }
 
-void InteractionTestLayer::setCamera(std::shared_ptr<vne::scene::PerspectiveCamera> cam) {
+void InteractionTestLayer::setCamera(std::shared_ptr<vne::scene::ICamera> cam) {
     camera_ = std::move(cam);
     if (!controllers_.empty() && controllers_[0]) {
         controllers_[0]->setCamera(camera_);
     }
 }
 
-void InteractionTestLayer::setSceneLayer(const BaseSceneLayer* scene) {
-    if (scene) {
-        const auto& cams = scene->getCameras();
-        for (size_t i = 0; i < cams.size() && i < controllers_.size(); ++i) {
-            if (controllers_[i] && cams[i]) {
-                controllers_[i]->setCamera(cams[i]);
-            }
-        }
-        camera_ = scene->getCamera();
+void InteractionTestLayer::setSceneLayer(BaseSceneLayer* scene) {
+    scene_layer_ = scene;
+    setCamerasFromScene();
+}
+
+void InteractionTestLayer::setCamerasFromScene() {
+    if (!scene_layer_) {
+        return;
     }
+    const auto cams = scene_layer_->getActiveCameras();
+    camera_ = cams.empty() ? nullptr : cams[0];
+    for (size_t i = 0; i < cams.size() && i < controllers_.size(); ++i) {
+        if (controllers_[i] && cams[i]) {
+            controllers_[i]->setCamera(cams[i]);
+        }
+    }
+}
+
+bool InteractionTestLayer::isManipulatorCompatibleWithCamera(bool use_perspective) const {
+    if (current_manipulator_type_ == vne::interaction::CameraManipulatorType::eOrthoPanZoom) {
+        return !use_perspective;  // OrthoPanZoom requires orthographic
+    }
+    return true;  // Orbit, Arcball, Fps, Fly, Follow support both
 }
 
 #ifdef VNE_TESTBED_IMGUI
@@ -126,10 +140,10 @@ void InteractionTestLayer::onEvent(const vne::events::Event& event) {
 #ifdef VNE_TESTBED_IMGUI
     if (imgui_layer_) {
         const int idx = imgui_layer_->getHoveredViewportIndex(check_x, check_y);
-        if (idx < 0) {
-            return;
-        }
-        viewport_index = idx;
+        viewport_index = (idx >= 0) ? idx : 0;
+        // Fall back to viewport 0 when hit-test fails (e.g. viewport_rects_ not yet
+        // populated, or coordinate mismatch). Avoid returning early so camera
+        // interaction is not fully blocked.
     }
 #endif
     auto* controller = (viewport_index >= 0 && viewport_index < static_cast<int>(controllers_.size()))
@@ -214,19 +228,34 @@ vne::interaction::CameraManipulatorType InteractionTestLayer::getManipulatorType
     return current_manipulator_type_;
 }
 
+vne::interaction::CameraSystemController* InteractionTestLayer::getController() const {
+    return controllers_.empty() ? nullptr : controllers_[0].get();
+}
+
+vne::interaction::CameraSystemController* InteractionTestLayer::getController(int index) const {
+    if (index >= 0 && index < static_cast<int>(controllers_.size())) {
+        return controllers_[static_cast<size_t>(index)].get();
+    }
+    return getController();
+}
+
 void InteractionTestLayer::setZoomMethod(vne::interaction::ZoomMethod method) {
     for (auto& ctrl : controllers_) {
-        if (!ctrl) {
+        if (!ctrl)
             continue;
-        }
         auto m = ctrl->getManipulator();
-        if (!m) {
+        if (!m)
             continue;
-        }
         if (auto* orbit = dynamic_cast<vne::interaction::OrbitManipulator*>(m.get())) {
             orbit->setZoomMethod(method);
         } else if (auto* arc = dynamic_cast<vne::interaction::ArcballManipulator*>(m.get())) {
             arc->setZoomMethod(method);
+        } else if (auto* fps = dynamic_cast<vne::interaction::FpsManipulator*>(m.get())) {
+            fps->setZoomMethod(method);
+        } else if (auto* fly = dynamic_cast<vne::interaction::FlyManipulator*>(m.get())) {
+            fly->setZoomMethod(method);
+        } else if (auto* ortho = dynamic_cast<vne::interaction::OrthoPanZoomManipulator*>(m.get())) {
+            ortho->setZoomMethod(method);
         }
     }
 }
@@ -411,62 +440,35 @@ void InteractionSettingsLayer::handleViewportDrop(int /*viewport_index*/) {
     }
 }
 
+void InteractionSettingsLayer::setSceneLayer(BaseSceneLayer* layer) {
+    scene_layer_ = layer;
+}
+
 void InteractionSettingsLayer::renderPanel() {
     if (!interaction_layer_) {
         return;
     }
     auto& il = *interaction_layer_;
 
-    // ---- Manipulator type ----
-    if (ImGui::CollapsingHeader("Manipulator", ImGuiTreeNodeFlags_DefaultOpen)) {
-        using MT = vne::interaction::CameraManipulatorType;
-        const char* types[] = {"Orbit", "Arcball", "Fps", "Fly", "OrthoPanZoom", "Follow"};
-        const MT values[] = {MT::eOrbit, MT::eArcball, MT::eFps, MT::eFly, MT::eOrthoPanZoom, MT::eFollow};
-        int idx = 0;
-        const MT cur = il.getManipulatorType();
-        for (int i = 0; i < 6; ++i) {
-            if (values[i] == cur) {
-                idx = i;
-                break;
-            }
-        }
-        if (ImGui::Combo("Type", &idx, types, 6)) {
-            il.setManipulatorType(values[idx]);
-        }
+    // ---- Camera (perspective / orthographic) ----
+    renderCameraSettings();
 
-        ImGui::Spacing();
-        switch (il.getManipulatorType()) {
-            case MT::eOrbit:
-                ImGui::TextDisabled("LMB rotate  RMB pan  Scroll zoom");
-                break;
-            case MT::eArcball:
-                ImGui::TextDisabled("LMB rotate  RMB pan  Scroll zoom (arcball)");
-                break;
-            case MT::eFps:
-                ImGui::TextDisabled("RMB + WASD/QE move  Mouse look");
-                break;
-            case MT::eFly:
-                ImGui::TextDisabled("RMB + WASD/QE move  Mouse look (fly)");
-                break;
-            case MT::eOrthoPanZoom:
-                ImGui::TextDisabled("LMB/RMB pan  Scroll zoom (no rotate)");
-                break;
-            case MT::eFollow:
-                ImGui::TextDisabled("Camera follows the target object");
-                break;
-        }
-    }
+    // ---- Manipulator ----
+    renderManipulatorSettings();
 
     const auto cur_type = il.getManipulatorType();
 
-    // ---- Zoom method (Orbit / Arcball only) ----
+    // ---- Zoom method (Orbit, Arcball, Fps, Fly, OrthoPanZoom) ----
     if (cur_type == vne::interaction::CameraManipulatorType::eOrbit
-        || cur_type == vne::interaction::CameraManipulatorType::eArcball) {
+        || cur_type == vne::interaction::CameraManipulatorType::eArcball
+        || cur_type == vne::interaction::CameraManipulatorType::eFps
+        || cur_type == vne::interaction::CameraManipulatorType::eFly
+        || cur_type == vne::interaction::CameraManipulatorType::eOrthoPanZoom) {
         if (ImGui::CollapsingHeader("Zoom Method", ImGuiTreeNodeFlags_DefaultOpen)) {
             using ZM = vne::interaction::ZoomMethod;
             const char* znames[] = {"DollyToCoi", "SceneScale", "ChangeFov"};
             const ZM zvals[] = {ZM::eDollyToCoi, ZM::eSceneScale, ZM::eChangeFov};
-            if (ImGui::Combo("Method", &zoom_idx_, znames, 3)) {
+            if (ImGui::Combo("Method##zoom", &zoom_idx_, znames, 3)) {
                 il.setZoomMethod(zvals[zoom_idx_]);
             }
             ImGui::Spacing();
@@ -503,19 +505,6 @@ void InteractionSettingsLayer::renderPanel() {
         }
     }
 
-    // ---- Fps / Fly controls ----
-    if (cur_type == vne::interaction::CameraManipulatorType::eFps
-        || cur_type == vne::interaction::CameraManipulatorType::eFly) {
-        if (ImGui::CollapsingHeader("Fps/Fly Settings", ImGuiTreeNodeFlags_DefaultOpen)) {
-            if (ImGui::SliderFloat("Move speed##fps", &fps_speed_, 0.5f, 20.f)) {
-                il.setFpsSpeed(fps_speed_);
-            }
-            if (ImGui::SliderFloat("Mouse sensitivity##fps", &fps_sensitivity_, 0.05f, 0.5f)) {
-                il.setFpsSensitivity(fps_sensitivity_);
-            }
-        }
-    }
-
     // ---- Camera readout ----
     if (ImGui::CollapsingHeader("Camera State", ImGuiTreeNodeFlags_DefaultOpen)) {
         const auto pos = il.cameraPosition();
@@ -542,6 +531,246 @@ void InteractionSettingsLayer::renderPanel() {
 
     // ---- Mesh Transform ----
     renderMeshTransform();
+}
+
+void InteractionSettingsLayer::renderCameraSettings() {
+    if (!scene_layer_ || !interaction_layer_) {
+        return;
+    }
+    auto& sl = *scene_layer_;
+    auto& il = *interaction_layer_;
+
+    if (ImGui::CollapsingHeader("Camera", ImGuiTreeNodeFlags_DefaultOpen)) {
+        int persp_idx = sl.use_perspective_ ? 0 : 1;
+        const char* types[] = {"Perspective", "Orthographic"};
+        if (ImGui::Combo("Type##cam", &persp_idx, types, 2)) {
+            const bool use_persp = (persp_idx == 0);
+            if (use_persp && !il.isManipulatorCompatibleWithCamera(true)) {
+                ImGui::OpenPopup("ManipulatorIncompatible");
+            } else {
+                sl.syncCameraPositionTargetUp();
+                sl.setUsePerspective(use_persp);
+                if (!use_persp && !il.isManipulatorCompatibleWithCamera(false)) {
+                    il.setManipulatorType(vne::interaction::CameraManipulatorType::eOrbit);
+                }
+                il.setCamerasFromScene();
+            }
+        }
+        if (ImGui::BeginPopupModal("ManipulatorIncompatible", nullptr, ImGuiWindowFlags_AlwaysAutoResize)) {
+            ImGui::Text("OrthoPanZoom requires Orthographic camera.");
+            ImGui::Text("Switch to Perspective first, or change manipulator to Orbit/Arcball.");
+            if (ImGui::Button("OK")) {
+                ImGui::CloseCurrentPopup();
+            }
+            ImGui::EndPopup();
+        }
+
+        bool proj_changed = false;
+        if (sl.use_perspective_) {
+            if (ImGui::TreeNodeEx("Perspective", ImGuiTreeNodeFlags_DefaultOpen)) {
+                proj_changed |= ImGui::SliderFloat("FOV##persp", &sl.fov_, 10.f, 120.f, "%.0f deg");
+                proj_changed |= ImGui::SliderFloat("Near##persp", &sl.near_plane_, 0.01f, 10.f, "%.3f");
+                proj_changed |= ImGui::SliderFloat("Far##persp", &sl.far_plane_, 100.f, 5000.f, "%.0f");
+                ImGui::TreePop();
+            }
+        } else {
+            if (ImGui::TreeNodeEx("Orthographic", ImGuiTreeNodeFlags_DefaultOpen)) {
+                proj_changed |= ImGui::SliderFloat("Half extent##ortho", &sl.ortho_half_, 0.5f, 50.f, "%.1f");
+                proj_changed |= ImGui::SliderFloat("Near##ortho", &sl.ortho_near_, -500.f, 500.f);
+                proj_changed |= ImGui::SliderFloat("Far##ortho", &sl.ortho_far_, -500.f, 500.f);
+                ImGui::TreePop();
+            }
+        }
+
+        if (proj_changed) {
+            sl.rebuildCameras(sl.last_vp_w_, sl.last_vp_h_);
+            il.setCamerasFromScene();
+        }
+
+        ImGui::Checkbox("Show view matrix", &show_view_matrix_);
+        ImGui::Checkbox("Show projection matrix", &show_projection_matrix_);
+        if (show_view_matrix_ && sl.getActiveCamera(0)) {
+            const vne::math::Mat4f view = sl.getActiveCamera(0)->getViewMatrix();
+            ImGui::Text("View matrix (column-major):");
+            for (size_t row = 0; row < 4u; ++row) {
+                ImGui::Text("%.4f  %.4f  %.4f  %.4f",
+                            static_cast<double>(view[0][row]), static_cast<double>(view[1][row]),
+                            static_cast<double>(view[2][row]), static_cast<double>(view[3][row]));
+            }
+        }
+        if (show_projection_matrix_ && sl.getActiveCamera(0)) {
+            const vne::math::Mat4f proj = sl.getActiveCamera(0)->getProjectionMatrix();
+            ImGui::Text("Projection matrix (column-major):");
+            for (size_t row = 0; row < 4u; ++row) {
+                ImGui::Text("%.4f  %.4f  %.4f  %.4f",
+                            static_cast<double>(proj[0][row]), static_cast<double>(proj[1][row]),
+                            static_cast<double>(proj[2][row]), static_cast<double>(proj[3][row]));
+            }
+        }
+    }
+}
+
+void InteractionSettingsLayer::renderManipulatorSettings() {
+    if (!interaction_layer_ || !scene_layer_) {
+        return;
+    }
+    auto& il = *interaction_layer_;
+    using MT = vne::interaction::CameraManipulatorType;
+
+    if (ImGui::CollapsingHeader("Manipulator", ImGuiTreeNodeFlags_DefaultOpen)) {
+        const char* types[] = {"Orbit", "Arcball", "Fps", "Fly", "OrthoPanZoom", "Follow"};
+        const MT values[] = {MT::eOrbit, MT::eArcball, MT::eFps, MT::eFly, MT::eOrthoPanZoom, MT::eFollow};
+        int idx = 0;
+        const MT cur = il.getManipulatorType();
+        for (int i = 0; i < 6; ++i) {
+            if (values[i] == cur) {
+                idx = i;
+                break;
+            }
+        }
+        const bool ortho_only = (cur == MT::eOrthoPanZoom);
+        const bool need_ortho = ortho_only && scene_layer_->use_perspective_;
+        if (need_ortho) {
+            ImGui::TextColored(ImVec4(1.f, 0.4f, 0.4f, 1.f), "OrthoPanZoom requires Orthographic camera");
+        }
+        if (ImGui::Combo("Type##manip", &idx, types, 6)) {
+            const MT new_type = values[idx];
+            if (new_type == MT::eOrthoPanZoom && scene_layer_->use_perspective_) {
+                ImGui::OpenPopup("OrthoPanZoomNeedsOrtho");
+            } else {
+                il.setManipulatorType(new_type);
+                il.setCamerasFromScene();
+            }
+        }
+        if (ImGui::BeginPopupModal("OrthoPanZoomNeedsOrtho", nullptr, ImGuiWindowFlags_AlwaysAutoResize)) {
+            ImGui::Text("OrthoPanZoom works only with Orthographic camera.");
+            ImGui::Text("Switch camera to Orthographic first.");
+            if (ImGui::Button("OK")) {
+                ImGui::CloseCurrentPopup();
+            }
+            ImGui::EndPopup();
+        }
+
+        ImGui::Spacing();
+        switch (cur) {
+            case MT::eOrbit:
+                ImGui::TextDisabled("LMB rotate  RMB pan  Scroll zoom");
+                break;
+            case MT::eArcball:
+                ImGui::TextDisabled("LMB rotate  RMB pan  Scroll zoom (arcball)");
+                break;
+            case MT::eFps:
+                ImGui::TextDisabled("RMB + WASD/QE move  Mouse look");
+                break;
+            case MT::eFly:
+                ImGui::TextDisabled("RMB + WASD/QE move  Mouse look (fly)");
+                break;
+            case MT::eOrthoPanZoom:
+                ImGui::TextDisabled("LMB/RMB pan  Scroll zoom (no rotate)");
+                break;
+            case MT::eFollow:
+                ImGui::TextDisabled("Camera follows the target object");
+                break;
+        }
+
+        // Per-manipulator settings
+        auto* ctrl = il.getController();
+        if (ctrl) {
+            auto m = ctrl->getManipulator();
+            if (m) {
+                if (auto* orbit = dynamic_cast<vne::interaction::OrbitManipulator*>(m.get())) {
+                    if (ImGui::TreeNodeEx("Orbit Settings", ImGuiTreeNodeFlags_DefaultOpen)) {
+                        float rs = orbit->getRotationSpeed();
+                        if (ImGui::SliderFloat("Rotation speed##orb", &rs, 0.1f, 5.f))
+                            orbit->setRotationSpeed(rs);
+                        float ps = orbit->getPanSpeed();
+                        if (ImGui::SliderFloat("Pan speed##orb", &ps, 0.1f, 10.f))
+                            orbit->setPanSpeed(ps);
+                        float zs = orbit->getZoomSpeed();
+                        if (ImGui::SliderFloat("Zoom speed##orb", &zs, 1.01f, 1.5f, "%.3f"))
+                            orbit->setZoomSpeed(zs);
+                        float fs = orbit->getFovZoomSpeed();
+                        if (ImGui::SliderFloat("FOV zoom speed##orb", &fs, 1.01f, 1.2f, "%.3f"))
+                            orbit->setFovZoomSpeed(fs);
+                        float rd = orbit->getRotationDamping();
+                        if (ImGui::SliderFloat("Rotation damping##orb", &rd, 0.f, 20.f))
+                            orbit->setRotationDamping(rd);
+                        float pd = orbit->getPanDamping();
+                        if (ImGui::SliderFloat("Pan damping##orb", &pd, 0.f, 20.f))
+                            orbit->setPanDamping(pd);
+                        ImGui::TreePop();
+                    }
+                } else if (auto* arc = dynamic_cast<vne::interaction::ArcballManipulator*>(m.get())) {
+                    if (ImGui::TreeNodeEx("Arcball Settings", ImGuiTreeNodeFlags_DefaultOpen)) {
+                        float rs = arc->getRotationSpeed();
+                        if (ImGui::SliderFloat("Rotation speed##arc", &rs, 0.1f, 5.f))
+                            arc->setRotationSpeed(rs);
+                        float ps = arc->getPanSpeed();
+                        if (ImGui::SliderFloat("Pan speed##arc", &ps, 0.1f, 10.f))
+                            arc->setPanSpeed(ps);
+                        float zs = arc->getZoomSpeed();
+                        if (ImGui::SliderFloat("Zoom speed##arc", &zs, 1.01f, 1.5f, "%.3f"))
+                            arc->setZoomSpeed(zs);
+                        float rd = arc->getRotationDamping();
+                        if (ImGui::SliderFloat("Rotation damping##arc", &rd, 0.f, 20.f))
+                            arc->setRotationDamping(rd);
+                        float pd = arc->getPanDamping();
+                        if (ImGui::SliderFloat("Pan damping##arc", &pd, 0.f, 20.f))
+                            arc->setPanDamping(pd);
+                        ImGui::TreePop();
+                    }
+                } else if (auto* ortho = dynamic_cast<vne::interaction::OrthoPanZoomManipulator*>(m.get())) {
+                    if (ImGui::TreeNodeEx("OrthoPanZoom Settings", ImGuiTreeNodeFlags_DefaultOpen)) {
+                        float zs = ortho->getZoomSpeed();
+                        if (ImGui::SliderFloat("Zoom speed##ortho", &zs, 1.01f, 1.5f, "%.3f"))
+                            ortho->setZoomSpeed(zs);
+                        float pd = ortho->getPanDamping();
+                        if (ImGui::SliderFloat("Pan damping##ortho", &pd, 0.f, 20.f))
+                            ortho->setPanDamping(pd);
+                        ImGui::TreePop();
+                    }
+                } else if (auto* fps = dynamic_cast<vne::interaction::FpsManipulator*>(m.get())) {
+                    if (ImGui::TreeNodeEx("Fps Settings", ImGuiTreeNodeFlags_DefaultOpen)) {
+                        float ms = fps->getMoveSpeed();
+                        if (ImGui::SliderFloat("Move speed##fps", &ms, 0.5f, 20.f))
+                            fps->setMoveSpeed(ms);
+                        float sens = fps->getMouseSensitivity();
+                        if (ImGui::SliderFloat("Mouse sensitivity##fps", &sens, 0.05f, 0.5f))
+                            fps->setMouseSensitivity(sens);
+                        float zs = fps->getZoomSpeed();
+                        if (ImGui::SliderFloat("Zoom speed##fps", &zs, 0.1f, 5.f))
+                            fps->setZoomSpeed(zs);
+                        float sprint = fps->getSprintMultiplier();
+                        if (ImGui::SliderFloat("Sprint multiplier##fps", &sprint, 1.f, 5.f))
+                            fps->setSprintMultiplier(sprint);
+                        float slow = fps->getSlowMultiplier();
+                        if (ImGui::SliderFloat("Slow multiplier##fps", &slow, 0.1f, 1.f))
+                            fps->setSlowMultiplier(slow);
+                        ImGui::TreePop();
+                    }
+                } else if (auto* fly = dynamic_cast<vne::interaction::FlyManipulator*>(m.get())) {
+                    if (ImGui::TreeNodeEx("Fly Settings", ImGuiTreeNodeFlags_DefaultOpen)) {
+                        float ms = fly->getMoveSpeed();
+                        if (ImGui::SliderFloat("Move speed##fly", &ms, 0.5f, 20.f))
+                            fly->setMoveSpeed(ms);
+                        float sens = fly->getMouseSensitivity();
+                        if (ImGui::SliderFloat("Mouse sensitivity##fly", &sens, 0.05f, 0.5f))
+                            fly->setMouseSensitivity(sens);
+                        float zs = fly->getZoomSpeed();
+                        if (ImGui::SliderFloat("Zoom speed##fly", &zs, 0.1f, 5.f))
+                            fly->setZoomSpeed(zs);
+                        float sprint = fly->getSprintMultiplier();
+                        if (ImGui::SliderFloat("Sprint multiplier##fly", &sprint, 1.f, 5.f))
+                            fly->setSprintMultiplier(sprint);
+                        float slow = fly->getSlowMultiplier();
+                        if (ImGui::SliderFloat("Slow multiplier##fly", &slow, 0.1f, 1.f))
+                            fly->setSlowMultiplier(slow);
+                        ImGui::TreePop();
+                    }
+                }
+            }
+        }
+    }
 }
 
 void InteractionSettingsLayer::renderMeshBrowser() {
@@ -775,6 +1004,7 @@ void RegisterTestInteractionDemo(vne::testbed::Application& app) {
         interaction->setImGuiLayer(imgui);
     }
     settings->setInteractionLayer(interaction);
+    settings->setSceneLayer(scene);
 
 #ifdef VNE_TESTBED_HAVE_VNEIO
     // Connect mesh layer to the settings panel for the mesh browser.
