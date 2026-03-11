@@ -105,9 +105,11 @@ void MeshLayer::reloadMesh(std::string path) {
     index_count_ = 0;
     ready_ = false;
     model_ = vne::math::Mat4f::identity();
+    uniform_scale_ = 1.0f;
     for (int k = 0; k < 3; ++k) {
         aabb_min_[k] = 0.0f;
         aabb_max_[k] = 0.0f;
+        center_offset_[k] = 0.0f;
     }
     mesh_path_ = std::move(path);
     loadMeshFromPath();
@@ -165,6 +167,20 @@ void MeshLayer::loadMeshFromPath() {
         aabb_min_[k] = mesh.aabb_min[k];
         aabb_max_[k] = mesh.aabb_max[k];
     }
+
+    // Place mesh at grid origin: center X/Z, bottom of AABB at Y=0.
+    if (ready_) {
+        static constexpr float kHalf = 0.5f;
+        center_offset_[0] = -(aabb_min_[0] + aabb_max_[0]) * kHalf;
+        center_offset_[1] = -aabb_min_[1];  // bottom face sits on Y=0 plane
+        center_offset_[2] = -(aabb_min_[2] + aabb_max_[2]) * kHalf;
+        uniform_scale_ = 1.0f;
+        model_ = vne::math::Mat4f::identity();
+        model_[3][0] = center_offset_[0];
+        model_[3][1] = center_offset_[1];
+        model_[3][2] = center_offset_[2];
+    }
+
 #ifdef VNE_TESTBED_LOGGING
     if (ready_) {
         VNE_LOG_INFO << "MeshLayer: loaded " << mesh_path_ << " (" << vertex_count << " verts, " << index_count
@@ -172,6 +188,19 @@ void MeshLayer::loadMeshFromPath() {
     }
 #endif
 #endif
+}
+
+void MeshLayer::setUniformScale(float s) {
+    uniform_scale_ = s;
+    // Build Scale * Translation so the mesh stays centered at the grid origin.
+    // In column-major (OpenGL): Translation * Scale
+    model_ = vne::math::Mat4f::identity();
+    model_[0][0] = s;
+    model_[1][1] = s;
+    model_[2][2] = s;
+    model_[3][0] = center_offset_[0];
+    model_[3][1] = center_offset_[1];
+    model_[3][2] = center_offset_[2];
 }
 
 void MeshLayer::onDetach() {

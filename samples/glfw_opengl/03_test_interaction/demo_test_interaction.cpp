@@ -706,49 +706,40 @@ void InteractionSettingsLayer::renderMeshTransform() {
         return;
     }
     if (ImGui::CollapsingHeader("Mesh Transform")) {
-        // Uniform scale
-        static float scale = 1.0f;
+        // Sync scale from MeshLayer so it resets properly when a new mesh is loaded.
+        float scale = mesh_layer_->getUniformScale();
         if (ImGui::SliderFloat("Scale##mesh", &scale, 0.001f, 10.0f, "%.3f")) {
-            vne::math::Mat4f s = vne::math::Mat4f::identity();
-            s[0][0] = scale;
-            s[1][1] = scale;
-            s[2][2] = scale;
-            mesh_layer_->setModelMatrix(s);
+            mesh_layer_->setUniformScale(scale);
         }
 
-        // Auto-fit: compute uniform scale so the mesh AABB fits in a ~1.5-unit radius sphere.
+        // Auto-fit: scale so the mesh AABB fits inside a ~1.5-unit radius sphere.
         if (ImGui::Button("Auto-fit")) {
             const float* mn = mesh_layer_->getAabbMin();
             const float* mx = mesh_layer_->getAabbMax();
             float ext = 0.0f;
             for (int k = 0; k < 3; ++k) {
-                float half = (mx[k] - mn[k]) * 0.5f;
+                const float half = (mx[k] - mn[k]) * 0.5f;
                 if (half > ext) {
                     ext = half;
                 }
             }
+            static constexpr float kFitRadius = 1.5f;
             if (ext > 1e-6f) {
-                scale = 1.5f / ext;
-                vne::math::Mat4f s = vne::math::Mat4f::identity();
-                s[0][0] = scale;
-                s[1][1] = scale;
-                s[2][2] = scale;
-                mesh_layer_->setModelMatrix(s);
+                mesh_layer_->setUniformScale(kFitRadius / ext);
             }
         }
         ImGui::SameLine();
         if (ImGui::Button("Reset scale")) {
-            scale = 1.0f;
-            mesh_layer_->setModelMatrix(vne::math::Mat4f::identity());
+            mesh_layer_->setUniformScale(1.0f);
         }
 
-        // AABB display
+        // AABB display (mesh-local space)
         const float* mn = mesh_layer_->getAabbMin();
         const float* mx = mesh_layer_->getAabbMax();
-        ImGui::TextDisabled("AABB min: %.2f %.2f %.2f", static_cast<double>(mn[0]), static_cast<double>(mn[1]),
-                            static_cast<double>(mn[2]));
-        ImGui::TextDisabled("AABB max: %.2f %.2f %.2f", static_cast<double>(mx[0]), static_cast<double>(mx[1]),
-                            static_cast<double>(mx[2]));
+        ImGui::TextDisabled("AABB min: %.2f %.2f %.2f",
+                            static_cast<double>(mn[0]), static_cast<double>(mn[1]), static_cast<double>(mn[2]));
+        ImGui::TextDisabled("AABB max: %.2f %.2f %.2f",
+                            static_cast<double>(mx[0]), static_cast<double>(mx[1]), static_cast<double>(mx[2]));
     }
 #endif
 }

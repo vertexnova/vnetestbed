@@ -93,9 +93,23 @@ class MeshLayer : public ILayer {
     void setModelMatrix(const vne::math::Mat4f& m) { model_ = m; }
     [[nodiscard]] const vne::math::Mat4f& getModelMatrix() const { return model_; }
 
+    /**
+     * @brief Apply a uniform scale centered on the mesh's load-time center offset.
+     *
+     * Builds model = Translation(center_offset) * Scale(s) so the mesh stays on
+     * the grid origin regardless of scale value. Resets to scale=1 when s==1.
+     */
+    void setUniformScale(float s);
+
+    /** @brief Returns the center offset applied when the last mesh was loaded. */
+    [[nodiscard]] const float* getCenterOffset() const { return center_offset_; }
+
     // ---- AABB of last loaded mesh (model space) ----
     [[nodiscard]] const float* getAabbMin() const { return aabb_min_; }
     [[nodiscard]] const float* getAabbMax() const { return aabb_max_; }
+
+    /** @brief Current uniform scale (1.0 after load or reset). */
+    [[nodiscard]] float getUniformScale() const { return uniform_scale_; }
 
     void onAttach(AppContext& ctx) override;
     void onDetach() override;
@@ -131,6 +145,8 @@ class MeshLayer : public ILayer {
 
     float aabb_min_[3]{0.0f, 0.0f, 0.0f};
     float aabb_max_[3]{0.0f, 0.0f, 0.0f};
+    float center_offset_[3]{0.0f, 0.0f, 0.0f};  ///< Translation set by loadMeshFromPath to grid origin
+    float uniform_scale_{1.0f};                   ///< Current scale applied via setUniformScale()
 };
 
 }  // namespace testbed
