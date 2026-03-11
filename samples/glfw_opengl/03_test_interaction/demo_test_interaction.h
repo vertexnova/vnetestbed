@@ -23,7 +23,9 @@
 
 #include <vertexnova/math/core/core.h>
 
+#include <filesystem>
 #include <memory>
+#include <string>
 #include <vector>
 
 namespace vne::testbed {
@@ -36,7 +38,8 @@ class Event;
 #ifdef VNE_TESTBED_IMGUI
 namespace vne::testbed {
 class ImGuiLayer;
-}
+class MeshLayer;
+}  // namespace vne::testbed
 #endif
 
 class BaseSceneLayer;
@@ -48,20 +51,16 @@ namespace vne::samples::test_interaction {
 // ---------------------------------------------------------------------------
 class InteractionTestLayer : public vne::testbed::ILayer {
    public:
-    // 1. Types and constants
     static constexpr int kMaxViewports = 4;
     static constexpr double kFixedDt = 0.016;
 
-    // 2. Constructors and destructor
     InteractionTestLayer();
 
-    // 3. Public methods (ILayer overrides)
     void onAttach(vne::testbed::AppContext& ctx) override;
     void onDetach() override;
     void onUpdate(float dt) override;
     void onEvent(const vne::events::Event& event) override;
 
-    // 4. Public methods (camera and manipulator control)
     void setCamera(std::shared_ptr<vne::scene::PerspectiveCamera> cam);
     void setSceneLayer(const BaseSceneLayer* scene);
 
@@ -95,7 +94,7 @@ class InteractionTestLayer : public vne::testbed::ILayer {
 };
 
 // ---------------------------------------------------------------------------
-// InteractionSettingsLayer — ImGui panel for manipulator type, zoom, view, FPS settings
+// InteractionSettingsLayer — ImGui panel: manipulator, zoom, view, FPS + mesh browser
 // ---------------------------------------------------------------------------
 #ifdef VNE_TESTBED_IMGUI
 class InteractionSettingsLayer : public vne::testbed::ILayer {
@@ -105,14 +104,38 @@ class InteractionSettingsLayer : public vne::testbed::ILayer {
     void setImGuiLayer(vne::testbed::ImGuiLayer* layer);
     void setInteractionLayer(InteractionTestLayer* layer);
 
+    /**
+     * @brief Set the MeshLayer to drive from the mesh browser.
+     *
+     * When set, the mesh browser panel lists files from the meshes directory and
+     * reloads the MeshLayer when the user clicks or drops a mesh file.
+     */
+    void setMeshLayer(vne::testbed::MeshLayer* layer);
+
+    /**
+     * @brief Set the root directory to browse for meshes.
+     *
+     * Typically VNETESTBED_TESTDATA_DIR + "/resources/meshes".
+     * The browser lists .ply, .obj, .stl, and .fbx files in this directory.
+     */
+    void setMeshesDir(std::string dir);
+
     void onAttach(vne::testbed::AppContext& ctx) override;
     void onDetach() override;
 
    private:
     void renderPanel();
+    void renderMeshBrowser();
+    void loadMesh(const std::filesystem::path& path);
+    void handleViewportDrop(int viewport_index);
 
     vne::testbed::ImGuiLayer* imgui_layer_{nullptr};
     InteractionTestLayer* interaction_layer_{nullptr};
+    vne::testbed::MeshLayer* mesh_layer_{nullptr};
+
+    std::string meshes_dir_;
+    std::vector<std::filesystem::path> mesh_files_;
+    int selected_mesh_idx_{-1};
 
     int zoom_idx_{0};
     float fps_speed_{3.0f};

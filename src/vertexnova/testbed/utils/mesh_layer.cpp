@@ -65,8 +65,31 @@ void MeshLayer::onAttach(AppContext& ctx) {
 #endif
         return;
     }
+    loadMeshFromPath();
+}
+
+void MeshLayer::reloadMesh(std::string path) {
+    if (!device_) {
+        mesh_path_ = std::move(path);
+        return;
+    }
+    if (ibo_.isValid()) {
+        device_->destroy(ibo_);
+    }
+    if (vbo_.isValid()) {
+        device_->destroy(vbo_);
+    }
+    ibo_ = {};
+    vbo_ = {};
+    index_count_ = 0;
+    ready_ = false;
+    mesh_path_ = std::move(path);
+    loadMeshFromPath();
+}
+
+void MeshLayer::loadMeshFromPath() {
 #ifdef VNE_TESTBED_HAVE_VNEIO
-    if (mesh_path_.empty()) {
+    if (mesh_path_.empty() || !device_) {
         return;
     }
     vne::mesh::AssimpLoader loader;
@@ -74,11 +97,15 @@ void MeshLayer::onAttach(AppContext& ctx) {
     opts.calc_normals_if_missing = true;
     vne::mesh::Mesh mesh;
     if (!loader.loadFile(mesh_path_, mesh, opts)) {
+#ifdef VNE_TESTBED_LOGGING
         VNE_LOG_ERROR << "MeshLayer: failed to load " << mesh_path_ << ": " << loader.getLastError();
+#endif
         return;
     }
     if (mesh.isEmpty()) {
+#ifdef VNE_TESTBED_LOGGING
         VNE_LOG_ERROR << "MeshLayer: mesh is empty " << mesh_path_;
+#endif
         return;
     }
     const size_t vertex_count = mesh.getVertexCount();
@@ -102,6 +129,12 @@ void MeshLayer::onAttach(AppContext& ctx) {
     ibo_ = device_->createIndexBuffer(mesh.indices.data(), static_cast<uint32_t>(index_count));
     index_count_ = static_cast<uint32_t>(index_count);
     ready_ = vbo_.isValid() && ibo_.isValid();
+#ifdef VNE_TESTBED_LOGGING
+    if (ready_) {
+        VNE_LOG_INFO << "MeshLayer: loaded " << mesh_path_ << " (" << vertex_count << " verts, " << index_count
+                     << " idx)";
+    }
+#endif
 #endif
 }
 

@@ -80,6 +80,15 @@ class ImGuiLayer : public ILayer {
      */
     using SettingsCallback = std::function<void()>;
 
+    /**
+     * @brief Callback invoked immediately after ImGui::Image() for each viewport.
+     *
+     * Called with the 0-based viewport index. Use it to add drag-drop targets
+     * (ImGui::BeginDragDropTarget / AcceptDragDropPayload) on the scene image.
+     * Only called when the viewport window is open and has a valid FBO texture.
+     */
+    using ViewportOverlayCallback = std::function<void(int viewport_index)>;
+
     ImGuiLayer();
     ~ImGuiLayer() override;
 
@@ -102,6 +111,14 @@ class ImGuiLayer : public ILayer {
 
     /** @brief Set optional callback for demo-specific settings in the Settings panel. */
     void setSettingsCallback(SettingsCallback cb) { settings_callback_ = std::move(cb); }
+
+    /**
+     * @brief Set callback invoked after ImGui::Image() for each viewport (for drag-drop targets).
+     * Pass nullptr to clear.
+     */
+    void setViewportOverlayCallback(ViewportOverlayCallback cb) {
+        viewport_overlay_callback_ = std::move(cb);
+    }
 
     /**
      * @brief Set the fixed pixel width of the Settings panel (default 320).
@@ -172,6 +189,7 @@ class ImGuiLayer : public ILayer {
     ViewportLayout last_dock_layout_{ViewportLayout::eOne};  // Track layout for dock rebuild
     ImVec2 last_dock_size_{0.0f, 0.0f};                      // Track size for rebuild on window resize
     SettingsCallback settings_callback_;
+    ViewportOverlayCallback viewport_overlay_callback_;
     bool initialized_{false};
     float settings_panel_width_{320.0f};  ///< Fixed pixel width; viewport absorbs remaining space.
     float font_scale_{1.25f};             ///< Global font scale (style.FontScaleMain); user-adjustable in Settings.

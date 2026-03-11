@@ -36,6 +36,8 @@
 #include "vertexnova/testbed/utils/mesh_layer.h"
 #endif
 
+#include <algorithm>
+
 #include "../common/base_scene_layer.h"
 #include "../common/path_utils.h"
 
@@ -318,18 +320,95 @@ void InteractionSettingsLayer::setInteractionLayer(InteractionTestLayer* layer) 
     interaction_layer_ = layer;
 }
 
+void InteractionSettingsLayer::setMeshLayer(vne::testbed::MeshLayer* layer) {
+    mesh_layer_ = layer;
+}
+
+void InteractionSettingsLayer::setMeshesDir(std::string dir) {
+    meshes_dir_ = std::move(dir);
+    mesh_files_.clear();
+    selected_mesh_idx_ = -1;
+    if (meshes_dir_.empty()) {
+        return;
+    }
+    std::error_code ec;
+    if (!std::filesystem::exists(meshes_dir_, ec) || ec) {
+        return;
+    }
+    static const std::vector<std::string> kExts = {".ply", ".obj", ".stl", ".fbx", ".gltf", ".glb"};
+    for (const auto& entry : std::filesystem::directory_iterator(meshes_dir_, ec)) {
+        if (ec) {
+            break;
+        }
+        if (!entry.is_regular_file()) {
+            continue;
+        }
+        std::string ext = entry.path().extension().string();
+        std::transform(ext.begin(), ext.end(), ext.begin(), [](unsigned char c) { return std::tolower(c); });
+        for (const auto& e : kExts) {
+            if (ext == e) {
+                mesh_files_.push_back(entry.path());
+                break;
+            }
+        }
+    }
+    std::sort(mesh_files_.begin(), mesh_files_.end());
+
+    // Pre-select the currently loaded mesh if known.
+    if (mesh_layer_ && !mesh_layer_->getMeshPath().empty()) {
+        std::filesystem::path cur(mesh_layer_->getMeshPath());
+        for (int i = 0; i < static_cast<int>(mesh_files_.size()); ++i) {
+            if (mesh_files_[static_cast<size_t>(i)] == cur) {
+                selected_mesh_idx_ = i;
+                break;
+            }
+        }
+    }
+}
+
 void InteractionSettingsLayer::onAttach(vne::testbed::AppContext& /*ctx*/) {
     if (imgui_layer_) {
         imgui_layer_->setSettingsCallback([this]() { renderPanel(); });
+        imgui_layer_->setViewportOverlayCallback([this](int idx) { handleViewportDrop(idx); });
     }
 }
 
 void InteractionSettingsLayer::onDetach() {
     if (imgui_layer_) {
         imgui_layer_->setSettingsCallback(nullptr);
+        imgui_layer_->setViewportOverlayCallback(nullptr);
         imgui_layer_ = nullptr;
     }
     interaction_layer_ = nullptr;
+    mesh_layer_ = nullptr;
+}
+
+void InteractionSettingsLayer::loadMesh(const std::filesystem::path& path) {
+#ifdef VNE_TESTBED_HAVE_VNEIO
+    if (mesh_layer_) {
+        mesh_layer_->reloadMesh(path.string());
+    }
+#else
+    (void)path;
+#endif
+}
+
+void InteractionSettingsLayer::handleViewportDrop(int /*viewport_index*/) {
+    if (ImGui::BeginDragDropTarget()) {
+        if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("VNE_MESH_PATH")) {
+            const char* path_str = static_cast<const char*>(payload->Data);
+            std::filesystem::path dropped(path_str);
+            loadMesh(dropped);
+            // Update selection highlight.
+            for (int i = 0; i < static_cast<int>(mesh_files_.size()); ++i) {
+                if (mesh_files_[static_cast<size_t>(i)] == dropped) {
+                    selected_mesh_idx_ = i;
+                    break;
+                }
+            }
+        }
+        ImGui::EndDragDropTarget();
+    }
 }
 
 void InteractionSettingsLayer::renderPanel() {
@@ -383,7 +462,7 @@ void InteractionSettingsLayer::renderPanel() {
     // ---- Zoom method (Orbit / Arcball only) ----
     if (cur_type == vne::interaction::CameraManipulatorType::eOrbit
         || cur_type == vne::interaction::CameraManipulatorType::eArcball) {
-        if (ImGui::CollapsingHeader("Zoom Method (Orbit)", ImGuiTreeNodeFlags_DefaultOpen)) {
+        if (ImGui::CollapsingHeader("Zoom Method", ImGuiTreeNodeFlags_DefaultOpen)) {
             using ZM = vne::interaction::ZoomMethod;
             const char* znames[] = {"DollyToCoi", "SceneScale", "ChangeFov"};
             const ZM zvals[] = {ZM::eDollyToCoi, ZM::eSceneScale, ZM::eChangeFov};
@@ -454,6 +533,76 @@ void InteractionSettingsLayer::renderPanel() {
             il.resetCamera();
         }
     }
+
+    // ---- Mesh Browser ----
+    renderMeshBrowser();
+}
+
+void InteractionSettingsLayer::renderMeshBrowser() {
+    if (ImGui::CollapsingHeader("Mesh Browser", ImGuiTreeNodeFlags_DefaultOpen)) {
+#ifndef VNE_TESTBED_HAVE_VNEIO
+        ImGui::TextDisabled("(mesh loading requires vneio)");
+        return;
+#else
+        if (meshes_dir_.empty()) {
+            ImGui::TextDisabled("No meshes directory set.");
+            return;
+        }
+
+        // Currently loaded mesh.
+        if (mesh_layer_ && !mesh_layer_->getMeshPath().empty()) {
+            std::filesystem::path cur(mesh_layer_->getMeshPath());
+            ImGui::TextDisabled("Loaded: %s", cur.filename().string().c_str());
+        } else {
+            ImGui::TextDisabled("No mesh loaded.");
+        }
+
+        ImGui::Spacing();
+        ImGui::TextDisabled("Click to load  |  Drag to viewport");
+        ImGui::Separator();
+
+        if (mesh_files_.empty()) {
+            ImGui::TextDisabled("No mesh files found in:");
+            ImGui::TextWrapped("%s", meshes_dir_.c_str());
+            return;
+        }
+
+        // Scrollable list of mesh files.
+        const float list_height = std::min(static_cast<float>(mesh_files_.size()) * 22.0f + 8.0f, 200.0f);
+        ImGui::BeginChild("MeshFileList", ImVec2(0.0f, list_height), true);
+        for (int i = 0; i < static_cast<int>(mesh_files_.size()); ++i) {
+            const auto& p = mesh_files_[static_cast<size_t>(i)];
+            const std::string fname = p.filename().string();
+            const bool selected = (i == selected_mesh_idx_);
+
+            ImGui::PushID(i);
+            if (ImGui::Selectable(fname.c_str(), selected, ImGuiSelectableFlags_AllowDoubleClick)) {
+                selected_mesh_idx_ = i;
+                loadMesh(p);
+            }
+
+            // Drag source: drag any item onto the viewport to load it.
+            if (ImGui::BeginDragDropSource(ImGuiDragDropFlags_SourceAllowNullID)) {
+                const std::string full = p.string();
+                ImGui::SetDragDropPayload("VNE_MESH_PATH",
+                                          full.c_str(),
+                                          full.size() + 1u,
+                                          ImGuiCond_Once);
+                ImGui::Text("Load: %s", fname.c_str());
+                ImGui::EndDragDropSource();
+            }
+
+            if (ImGui::IsItemHovered()) {
+                ImGui::BeginTooltip();
+                ImGui::TextUnformatted(p.string().c_str());
+                ImGui::EndTooltip();
+            }
+
+            ImGui::PopID();
+        }
+        ImGui::EndChild();
+#endif  // VNE_TESTBED_HAVE_VNEIO
+    }
 }
 
 #endif  // VNE_TESTBED_IMGUI
@@ -471,10 +620,11 @@ void RegisterTestInteractionDemo(vne::testbed::Application& app) {
     app.getLayerStack().pushLayer(std::unique_ptr<InteractionTestLayer>(interaction), app.getAppContext());
 
 #ifdef VNE_TESTBED_HAVE_VNEIO
+    // Default mesh: box.ply so there's something to see on startup.
     auto* mesh_layer = new vne::testbed::MeshLayer();
     mesh_layer->setMeshPath(vne::samples::common::getTestdataPath("resources/meshes/box.ply"));
     mesh_layer->setCameraProvider([scene](int i) { return scene->getCamera(i); });
-    mesh_layer->setRenderSortKey(10);  // after grid (0) so box draws on top
+    mesh_layer->setRenderSortKey(10);  // after grid (0) so mesh draws on top
     app.getLayerStack().pushLayer(std::unique_ptr<vne::testbed::MeshLayer>(mesh_layer), app.getAppContext());
 #endif
 
@@ -486,6 +636,14 @@ void RegisterTestInteractionDemo(vne::testbed::Application& app) {
         interaction->setImGuiLayer(imgui);
     }
     settings->setInteractionLayer(interaction);
+
+#ifdef VNE_TESTBED_HAVE_VNEIO
+    // Connect mesh layer to the settings panel for the mesh browser.
+    settings->setMeshLayer(mesh_layer);
+    // Point the browser at the testdata meshes directory.
+    settings->setMeshesDir(vne::samples::common::getTestdataPath("resources/meshes"));
+#endif
+
     app.getLayerStack().pushLayer(std::unique_ptr<InteractionSettingsLayer>(settings), app.getAppContext());
 #endif
 }

@@ -44,11 +44,25 @@ class MeshLayer : public ILayer {
     void setMeshPath(std::string path);
     void setCameraProvider(CameraProvider provider);
 
+    /**
+     * @brief Reload the mesh from a new path at runtime.
+     *
+     * Destroys the current GPU buffers (if any) and loads the mesh from @p path.
+     * Safe to call any time after onAttach; no-op before device is available.
+     * @param path Absolute or resolved path to the mesh file.
+     */
+    void reloadMesh(std::string path);
+
+    /** @brief Returns the currently loaded mesh path (empty if none). */
+    [[nodiscard]] const std::string& getMeshPath() const { return mesh_path_; }
+
     void onAttach(AppContext& ctx) override;
     void onDetach() override;
     void onRender(const RenderContext& ctx) override;
 
    private:
+    void loadMeshFromPath();
+
     std::string mesh_path_;
     CameraProvider camera_provider_;
 

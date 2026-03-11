@@ -563,6 +563,7 @@ void ImGuiLayer::renderViewportWindows(const RenderContext& ctx) {
     auto drawViewport = [this, multi_viewport](const char* title, int index) {
         const unsigned int tex_id = multi_viewport ? getSceneTextureId(index) : getSceneTextureId();
         const bool has_scene = (tex_id != 0u);
+        (void)has_scene;  // used below via tex_id check
         // C-style cast (ImTextureID)(intptr_t) works for both void* and ImU64 ImTextureID (ImGui FAQ)
 #if defined(__clang__)
 #pragma clang diagnostic push
@@ -582,11 +583,19 @@ void ImGuiLayer::renderViewportWindows(const RenderContext& ctx) {
             viewport_rects_.push_back(pos.y + size.y);
 
             ImVec2 content_size = ImGui::GetContentRegionAvail();
-            if (has_scene && content_size.x > 0 && content_size.y > 0) {
+            if (tex_id != 0u && content_size.x > 0 && content_size.y > 0) {
                 // ImTextureID via (ImTextureID)(intptr_t) (OpenGL convention; works for void* or ImU64)
                 ImGui::Image(im_tex_id, content_size, ImVec2(0, 1), ImVec2(1, 0));
+                // Let registered layers add drag-drop targets or overlays on the scene image.
+                if (viewport_overlay_callback_) {
+                    viewport_overlay_callback_(index);
+                }
             } else {
                 ImGui::Text("No scene");
+                // Still allow drag-drop targets even without a scene texture.
+                if (viewport_overlay_callback_) {
+                    viewport_overlay_callback_(index);
+                }
             }
         }
         ImGui::End();
