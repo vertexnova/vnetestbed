@@ -485,8 +485,6 @@ void RegisterTestInteractionDemo(vne::testbed::Application& app) {
     auto* mesh_layer = new vne::testbed::MeshLayer();
     mesh_layer->setMeshPath(vne::samples::common::getTestdataPath("resources/meshes/box.ply"));
     mesh_layer->setCameraProvider([scene](int i) { return scene->getCamera(i); });
-    mesh_layer->setShaderPaths(vne::samples::common::resolveShaderPath(kSceneVertFilename),
-                              vne::samples::common::resolveShaderPath(kSceneFragFilename));
     app.getLayerStack().pushLayer(std::unique_ptr<vne::testbed::MeshLayer>(mesh_layer), app.getAppContext());
 #endif
 

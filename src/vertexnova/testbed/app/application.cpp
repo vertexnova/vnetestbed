@@ -24,10 +24,16 @@
 #endif
 
 #if defined(VNE_TESTBED_OPENGL) || defined(VNE_TESTBED_OPENGLES)
-#include "vertexnova/testbed/gl/opengl_debug_draw.h"
+#include "vertexnova/testbed/renderer/core_renderer.h"
+#include "vertexnova/testbed/renderer/debug_renderer.h"
+#include "vertexnova/testbed/renderer/mesh_renderer.h"
 #include "vertexnova/testbed/gl/opengl_render_adapter.h"
 #include "vertexnova/testbed/gl/opengl_render_device.h"
 #include "vertexnova/testbed/gl/texture2d.h"  // complete type for TextureSlot destruction when impl_ is destroyed in this TU
+#include "vertexnova/testbed/gl/index_buffer.h"  // complete type for OpenGLRenderDevice::BufferSlot
+#include "vertexnova/testbed/gl/vertex_array.h"   // complete type for DebugRenderer member
+#include "vertexnova/testbed/gl/vertex_buffer.h" // complete type for DebugRenderer member
+#include "vertexnova/testbed/gl/shader.h"         // complete type for DebugRenderer member
 #include "vertexnova/testbed/window/glfw_window.h"
 #include "vertexnova/testbed/window/glfw_window_descriptor.h"
 #endif
@@ -43,7 +49,7 @@ struct Application::Impl {
     std::unique_ptr<IWindow> window;
     std::unique_ptr<gl::OpenGLRenderAdapter> render_adapter;
     std::unique_ptr<gl::OpenGLRenderDevice> render_device;
-    std::unique_ptr<gl::OpenGLDebugDraw> debug_draw;
+    std::unique_ptr<CoreRenderer> core_renderer;
     std::chrono::steady_clock::time_point last_frame_time{std::chrono::steady_clock::now()};
 };
 
@@ -83,8 +89,10 @@ bool Application::initialize(const ApplicationDescriptor& descriptor) {
     }
 
     impl_->render_device = std::make_unique<gl::OpenGLRenderDevice>();
-    impl_->debug_draw = std::make_unique<gl::OpenGLDebugDraw>();
-    if (!impl_->debug_draw->init()) {
+    impl_->core_renderer = std::make_unique<CoreRenderer>();
+    impl_->core_renderer->registerRenderer(std::make_unique<MeshRenderer>(), 0, "mesh");
+    impl_->core_renderer->registerRenderer(std::make_unique<DebugRenderer>(), 100, "debug");
+    if (!impl_->core_renderer->init(impl_->render_device.get())) {
         impl_->render_adapter->shutdown();
         impl_.reset();
         return false;
@@ -93,7 +101,8 @@ bool Application::initialize(const ApplicationDescriptor& descriptor) {
     app_ctx_.window = impl_->window.get();
     app_ctx_.renderer = impl_->render_adapter.get();
     app_ctx_.device = impl_->render_device.get();
-    app_ctx_.debugDraw = impl_->debug_draw.get();
+    app_ctx_.coreRenderer = impl_->core_renderer.get();
+    app_ctx_.debugDraw = impl_->core_renderer->getDebugDraw();
 
 #if defined(VNE_TESTBED_EVENTS)
     registerAsListener();
@@ -211,8 +220,8 @@ void Application::shutdown() {
     }
     layer_stack_.clear();
     if (impl_) {
-        if (impl_->debug_draw) {
-            impl_->debug_draw->shutdown();
+        if (impl_->core_renderer) {
+            impl_->core_renderer->shutdown();
         }
         if (impl_->render_device) {
             impl_->render_device->shutdown();

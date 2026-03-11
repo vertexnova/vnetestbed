@@ -3,13 +3,17 @@
  * Licensed under the Apache License, Version 2.0 (the "License")
  *
  * Author:    Ajeet Singh Yadav
- * Created:   February 2026
+ * Created:   March 2026
  *
- * Autodoc:   yes
+ * DebugRenderer: IDebugDraw + IRenderer; batched OpenGL line rendering.
  * ----------------------------------------------------------------------
  */
 
-#include "vertexnova/testbed/gl/opengl_debug_draw.h"
+#include "vertexnova/testbed/renderer/debug_renderer.h"
+
+#include "vertexnova/testbed/gl/shader.h"
+#include "vertexnova/testbed/gl/vertex_buffer.h"
+#include "vertexnova/testbed/gl/vertex_array.h"
 
 #if defined(VNE_TESTBED_OPENGL)
 #include <glad/glad.h>
@@ -17,13 +21,18 @@
 #include <glad/glad_es3.h>
 #endif
 
+#ifdef VNE_TESTBED_LOGGING
+#include "vertexnova/logging/logging.h"
+#endif
+
 namespace vne {
 namespace testbed {
-namespace gl {
 
-// ---------------------------------------------------------------------------
-// GLSL 4.10 / GLSL ES 3.00 shaders for debug line rendering
-// ---------------------------------------------------------------------------
+#ifdef VNE_TESTBED_LOGGING
+namespace {
+CREATE_VNE_LOGGER_CATEGORY("vnetestbed.renderer.debug")
+}  // namespace
+#endif
 
 #if defined(VNE_TESTBED_OPENGL)
 static const char* kDebugVertSrc = R"(
@@ -41,7 +50,6 @@ void main() {
 }
 )";
 
-// Expand each line segment into a quad so thickness is visible (glLineWidth is ignored on macOS Core Profile)
 static const char* kDebugGeomSrc = R"(
 #version 410 core
 layout(lines) in;
@@ -86,7 +94,7 @@ void main() {
     FragColor = vec4(fColor, 1.0);
 }
 )";
-#else  // OpenGL ES 3.0
+#else
 static const char* kDebugVertSrc = R"(
 #version 300 es
 layout(location = 0) in vec3 aPos;
@@ -114,41 +122,40 @@ void main() {
 )";
 #endif
 
-// ---------------------------------------------------------------------------
-
-OpenGLDebugDraw::~OpenGLDebugDraw() {
+DebugRenderer::~DebugRenderer() {
     if (initialized_) {
         shutdown();
     }
 }
 
-bool OpenGLDebugDraw::init() {
+bool DebugRenderer::init(IRenderDevice* device) {
+    (void)device;
     if (initialized_) {
         return true;
     }
-
 #if defined(VNE_TESTBED_OPENGL)
-    // Use geometry shader to draw lines as quads (thick lines work on macOS Core Profile)
-    shader_ = std::make_unique<Shader>(kDebugVertSrc, kDebugGeomSrc, kDebugFragSrc);
+    shader_ = std::make_unique<gl::Shader>(kDebugVertSrc, kDebugGeomSrc, kDebugFragSrc);
 #else
-    shader_ = std::make_unique<Shader>(kDebugVertSrc, kDebugFragSrc);
+    shader_ = std::make_unique<gl::Shader>(kDebugVertSrc, kDebugFragSrc);
 #endif
     if (!shader_->isValid()) {
+#ifdef VNE_TESTBED_LOGGING
+        VNE_LOG_ERROR << "DebugRenderer: shader compile failed";
+#endif
         return false;
     }
-
-    // Dynamic VBO sized to hold kMaxLineVertices vertices (2 per line → 32 K lines).
-    vbo_ = std::make_unique<VertexBuffer>(kMaxLineVertices * kFloatsPerVertex * sizeof(float));
-
-    vao_ = std::make_unique<VertexArray>();
+    vbo_ = std::make_unique<gl::VertexBuffer>(kMaxLineVertices * kFloatsPerVertex * sizeof(float));
+    vao_ = std::make_unique<gl::VertexArray>();
     vao_->addVertexBuffer(*vbo_, {{"aPos", 3}, {"aColor", 3}});
-
     vertex_data_.reserve(kMaxLineVertices * kFloatsPerVertex);
     initialized_ = true;
+#ifdef VNE_TESTBED_LOGGING
+    VNE_LOG_DEBUG << "DebugRenderer: init OK";
+#endif
     return true;
 }
 
-void OpenGLDebugDraw::shutdown() {
+void DebugRenderer::shutdown() {
     vao_.reset();
     vbo_.reset();
     shader_.reset();
@@ -156,27 +163,20 @@ void OpenGLDebugDraw::shutdown() {
     initialized_ = false;
 }
 
-void OpenGLDebugDraw::setViewProjectionMatrix(const vne::math::Mat4f& vp) {
+void DebugRenderer::setViewProjectionMatrix(const vne::math::Mat4f& vp) {
     vp_matrix_ = vp;
 }
 
-// ---------------------------------------------------------------------------
-// Queue primitives
-// ---------------------------------------------------------------------------
-
-void OpenGLDebugDraw::line(vne::math::Vec3f from, vne::math::Vec3f to, vne::math::Vec3f color) {
-    // Drop the line silently if the buffer is already full.
+void DebugRenderer::line(vne::math::Vec3f from, vne::math::Vec3f to, vne::math::Vec3f color) {
     if (vertex_data_.size() + 2 * kFloatsPerVertex > kMaxLineVertices * kFloatsPerVertex) {
         return;
     }
-    // Vertex 1
     vertex_data_.push_back(from[0]);
     vertex_data_.push_back(from[1]);
     vertex_data_.push_back(from[2]);
     vertex_data_.push_back(color[0]);
     vertex_data_.push_back(color[1]);
     vertex_data_.push_back(color[2]);
-    // Vertex 2
     vertex_data_.push_back(to[0]);
     vertex_data_.push_back(to[1]);
     vertex_data_.push_back(to[2]);
@@ -185,52 +185,38 @@ void OpenGLDebugDraw::line(vne::math::Vec3f from, vne::math::Vec3f to, vne::math
     vertex_data_.push_back(color[2]);
 }
 
-void OpenGLDebugDraw::aabb(DebugAabb box, vne::math::Vec3f color) {
-    // Draw 12 edges of an AABB as 12 line segments.
-    auto& mn = box.min;
-    auto& mx = box.max;
-
-    // Bottom face
+void DebugRenderer::aabb(DebugAabb box, vne::math::Vec3f color) {
+    const auto& mn = box.min;
+    const auto& mx = box.max;
     line({mn[0], mn[1], mn[2]}, {mx[0], mn[1], mn[2]}, color);
     line({mx[0], mn[1], mn[2]}, {mx[0], mn[1], mx[2]}, color);
     line({mx[0], mn[1], mx[2]}, {mn[0], mn[1], mx[2]}, color);
     line({mn[0], mn[1], mx[2]}, {mn[0], mn[1], mn[2]}, color);
-    // Top face
     line({mn[0], mx[1], mn[2]}, {mx[0], mx[1], mn[2]}, color);
     line({mx[0], mx[1], mn[2]}, {mx[0], mx[1], mx[2]}, color);
     line({mx[0], mx[1], mx[2]}, {mn[0], mx[1], mx[2]}, color);
     line({mn[0], mx[1], mx[2]}, {mn[0], mx[1], mn[2]}, color);
-    // Vertical pillars
     line({mn[0], mn[1], mn[2]}, {mn[0], mx[1], mn[2]}, color);
     line({mx[0], mn[1], mn[2]}, {mx[0], mx[1], mn[2]}, color);
     line({mx[0], mn[1], mx[2]}, {mx[0], mx[1], mx[2]}, color);
     line({mn[0], mn[1], mx[2]}, {mn[0], mx[1], mx[2]}, color);
 }
 
-// ---------------------------------------------------------------------------
-// Flush
-// ---------------------------------------------------------------------------
-
-void OpenGLDebugDraw::flush() {
+void DebugRenderer::flush() {
     if (!initialized_ || vertex_data_.empty()) {
         return;
     }
-
     const std::size_t byte_size = vertex_data_.size() * sizeof(float);
     vbo_->setData(vertex_data_.data(), byte_size);
-
     shader_->bind();
     shader_->setMat4("uVP", vp_matrix_);
-
     vao_->bind();
 #if defined(VNE_TESTBED_OPENGL)
     shader_->setFloat("uHalfWidth", 0.004f);
 #endif
-    // Don't write depth so overlapping line quads don't z-fight
     GLboolean depth_mask_prev = GL_TRUE;
     glGetBooleanv(GL_DEPTH_WRITEMASK, &depth_mask_prev);
     glDepthMask(GL_FALSE);
-    // Disable depth test so debug lines (camera frustum, grid, axes) are always visible and don't flicker
     GLboolean depth_test_prev = glIsEnabled(GL_DEPTH_TEST);
     glDisable(GL_DEPTH_TEST);
     glDrawArrays(GL_LINES, 0, static_cast<GLsizei>(vertex_data_.size() / kFloatsPerVertex));
@@ -239,11 +225,12 @@ void OpenGLDebugDraw::flush() {
     }
     glDepthMask(depth_mask_prev);
     vao_->unbind();
-
     shader_->unbind();
+#ifdef VNE_TESTBED_LOGGING
+    VNE_LOG_TRACE << "DebugRenderer: flush " << (vertex_data_.size() / kFloatsPerVertex) << " vertices";
+#endif
     vertex_data_.clear();
 }
 
-}  // namespace gl
 }  // namespace testbed
 }  // namespace vne

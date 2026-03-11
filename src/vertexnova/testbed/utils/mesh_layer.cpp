@@ -12,6 +12,9 @@
 #include "vertexnova/testbed/utils/mesh_layer.h"
 
 #include "vertexnova/testbed/app_context.h"
+#include "vertexnova/testbed/renderer/core_renderer.h"
+#include "vertexnova/testbed/renderer/mesh_renderer.h"
+#include "vertexnova/testbed/renderer/phong_material.h"
 
 #include "vertexnova/logging/logging.h"
 #include "vertexnova/math/math.h"
@@ -22,17 +25,16 @@
 #include "vertexnova/io/mesh/mesh.h"
 #endif
 
-#include <cmath>
 #include <vector>
 
 namespace vne {
 namespace testbed {
 
+#ifdef VNE_TESTBED_LOGGING
 namespace {
-#ifdef VNE_TESTBED_HAVE_VNEIO
 CREATE_VNE_LOGGER_CATEGORY("vnetestbed.utils.mesh_layer")
-#endif
 }  // namespace
+#endif
 
 MeshLayer::MeshLayer()
     : ILayer("MeshLayer") {}
@@ -45,18 +47,26 @@ void MeshLayer::setCameraProvider(CameraProvider provider) {
     camera_provider_ = std::move(provider);
 }
 
-void MeshLayer::setShaderPaths(std::filesystem::path vert_path, std::filesystem::path frag_path) {
-    vert_path_ = std::move(vert_path);
-    frag_path_ = std::move(frag_path);
-}
-
 void MeshLayer::onAttach(AppContext& ctx) {
     device_ = ctx.device;
     if (!device_) {
         return;
     }
+    if (!ctx.coreRenderer) {
+#ifdef VNE_TESTBED_LOGGING
+        VNE_LOG_ERROR << "MeshLayer: AppContext has no coreRenderer";
+#endif
+        return;
+    }
+    mesh_renderer_ = ctx.coreRenderer->getMeshRenderer();
+    if (!mesh_renderer_) {
+#ifdef VNE_TESTBED_LOGGING
+        VNE_LOG_ERROR << "MeshLayer: coreRenderer has no MeshRenderer";
+#endif
+        return;
+    }
 #ifdef VNE_TESTBED_HAVE_VNEIO
-    if (mesh_path_.empty() || vert_path_.empty() || frag_path_.empty()) {
+    if (mesh_path_.empty()) {
         return;
     }
     vne::mesh::AssimpLoader loader;
@@ -91,48 +101,27 @@ void MeshLayer::onAttach(AppContext& ctx) {
     vbo_ = device_->createVertexBuffer(vbo_data.data(), static_cast<uint32_t>(vbo_data.size() * sizeof(float)));
     ibo_ = device_->createIndexBuffer(mesh.indices.data(), static_cast<uint32_t>(index_count));
     index_count_ = static_cast<uint32_t>(index_count);
-
-    shader_ = device_->createShader(vert_path_, frag_path_);
-    if (!shader_.isValid()) {
-        VNE_LOG_ERROR << "MeshLayer: shaders not loaded (ensure vert/frag paths are valid).";
-        return;
-    }
-    PipelineDesc pd{};
-    pd.shader = shader_;
-    pd.layout = {{3}, {3}, {3}};
-    pd.depth.testEnabled = true;
-    pd.depth.writeEnabled = true;
-    pd.rasterizer.cull = CullMode::eBack;
-    pipeline_ = device_->createPipeline(pd);
-    ready_ = vbo_.isValid() && ibo_.isValid() && pipeline_.isValid();
-#else
-    (void)vert_path_;
-    (void)frag_path_;
+    ready_ = vbo_.isValid() && ibo_.isValid();
 #endif
 }
 
 void MeshLayer::onDetach() {
     if (device_) {
-        if (pipeline_.isValid())
-            device_->destroy(pipeline_);
         if (ibo_.isValid())
             device_->destroy(ibo_);
         if (vbo_.isValid())
             device_->destroy(vbo_);
-        if (shader_.isValid())
-            device_->destroy(shader_);
     }
-    pipeline_ = {};
     ibo_ = {};
     vbo_ = {};
-    shader_ = {};
     device_ = nullptr;
+    mesh_renderer_ = nullptr;
     index_count_ = 0;
     ready_ = false;
 }
 
 void MeshLayer::onRender(const RenderContext& ctx) {
-    if (!ready_ || !device_ || !camera_provider_) {
+    if (!ready_ || !device_ || !mesh_renderer_ || !camera_provider_) {
         return;
     }
     const int vp_idx = (ctx.active_viewport_index >= 0) ? ctx.active_viewport_index : 0;
@@ -148,23 +137,8 @@ void MeshLayer::onRender(const RenderContext& ctx) {
         camera->updateProjectionMatrix();
     }
     const vne::math::Mat4f model = vne::math::Mat4f::identity();
-    const vne::math::Mat4f vp = camera->getViewProjectionMatrix();
-    const vne::math::Mat4f mvp = vp * model;
-
-    device_->setMat4(shader_, "u_mvp", mvp);
-    device_->setMat4(shader_, "u_model", model);
-    device_->setVec3(shader_, "u_camPos", camera->getPosition());
-    device_->setVec3(shader_, "u_ambientColor", vne::math::Vec3f{0.4f, 0.4f, 0.45f});
-    device_->setFloat(shader_, "u_ambientIntensity", 1.0f);
-    device_->setInt(shader_, "u_dirLightEnabled", 0);
-    device_->setInt(shader_, "u_numPointLights", 0);
-    device_->setInt(shader_, "u_spotLightEnabled", 0);
-    device_->setFloat(shader_, "u_attnConst", 1.0f);
-    device_->setFloat(shader_, "u_attnLinear", 0.09f);
-    device_->setFloat(shader_, "u_attnQuad", 0.032f);
-    device_->setInt(shader_, "u_useAttnFormula", 0);
-
-    device_->drawIndexed(pipeline_, vbo_, ibo_, index_count_, DrawMode::eTriangles);
+    PhongLightParams lights{};  // default ambient only
+    mesh_renderer_->drawMesh(device_, camera.get(), vbo_, ibo_, index_count_, model, lights);
 }
 
 }  // namespace testbed

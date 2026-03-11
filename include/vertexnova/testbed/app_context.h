@@ -35,6 +35,8 @@
 namespace vne {
 namespace testbed {
 
+class CoreRenderer;
+
 /**
  * @struct AppContext
  * @brief Opaque container filled by the runner; plugins access window/renderer/debugDraw.
@@ -53,6 +55,7 @@ struct AppContext {
     IWindow* window{nullptr};
     IRenderAdapter* renderer{nullptr};
     IRenderDevice* device{nullptr};  ///< Backend-agnostic resource factory + draw.
+    CoreRenderer* coreRenderer{nullptr};  ///< Registry of mesh, debug, and future volume/slice renderers.
     IDebugDraw* debugDraw{nullptr};
 
     /// Callback to render scene for a specific viewport (used when layout has 2 or 4 viewports)

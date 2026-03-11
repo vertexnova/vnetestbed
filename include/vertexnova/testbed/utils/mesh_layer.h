@@ -17,7 +17,6 @@
 
 #include "vertexnova/scene/camera/camera.h"
 
-#include <filesystem>
 #include <functional>
 #include <memory>
 #include <string>
@@ -25,16 +24,16 @@
 namespace vne {
 namespace testbed {
 
+class MeshRenderer;
+
 /**
  * @class MeshLayer
- * @brief Layer that loads a single mesh from file and draws it each frame.
+ * @brief Layer that loads a single mesh from file and draws it each frame via MeshRenderer.
  *
  * Requires mesh path (setMeshPath), camera provider (setCameraProvider), and
- * shader paths (setShaderPaths) before or in onAttach. When VNE_TESTBED_HAVE_VNEIO
- * is defined and vne::io is linked, the mesh is loaded via Assimp; otherwise
- * the layer does nothing.
- *
- * Vertex layout: position (3) + normal (3) + color (3), matching scene shaders.
+ * AppContext with coreRenderer (getMeshRenderer() non-null) in onAttach.
+ * When VNE_TESTBED_HAVE_VNEIO is defined, the mesh is loaded via Assimp; otherwise
+ * the layer does nothing. Vertex layout: position (3) + normal (3) + color (3).
  */
 class MeshLayer : public ILayer {
    public:
@@ -44,7 +43,6 @@ class MeshLayer : public ILayer {
 
     void setMeshPath(std::string path);
     void setCameraProvider(CameraProvider provider);
-    void setShaderPaths(std::filesystem::path vert_path, std::filesystem::path frag_path);
 
     void onAttach(AppContext& ctx) override;
     void onDetach() override;
@@ -53,14 +51,11 @@ class MeshLayer : public ILayer {
    private:
     std::string mesh_path_;
     CameraProvider camera_provider_;
-    std::filesystem::path vert_path_;
-    std::filesystem::path frag_path_;
 
     IRenderDevice* device_{nullptr};
-    ShaderHandle shader_{};
+    MeshRenderer* mesh_renderer_{nullptr};
     BufferHandle vbo_{};
     BufferHandle ibo_{};
-    PipelineHandle pipeline_{};
 
     uint32_t index_count_{0};
     bool ready_{false};
