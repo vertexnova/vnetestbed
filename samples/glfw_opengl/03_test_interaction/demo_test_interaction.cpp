@@ -45,17 +45,7 @@
 #include <string>
 #include <vector>
 
-namespace {
-
-#if defined(VNE_TESTBED_OPENGL)
-constexpr const char* kSceneVertFilename = "scene_vert.glsl";
-constexpr const char* kSceneFragFilename = "scene_frag.glsl";
-#else
-constexpr const char* kSceneVertFilename = "scene_vert_es.glsl";
-constexpr const char* kSceneFragFilename = "scene_frag_es.glsl";
-#endif
-
-}  // namespace
+namespace {}  // namespace
 
 namespace vne::samples::test_interaction {
 
@@ -484,6 +474,7 @@ void RegisterTestInteractionDemo(vne::testbed::Application& app) {
     auto* mesh_layer = new vne::testbed::MeshLayer();
     mesh_layer->setMeshPath(vne::samples::common::getTestdataPath("resources/meshes/box.ply"));
     mesh_layer->setCameraProvider([scene](int i) { return scene->getCamera(i); });
+    mesh_layer->setRenderSortKey(10);  // after grid (0) so box draws on top
     app.getLayerStack().pushLayer(std::unique_ptr<vne::testbed::MeshLayer>(mesh_layer), app.getAppContext());
 #endif
 

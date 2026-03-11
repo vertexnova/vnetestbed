@@ -35,19 +35,4 @@ set_target_properties(sample_03_test_interaction PROPERTIES
     RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin/samples"
 )
 
-# Copy scene shaders (reused from 02: pos+normal+color, same as mesh vertex layout)
-add_custom_command(TARGET sample_03_test_interaction POST_BUILD
-    COMMAND ${CMAKE_COMMAND} -E copy_if_different
-        "${CMAKE_CURRENT_SOURCE_DIR}/shaders/scene_vert.glsl"
-        "$<TARGET_FILE_DIR:sample_03_test_interaction>/scene_vert.glsl"
-    COMMAND ${CMAKE_COMMAND} -E copy_if_different
-        "${CMAKE_CURRENT_SOURCE_DIR}/shaders/scene_frag.glsl"
-        "$<TARGET_FILE_DIR:sample_03_test_interaction>/scene_frag.glsl"
-    COMMAND ${CMAKE_COMMAND} -E copy_if_different
-        "${CMAKE_CURRENT_SOURCE_DIR}/shaders/scene_vert_es.glsl"
-        "$<TARGET_FILE_DIR:sample_03_test_interaction>/scene_vert_es.glsl"
-    COMMAND ${CMAKE_COMMAND} -E copy_if_different
-        "${CMAKE_CURRENT_SOURCE_DIR}/shaders/scene_frag_es.glsl"
-        "$<TARGET_FILE_DIR:sample_03_test_interaction>/scene_frag_es.glsl"
-    COMMENT "Copying 03_test_interaction shaders (GL + ES) to output directory"
-)
+# Mesh is drawn via testbed MeshRenderer (embedded Phong); no sample shaders needed.

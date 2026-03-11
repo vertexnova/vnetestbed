@@ -76,6 +76,14 @@ void CoreRenderer::shutdown() {
     initialized_ = false;
 }
 
+void CoreRenderer::resize(int width, int height) {
+    for (auto& e : entries_) {
+        if (e.renderer) {
+            e.renderer->resize(width, height);
+        }
+    }
+}
+
 IRenderer* CoreRenderer::getRendererByName(const std::string& name) const {
     for (const auto& e : entries_) {
         if (e.name == name) {

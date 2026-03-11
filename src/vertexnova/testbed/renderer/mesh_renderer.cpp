@@ -53,6 +53,16 @@ bool MeshRenderer::init(IRenderDevice* device) {
 void MeshRenderer::shutdown() {
     phong_material_.shutdown();
     device_ = nullptr;
+    framebuffer_width_ = 0;
+    framebuffer_height_ = 0;
+}
+
+void MeshRenderer::resize(int width, int height) {
+    framebuffer_width_ = width;
+    framebuffer_height_ = height;
+#ifdef VNE_TESTBED_LOGGING
+    VNE_LOG_TRACE << "MeshRenderer: resize " << framebuffer_width_ << "x" << framebuffer_height_;
+#endif
 }
 
 void MeshRenderer::drawMesh(IRenderDevice* device,

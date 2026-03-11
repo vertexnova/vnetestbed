@@ -54,6 +54,9 @@ class CoreRenderer {
     /** @brief Shutdown all renderers (reverse order). */
     void shutdown();
 
+    /** @brief Notify all registered renderers of framebuffer resize. Call when window/viewport size changes. */
+    void resize(int width, int height);
+
     [[nodiscard]] IRenderer* getRendererByName(const std::string& name) const;
     [[nodiscard]] MeshRenderer* getMeshRenderer() const;
     [[nodiscard]] IDebugDraw* getDebugDraw() const;

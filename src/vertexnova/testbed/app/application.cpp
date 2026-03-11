@@ -51,6 +51,8 @@ struct Application::Impl {
     std::unique_ptr<gl::OpenGLRenderDevice> render_device;
     std::unique_ptr<CoreRenderer> core_renderer;
     std::chrono::steady_clock::time_point last_frame_time{std::chrono::steady_clock::now()};
+    int last_fb_width{0};
+    int last_fb_height{0};
 };
 
 Application::~Application() {
@@ -140,9 +142,19 @@ void Application::mainLoop() {
     const float dt = static_cast<float>(std::chrono::duration<double>(now - impl_->last_frame_time).count());
     impl_->last_frame_time = now;
 
+    const int fb_width = app_ctx_.window->getWidth();
+    const int fb_height = app_ctx_.window->getHeight();
+    if (app_ctx_.coreRenderer && (fb_width != impl_->last_fb_width || fb_height != impl_->last_fb_height)) {
+        app_ctx_.coreRenderer->resize(fb_width, fb_height);
+        impl_->last_fb_width = fb_width;
+        impl_->last_fb_height = fb_height;
+    }
+
     RenderContext render_ctx{};
-    render_ctx.frame_info.width = app_ctx_.window->getWidth();
-    render_ctx.frame_info.height = app_ctx_.window->getHeight();
+    render_ctx.framebuffer.width = fb_width;
+    render_ctx.framebuffer.height = fb_height;
+    render_ctx.frame_info.width = fb_width;
+    render_ctx.frame_info.height = fb_height;
     render_ctx.frame_info.dt = dt;
     render_ctx.debug_draw = app_ctx_.debugDraw;
 

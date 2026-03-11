@@ -42,6 +42,7 @@ class MeshRenderer : public IRenderer {
 
     [[nodiscard]] bool init(IRenderDevice* device) override;
     void shutdown() override;
+    void resize(int width, int height) override;
 
     /**
      * @brief Draw an indexed mesh with the given model matrix and lights.
@@ -64,6 +65,8 @@ class MeshRenderer : public IRenderer {
    private:
     PhongMaterial phong_material_;
     IRenderDevice* device_{nullptr};
+    int framebuffer_width_{0};
+    int framebuffer_height_{0};
 };
 
 }  // namespace testbed
