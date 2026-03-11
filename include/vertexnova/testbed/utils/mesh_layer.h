@@ -69,14 +69,10 @@ class MeshLayer : public ILayer {
     [[nodiscard]] const vne::scene::SceneState& getSceneState() const { return scene_state_; }
 
     /** @brief Convenience: typed pointer to the default ambient light (always present). */
-    [[nodiscard]] std::shared_ptr<vne::scene::AmbientLight> getAmbientLight() const {
-        return ambient_light_;
-    }
+    [[nodiscard]] std::shared_ptr<vne::scene::AmbientLight> getAmbientLight() const { return ambient_light_; }
 
     /** @brief Convenience: typed pointer to the default directional light (always present). */
-    [[nodiscard]] std::shared_ptr<vne::scene::DirectionalLight> getDirectionalLight() const {
-        return dir_light_;
-    }
+    [[nodiscard]] std::shared_ptr<vne::scene::DirectionalLight> getDirectionalLight() const { return dir_light_; }
 
     /**
      * @brief Add a point light to the scene state.
@@ -146,7 +142,7 @@ class MeshLayer : public ILayer {
     float aabb_min_[3]{0.0f, 0.0f, 0.0f};
     float aabb_max_[3]{0.0f, 0.0f, 0.0f};
     float center_offset_[3]{0.0f, 0.0f, 0.0f};  ///< Translation set by loadMeshFromPath to grid origin
-    float uniform_scale_{1.0f};                   ///< Current scale applied via setUniformScale()
+    float uniform_scale_{1.0f};                 ///< Current scale applied via setUniformScale()
 };
 
 }  // namespace testbed

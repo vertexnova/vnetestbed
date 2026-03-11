@@ -65,8 +65,9 @@ class BaseSceneLayer : public vne::testbed::ILayer {
 
     void onAttach(vne::testbed::AppContext& ctx) override {
         buildCameras(1280, 720);
-        scene_state_.setActiveCamera(use_perspective_ ? std::static_pointer_cast<vne::scene::ICamera>(cameras_[0])
-                                                      : std::static_pointer_cast<vne::scene::ICamera>(cameras_ortho_[0]));
+        scene_state_.setActiveCamera(use_perspective_
+                                         ? std::static_pointer_cast<vne::scene::ICamera>(cameras_[0])
+                                         : std::static_pointer_cast<vne::scene::ICamera>(cameras_ortho_[0]));
         debug_draw_ = ctx.debugDraw;
     }
 
@@ -89,8 +90,9 @@ class BaseSceneLayer : public vne::testbed::ILayer {
     }
 
     void onRender(const vne::testbed::RenderContext& ctx) override {
-        const int idx =
-            (ctx.active_viewport_index >= 0 && ctx.active_viewport_index < kMaxViewports) ? ctx.active_viewport_index : 0;
+        const int idx = (ctx.active_viewport_index >= 0 && ctx.active_viewport_index < kMaxViewports)
+                            ? ctx.active_viewport_index
+                            : 0;
         vne::scene::ICamera* camera = getActiveCamera(idx);
         if (!camera || !debug_draw_) {
             return;
@@ -211,9 +213,9 @@ class BaseSceneLayer : public vne::testbed::ILayer {
                     c->updateMatrices();
                 }
         }
-        scene_state_.setActiveCamera(
-            use_perspective_ ? std::static_pointer_cast<vne::scene::ICamera>(cameras_[0])
-                            : std::static_pointer_cast<vne::scene::ICamera>(cameras_ortho_[0]));
+        scene_state_.setActiveCamera(use_perspective_
+                                         ? std::static_pointer_cast<vne::scene::ICamera>(cameras_[0])
+                                         : std::static_pointer_cast<vne::scene::ICamera>(cameras_ortho_[0]));
     }
 
     void syncCameraPositionTargetUp() {
@@ -233,9 +235,9 @@ class BaseSceneLayer : public vne::testbed::ILayer {
 
     void rebuildCameras(int w, int h) {
         buildCameras(w, h);
-        scene_state_.setActiveCamera(
-            use_perspective_ ? std::static_pointer_cast<vne::scene::ICamera>(cameras_[0])
-                            : std::static_pointer_cast<vne::scene::ICamera>(cameras_ortho_[0]));
+        scene_state_.setActiveCamera(use_perspective_
+                                         ? std::static_pointer_cast<vne::scene::ICamera>(cameras_[0])
+                                         : std::static_pointer_cast<vne::scene::ICamera>(cameras_ortho_[0]));
     }
 
    private:
@@ -247,9 +249,12 @@ class BaseSceneLayer : public vne::testbed::ILayer {
         const vne::math::Vec3f tgt(cam_target_[0], cam_target_[1], cam_target_[2]);
         const vne::math::Vec3f up(cam_up_[0], cam_up_[1], cam_up_[2]);
         for (int i = 0; i < kMaxViewports; ++i) {
-            auto persp = std::make_shared<vne::scene::PerspectiveCamera>(
-                fov_, static_cast<float>(w), static_cast<float>(h), near_plane_, far_plane_,
-                "BaseCamera" + std::to_string(i));
+            auto persp = std::make_shared<vne::scene::PerspectiveCamera>(fov_,
+                                                                         static_cast<float>(w),
+                                                                         static_cast<float>(h),
+                                                                         near_plane_,
+                                                                         far_plane_,
+                                                                         "BaseCamera" + std::to_string(i));
             persp->setPosition(pos);
             persp->setTarget(tgt);
             persp->setUp(up);
@@ -258,9 +263,13 @@ class BaseSceneLayer : public vne::testbed::ILayer {
             cameras_[static_cast<size_t>(i)] = std::move(persp);
 
             const float hw = ortho_half_ * aspect;
-            auto ortho = std::make_shared<vne::scene::OrthographicCamera>(
-                -hw, hw, -ortho_half_, ortho_half_, ortho_near_, ortho_far_,
-                "OrthoCamera" + std::to_string(i));
+            auto ortho = std::make_shared<vne::scene::OrthographicCamera>(-hw,
+                                                                          hw,
+                                                                          -ortho_half_,
+                                                                          ortho_half_,
+                                                                          ortho_near_,
+                                                                          ortho_far_,
+                                                                          "OrthoCamera" + std::to_string(i));
             ortho->setPosition(pos);
             ortho->setTarget(tgt);
             ortho->setUp(up);

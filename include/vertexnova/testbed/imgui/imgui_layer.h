@@ -116,9 +116,7 @@ class ImGuiLayer : public ILayer {
      * @brief Set callback invoked after ImGui::Image() for each viewport (for drag-drop targets).
      * Pass nullptr to clear.
      */
-    void setViewportOverlayCallback(ViewportOverlayCallback cb) {
-        viewport_overlay_callback_ = std::move(cb);
-    }
+    void setViewportOverlayCallback(ViewportOverlayCallback cb) { viewport_overlay_callback_ = std::move(cb); }
 
     /**
      * @brief Set the fixed pixel width of the Settings panel (default 320).

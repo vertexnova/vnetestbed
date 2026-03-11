@@ -600,8 +600,10 @@ void InteractionSettingsLayer::renderCameraSettings() {
             ImGui::Text("View matrix (column-major):");
             for (size_t row = 0; row < 4u; ++row) {
                 ImGui::Text("%.4f  %.4f  %.4f  %.4f",
-                            static_cast<double>(view[0][row]), static_cast<double>(view[1][row]),
-                            static_cast<double>(view[2][row]), static_cast<double>(view[3][row]));
+                            static_cast<double>(view[0][row]),
+                            static_cast<double>(view[1][row]),
+                            static_cast<double>(view[2][row]),
+                            static_cast<double>(view[3][row]));
             }
         }
         if (show_projection_matrix_ && sl.getActiveCamera(0)) {
@@ -609,8 +611,10 @@ void InteractionSettingsLayer::renderCameraSettings() {
             ImGui::Text("Projection matrix (column-major):");
             for (size_t row = 0; row < 4u; ++row) {
                 ImGui::Text("%.4f  %.4f  %.4f  %.4f",
-                            static_cast<double>(proj[0][row]), static_cast<double>(proj[1][row]),
-                            static_cast<double>(proj[2][row]), static_cast<double>(proj[3][row]));
+                            static_cast<double>(proj[0][row]),
+                            static_cast<double>(proj[1][row]),
+                            static_cast<double>(proj[2][row]),
+                            static_cast<double>(proj[3][row]));
             }
         }
     }
@@ -825,10 +829,7 @@ void InteractionSettingsLayer::renderMeshBrowser() {
             // Drag source: drag any item onto the viewport to load it.
             if (ImGui::BeginDragDropSource(ImGuiDragDropFlags_SourceAllowNullID)) {
                 const std::string full = p.string();
-                ImGui::SetDragDropPayload("VNE_MESH_PATH",
-                                          full.c_str(),
-                                          full.size() + 1u,
-                                          ImGuiCond_Once);
+                ImGui::SetDragDropPayload("VNE_MESH_PATH", full.c_str(), full.size() + 1u, ImGuiCond_Once);
                 ImGui::Text("Load: %s", fname.c_str());
                 ImGui::EndDragDropSource();
             }
@@ -894,11 +895,17 @@ void InteractionSettingsLayer::renderLightingSettings() {
                 ImGui::Spacing();
                 ImGui::TextDisabled("Presets:");
                 ImGui::SameLine();
-                if (ImGui::SmallButton("Top"))   { dir->setDirection({0.0f, -1.0f,  0.0f}); }
+                if (ImGui::SmallButton("Top")) {
+                    dir->setDirection({0.0f, -1.0f, 0.0f});
+                }
                 ImGui::SameLine();
-                if (ImGui::SmallButton("Front")) { dir->setDirection({0.0f,  0.0f, -1.0f}); }
+                if (ImGui::SmallButton("Front")) {
+                    dir->setDirection({0.0f, 0.0f, -1.0f});
+                }
                 ImGui::SameLine();
-                if (ImGui::SmallButton("3/4"))   { dir->setDirection({-0.4f, -1.0f, -0.6f}); }
+                if (ImGui::SmallButton("3/4")) {
+                    dir->setDirection({-0.4f, -1.0f, -0.6f});
+                }
             }
             ImGui::TreePop();
         }
@@ -972,9 +979,13 @@ void InteractionSettingsLayer::renderMeshTransform() {
         const float* mn = mesh_layer_->getAabbMin();
         const float* mx = mesh_layer_->getAabbMax();
         ImGui::TextDisabled("AABB min: %.2f %.2f %.2f",
-                            static_cast<double>(mn[0]), static_cast<double>(mn[1]), static_cast<double>(mn[2]));
+                            static_cast<double>(mn[0]),
+                            static_cast<double>(mn[1]),
+                            static_cast<double>(mn[2]));
         ImGui::TextDisabled("AABB max: %.2f %.2f %.2f",
-                            static_cast<double>(mx[0]), static_cast<double>(mx[1]), static_cast<double>(mx[2]));
+                            static_cast<double>(mx[0]),
+                            static_cast<double>(mx[1]),
+                            static_cast<double>(mx[2]));
     }
 #endif
 }

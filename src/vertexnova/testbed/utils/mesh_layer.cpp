@@ -48,15 +48,14 @@ MeshLayer::MeshLayer()
     static constexpr float kDirB = 0.90f;
     static constexpr float kDirIntensity = 1.5f;
 
-    ambient_light_ = std::make_shared<vne::scene::AmbientLight>(
-        vne::math::Vec3f{kAmbR, kAmbG, kAmbB}, 1.0f, "MeshAmbient");
+    ambient_light_ =
+        std::make_shared<vne::scene::AmbientLight>(vne::math::Vec3f{kAmbR, kAmbG, kAmbB}, 1.0f, "MeshAmbient");
     scene_state_.addLight(ambient_light_);
 
-    dir_light_ = std::make_shared<vne::scene::DirectionalLight>(
-        vne::math::Vec3f{kDirX, -1.0f, kDirZ},
-        vne::math::Vec3f{1.0f, kDirG, kDirB},
-        kDirIntensity,
-        "MeshDirectional");
+    dir_light_ = std::make_shared<vne::scene::DirectionalLight>(vne::math::Vec3f{kDirX, -1.0f, kDirZ},
+                                                                vne::math::Vec3f{1.0f, kDirG, kDirB},
+                                                                kDirIntensity,
+                                                                "MeshDirectional");
     scene_state_.addLight(dir_light_);
 }
 

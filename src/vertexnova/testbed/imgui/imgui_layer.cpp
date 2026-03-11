@@ -564,7 +564,7 @@ void ImGuiLayer::renderViewportWindows(const RenderContext& ctx) {
         const unsigned int tex_id = multi_viewport ? getSceneTextureId(index) : getSceneTextureId();
         const bool has_scene = (tex_id != 0u);
         (void)has_scene;  // used below via tex_id check
-        // C-style cast (ImTextureID)(intptr_t) works for both void* and ImU64 ImTextureID (ImGui FAQ)
+                          // C-style cast (ImTextureID)(intptr_t) works for both void* and ImU64 ImTextureID (ImGui FAQ)
 #if defined(__clang__)
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wold-style-cast"

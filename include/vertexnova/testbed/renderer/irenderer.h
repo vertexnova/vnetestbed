@@ -46,7 +46,10 @@ class IRenderer {
      * @brief Called when the framebuffer (window or main render target) is resized.
      * Update viewport-dependent resources (e.g. resolution-dependent buffers) here.
      */
-    virtual void resize(int width, int height) { (void)width; (void)height; }
+    virtual void resize(int width, int height) {
+        (void)width;
+        (void)height;
+    }
 
     /**
      * @brief Optional: render pass. For a future unified loop, CoreRenderer can call this in sort order.
