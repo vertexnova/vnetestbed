@@ -7,15 +7,22 @@
  * Created:   March 2026
  *
  * MeshLayer: loads a mesh from path (vneio when available), uploads to GPU,
- * draws with scene shaders. Camera provided via setCameraProvider().
+ * draws with MeshRenderer (Blinn-Phong). Lights are managed as vnescene ILight
+ * objects in a SceneState; buildLightParams() converts them to PhongLightParams
+ * just before each draw call.
  * ----------------------------------------------------------------------
  */
 
 #include "vertexnova/testbed/layer.h"
 #include "vertexnova/testbed/render_context.h"
 #include "vertexnova/testbed/render_device.h"
+#include "vertexnova/testbed/renderer/phong_material.h"
 
 #include "vertexnova/scene/camera/camera.h"
+#include "vertexnova/scene/light/ambient_light.h"
+#include "vertexnova/scene/light/directional_light.h"
+#include "vertexnova/scene/light/point_light.h"
+#include "vertexnova/scene/scene_state.h"
 
 #include <functional>
 #include <memory>
@@ -28,12 +35,13 @@ class MeshRenderer;
 
 /**
  * @class MeshLayer
- * @brief Layer that loads a single mesh from file and draws it each frame via MeshRenderer.
+ * @brief Layer that loads a single mesh from file and draws it with MeshRenderer.
  *
- * Requires mesh path (setMeshPath), camera provider (setCameraProvider), and
- * AppContext with coreRenderer (getMeshRenderer() non-null) in onAttach.
- * When VNE_TESTBED_HAVE_VNEIO is defined, the mesh is loaded via Assimp; otherwise
- * the layer does nothing. Vertex layout: position (3) + normal (3) + color (3).
+ * Lights are stored as vnescene ILight objects in `scene_state_`.  Call
+ * getAmbientLight() / getDirectionalLight() / addPointLight() to configure them.
+ * buildLightParams() converts them to PhongLightParams every frame.
+ *
+ * Vertex layout: position (3) + normal (3) + color (3).
  */
 class MeshLayer : public ILayer {
    public:
@@ -41,20 +49,53 @@ class MeshLayer : public ILayer {
 
     MeshLayer();
 
+    // ---- Mesh path and camera ----
     void setMeshPath(std::string path);
     void setCameraProvider(CameraProvider provider);
 
     /**
-     * @brief Reload the mesh from a new path at runtime.
-     *
-     * Destroys the current GPU buffers (if any) and loads the mesh from @p path.
-     * Safe to call any time after onAttach; no-op before device is available.
-     * @param path Absolute or resolved path to the mesh file.
+     * @brief Reload mesh at runtime. Destroys old GPU buffers and loads from new path.
+     * Safe after onAttach; stores path and defers load if device not yet available.
      */
     void reloadMesh(std::string path);
 
     /** @brief Returns the currently loaded mesh path (empty if none). */
     [[nodiscard]] const std::string& getMeshPath() const { return mesh_path_; }
+
+    // ---- Scene lights (vnescene objects) ----
+
+    /** @brief Access the SceneState holding all lights. */
+    [[nodiscard]] vne::scene::SceneState& getSceneState() { return scene_state_; }
+    [[nodiscard]] const vne::scene::SceneState& getSceneState() const { return scene_state_; }
+
+    /** @brief Convenience: typed pointer to the default ambient light (always present). */
+    [[nodiscard]] std::shared_ptr<vne::scene::AmbientLight> getAmbientLight() const {
+        return ambient_light_;
+    }
+
+    /** @brief Convenience: typed pointer to the default directional light (always present). */
+    [[nodiscard]] std::shared_ptr<vne::scene::DirectionalLight> getDirectionalLight() const {
+        return dir_light_;
+    }
+
+    /**
+     * @brief Add a point light to the scene state.
+     * Returns the typed pointer so callers can later modify or remove it.
+     */
+    std::shared_ptr<vne::scene::PointLight> addPointLight(std::shared_ptr<vne::scene::PointLight> light) {
+        if (light) {
+            scene_state_.addLight(light);
+        }
+        return light;
+    }
+
+    // ---- Model matrix ----
+    void setModelMatrix(const vne::math::Mat4f& m) { model_ = m; }
+    [[nodiscard]] const vne::math::Mat4f& getModelMatrix() const { return model_; }
+
+    // ---- AABB of last loaded mesh (model space) ----
+    [[nodiscard]] const float* getAabbMin() const { return aabb_min_; }
+    [[nodiscard]] const float* getAabbMax() const { return aabb_max_; }
 
     void onAttach(AppContext& ctx) override;
     void onDetach() override;
@@ -62,6 +103,13 @@ class MeshLayer : public ILayer {
 
    private:
     void loadMeshFromPath();
+
+    /**
+     * @brief Convert scene_state_ lights to PhongLightParams for drawMesh.
+     * Iterates ILight objects by type: first AmbientLight → ambient, first
+     * DirectionalLight → dir light, up to 4 PointLights → point_lights[].
+     */
+    [[nodiscard]] PhongLightParams buildLightParams() const;
 
     std::string mesh_path_;
     CameraProvider camera_provider_;
@@ -73,6 +121,16 @@ class MeshLayer : public ILayer {
 
     uint32_t index_count_{0};
     bool ready_{false};
+
+    // vnescene lights
+    vne::scene::SceneState scene_state_;
+    std::shared_ptr<vne::scene::AmbientLight> ambient_light_;
+    std::shared_ptr<vne::scene::DirectionalLight> dir_light_;
+
+    vne::math::Mat4f model_{vne::math::Mat4f::identity()};
+
+    float aabb_min_[3]{0.0f, 0.0f, 0.0f};
+    float aabb_max_[3]{0.0f, 0.0f, 0.0f};
 };
 
 }  // namespace testbed

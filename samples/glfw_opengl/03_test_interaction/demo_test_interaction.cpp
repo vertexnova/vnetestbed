@@ -536,6 +536,12 @@ void InteractionSettingsLayer::renderPanel() {
 
     // ---- Mesh Browser ----
     renderMeshBrowser();
+
+    // ---- Lighting ----
+    renderLightingSettings();
+
+    // ---- Mesh Transform ----
+    renderMeshTransform();
 }
 
 void InteractionSettingsLayer::renderMeshBrowser() {
@@ -603,6 +609,148 @@ void InteractionSettingsLayer::renderMeshBrowser() {
         ImGui::EndChild();
 #endif  // VNE_TESTBED_HAVE_VNEIO
     }
+}
+
+void InteractionSettingsLayer::renderLightingSettings() {
+#ifdef VNE_TESTBED_HAVE_VNEIO
+    if (!mesh_layer_) {
+        return;
+    }
+    // Access the real vnescene light objects stored in MeshLayer.
+    auto amb = mesh_layer_->getAmbientLight();
+    auto dir = mesh_layer_->getDirectionalLight();
+
+    if (ImGui::CollapsingHeader("Lighting", ImGuiTreeNodeFlags_DefaultOpen)) {
+        // ---- Ambient light (vne::scene::AmbientLight) ----
+        if (amb && ImGui::TreeNodeEx("Ambient", ImGuiTreeNodeFlags_DefaultOpen)) {
+            vne::math::Vec3f ac = amb->getColor();
+            float ambCol[3] = {ac.x(), ac.y(), ac.z()};
+            if (ImGui::ColorEdit3("Color##amb", ambCol)) {
+                amb->setColor({ambCol[0], ambCol[1], ambCol[2]});
+            }
+            float ambI = amb->getIntensity();
+            if (ImGui::SliderFloat("Intensity##amb", &ambI, 0.0f, 2.0f)) {
+                amb->setIntensity(ambI);
+            }
+            ImGui::TreePop();
+        }
+
+        // ---- Directional light (vne::scene::DirectionalLight) ----
+        if (dir && ImGui::TreeNodeEx("Directional Light", ImGuiTreeNodeFlags_DefaultOpen)) {
+            bool enabled = dir->isEnabled();
+            if (ImGui::Checkbox("Enabled##dir", &enabled)) {
+                dir->setEnabled(enabled);
+            }
+            if (enabled) {
+                vne::math::Vec3f dc = dir->getColor();
+                float dirCol[3] = {dc.x(), dc.y(), dc.z()};
+                if (ImGui::ColorEdit3("Color##dir", dirCol)) {
+                    dir->setColor({dirCol[0], dirCol[1], dirCol[2]});
+                }
+                float dirI = dir->getIntensity();
+                if (ImGui::SliderFloat("Intensity##dir", &dirI, 0.0f, 5.0f)) {
+                    dir->setIntensity(dirI);
+                }
+                vne::math::Vec3f dd = dir->getDirection();
+                float dirDir[3] = {dd.x(), dd.y(), dd.z()};
+                if (ImGui::SliderFloat3("Direction##dir", dirDir, -1.0f, 1.0f)) {
+                    dir->setDirection({dirDir[0], dirDir[1], dirDir[2]});
+                }
+                ImGui::Spacing();
+                ImGui::TextDisabled("Presets:");
+                ImGui::SameLine();
+                if (ImGui::SmallButton("Top"))   { dir->setDirection({0.0f, -1.0f,  0.0f}); }
+                ImGui::SameLine();
+                if (ImGui::SmallButton("Front")) { dir->setDirection({0.0f,  0.0f, -1.0f}); }
+                ImGui::SameLine();
+                if (ImGui::SmallButton("3/4"))   { dir->setDirection({-0.4f, -1.0f, -0.6f}); }
+            }
+            ImGui::TreePop();
+        }
+
+        // ---- Point lights (if any) ----
+        int ptIdx = 0;
+        for (const auto& light : mesh_layer_->getSceneState().getLights()) {
+            if (!light || light->getLightType() != vne::scene::LightType::ePoint) {
+                continue;
+            }
+            const std::string label = std::string("Point Light ") + std::to_string(ptIdx);
+            if (ImGui::TreeNodeEx(label.c_str())) {
+                bool ptEn = light->isEnabled();
+                const std::string enLabel = std::string("Enabled##pt") + std::to_string(ptIdx);
+                if (ImGui::Checkbox(enLabel.c_str(), &ptEn)) {
+                    light->setEnabled(ptEn);
+                }
+                vne::math::Vec3f pc = light->getColor();
+                float ptCol[3] = {pc.x(), pc.y(), pc.z()};
+                const std::string colLabel = std::string("Color##pt") + std::to_string(ptIdx);
+                if (ImGui::ColorEdit3(colLabel.c_str(), ptCol)) {
+                    light->setColor({ptCol[0], ptCol[1], ptCol[2]});
+                }
+                float ptI = light->getIntensity();
+                const std::string intLabel = std::string("Intensity##pt") + std::to_string(ptIdx);
+                if (ImGui::SliderFloat(intLabel.c_str(), &ptI, 0.0f, 5.0f)) {
+                    light->setIntensity(ptI);
+                }
+                ImGui::TreePop();
+            }
+            ++ptIdx;
+        }
+    }
+#endif
+}
+
+void InteractionSettingsLayer::renderMeshTransform() {
+#ifdef VNE_TESTBED_HAVE_VNEIO
+    if (!mesh_layer_) {
+        return;
+    }
+    if (ImGui::CollapsingHeader("Mesh Transform")) {
+        // Uniform scale
+        static float scale = 1.0f;
+        if (ImGui::SliderFloat("Scale##mesh", &scale, 0.001f, 10.0f, "%.3f")) {
+            vne::math::Mat4f s = vne::math::Mat4f::identity();
+            s[0][0] = scale;
+            s[1][1] = scale;
+            s[2][2] = scale;
+            mesh_layer_->setModelMatrix(s);
+        }
+
+        // Auto-fit: compute uniform scale so the mesh AABB fits in a ~1.5-unit radius sphere.
+        if (ImGui::Button("Auto-fit")) {
+            const float* mn = mesh_layer_->getAabbMin();
+            const float* mx = mesh_layer_->getAabbMax();
+            float ext = 0.0f;
+            for (int k = 0; k < 3; ++k) {
+                float half = (mx[k] - mn[k]) * 0.5f;
+                if (half > ext) {
+                    ext = half;
+                }
+            }
+            if (ext > 1e-6f) {
+                scale = 1.5f / ext;
+                vne::math::Mat4f s = vne::math::Mat4f::identity();
+                s[0][0] = scale;
+                s[1][1] = scale;
+                s[2][2] = scale;
+                mesh_layer_->setModelMatrix(s);
+            }
+        }
+        ImGui::SameLine();
+        if (ImGui::Button("Reset scale")) {
+            scale = 1.0f;
+            mesh_layer_->setModelMatrix(vne::math::Mat4f::identity());
+        }
+
+        // AABB display
+        const float* mn = mesh_layer_->getAabbMin();
+        const float* mx = mesh_layer_->getAabbMax();
+        ImGui::TextDisabled("AABB min: %.2f %.2f %.2f", static_cast<double>(mn[0]), static_cast<double>(mn[1]),
+                            static_cast<double>(mn[2]));
+        ImGui::TextDisabled("AABB max: %.2f %.2f %.2f", static_cast<double>(mx[0]), static_cast<double>(mx[1]),
+                            static_cast<double>(mx[2]));
+    }
+#endif
 }
 
 #endif  // VNE_TESTBED_IMGUI

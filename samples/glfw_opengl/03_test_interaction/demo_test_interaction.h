@@ -126,6 +126,8 @@ class InteractionSettingsLayer : public vne::testbed::ILayer {
    private:
     void renderPanel();
     void renderMeshBrowser();
+    void renderLightingSettings();
+    void renderMeshTransform();
     void loadMesh(const std::filesystem::path& path);
     void handleViewportDrop(int viewport_index);
 
