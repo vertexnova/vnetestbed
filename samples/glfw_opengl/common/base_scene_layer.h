@@ -32,20 +32,18 @@
 #include "vertexnova/events/key_event.h"
 #include "vertexnova/events/mouse_event.h"
 #include "vertexnova/events/types.h"
+#include "vertexnova/events/window_event.h"
 #include "vertexnova/interaction/camera_manipulator_factory.h"
 #include "vertexnova/interaction/camera_system_controller.h"
 #endif
 
 #ifdef VNE_TESTBED_IMGUI
-namespace vne {
-namespace testbed {
-class ImGuiLayer;
-}
-}  // namespace vne
+#include "vertexnova/testbed/imgui/imgui_layer.h"
 #endif
 
 #include <memory>
 #include <string>
+#include <utility>
 #include <vector>
 
 // ---------------------------------------------------------------------------
@@ -383,6 +381,20 @@ class BaseInteractionLayer : public vne::testbed::ILayer, public vne::events::Ev
     void onDetach() override {}
 
     void onUpdate(float dt) override {
+#ifdef VNE_TESTBED_IMGUI
+        if (imgui_layer_) {
+            const int n = static_cast<int>(controllers_.size());
+            for (int i = 0; i < n; ++i) {
+                float min_x = 0.0f, min_y = 0.0f, max_x = 0.0f, max_y = 0.0f;
+                if (imgui_layer_->getViewportRect(i, min_x, min_y, max_x, max_y)
+                    && controllers_[static_cast<size_t>(i)]) {
+                    const float vp_w = max_x - min_x;
+                    const float vp_h = max_y - min_y;
+                    controllers_[static_cast<size_t>(i)]->setViewportSize(vp_w, vp_h);
+                }
+            }
+        }
+#endif
         for (auto& ctrl : controllers_) {
             if (ctrl) {
                 ctrl->update(static_cast<double>(dt));
@@ -395,6 +407,18 @@ class BaseInteractionLayer : public vne::testbed::ILayer, public vne::events::Ev
             return;
         }
         using ET = vne::events::EventType;
+        // Handle resize early so viewport is updated regardless of mouse position.
+        if (event.type() == ET::eWindowResize) {
+            const auto& e = static_cast<const vne::events::WindowResizeEvent&>(event);
+            const float vpw = static_cast<float>(e.width());
+            const float vph = static_cast<float>(e.height());
+            for (auto& ctrl : controllers_) {
+                if (ctrl) {
+                    ctrl->setViewportSize(vpw, vph);
+                }
+            }
+            return;
+        }
         double prev_x = last_x_;
         double prev_y = last_y_;
         float check_x = static_cast<float>(last_x_);
@@ -430,6 +454,22 @@ class BaseInteractionLayer : public vne::testbed::ILayer, public vne::events::Ev
         if (!controller) {
             return;
         }
+        float vp_min_x = 0.0f, vp_min_y = 0.0f, vp_max_x = 0.0f, vp_max_y = 0.0f;
+        bool use_viewport_local = false;
+#ifdef VNE_TESTBED_IMGUI
+        if (imgui_layer_ && imgui_layer_->getViewportRect(viewport_index, vp_min_x, vp_min_y, vp_max_x, vp_max_y)) {
+            use_viewport_local = true;
+            const float vp_w = vp_max_x - vp_min_x;
+            const float vp_h = vp_max_y - vp_min_y;
+            controller->setViewportSize(vp_w, vp_h);
+        }
+#endif
+        auto toLocal = [&](float wx, float wy) -> std::pair<float, float> {
+            if (use_viewport_local) {
+                return {wx - vp_min_x, wy - vp_min_y};
+            }
+            return {wx, wy};
+        };
         switch (event.type()) {
             case ET::eMouseMoved: {
                 const auto& e = static_cast<const vne::events::MouseMovedEvent&>(event);
@@ -438,37 +478,29 @@ class BaseInteractionLayer : public vne::testbed::ILayer, public vne::events::Ev
                 first_mouse_ = false;
                 last_x_ = e.x();
                 last_y_ = e.y();
-                controller->handleMouseMove(static_cast<float>(e.x()),
-                                            static_cast<float>(e.y()),
-                                            static_cast<float>(dx),
-                                            static_cast<float>(dy),
-                                            kFixedDt);
+                const auto [lx, ly] = toLocal(static_cast<float>(e.x()), static_cast<float>(e.y()));
+                controller->handleMouseMove(lx, ly, static_cast<float>(dx), static_cast<float>(dy), kFixedDt);
                 break;
             }
             case ET::eMouseButtonPressed: {
                 const auto& e = static_cast<const vne::events::MouseButtonEvent&>(event);
-                controller->handleMouseButton(static_cast<int>(e.button()),
-                                              true,
-                                              static_cast<float>(last_x_),
-                                              static_cast<float>(last_y_),
-                                              kFixedDt);
+                const auto [lx, ly] = toLocal(static_cast<float>(last_x_), static_cast<float>(last_y_));
+                controller->handleMouseButton(static_cast<int>(e.button()), true, lx, ly, kFixedDt);
                 break;
             }
             case ET::eMouseButtonReleased: {
                 const auto& e = static_cast<const vne::events::MouseButtonEvent&>(event);
-                controller->handleMouseButton(static_cast<int>(e.button()),
-                                              false,
-                                              static_cast<float>(last_x_),
-                                              static_cast<float>(last_y_),
-                                              kFixedDt);
+                const auto [lx, ly] = toLocal(static_cast<float>(last_x_), static_cast<float>(last_y_));
+                controller->handleMouseButton(static_cast<int>(e.button()), false, lx, ly, kFixedDt);
                 break;
             }
             case ET::eMouseScrolled: {
                 const auto& e = static_cast<const vne::events::MouseScrolledEvent&>(event);
+                const auto [lx, ly] = toLocal(static_cast<float>(last_x_), static_cast<float>(last_y_));
                 controller->handleMouseScroll(static_cast<float>(e.xOffset()),
                                               static_cast<float>(e.yOffset()),
-                                              static_cast<float>(last_x_),
-                                              static_cast<float>(last_y_),
+                                              lx,
+                                              ly,
                                               kFixedDt);
                 break;
             }

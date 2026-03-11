@@ -652,6 +652,18 @@ std::string ImGuiLayer::getViewportName(int index) const {
     return "Viewport " + std::to_string(index + 1);
 }
 
+bool ImGuiLayer::getViewportRect(int index, float& min_x, float& min_y, float& max_x, float& max_y) const {
+    const size_t n = viewport_rects_.size() / 4u;
+    if (index < 0 || static_cast<size_t>(index) >= n) {
+        return false;
+    }
+    min_x = viewport_rects_[static_cast<size_t>(index) * 4u + 0u];
+    min_y = viewport_rects_[static_cast<size_t>(index) * 4u + 1u];
+    max_x = viewport_rects_[static_cast<size_t>(index) * 4u + 2u];
+    max_y = viewport_rects_[static_cast<size_t>(index) * 4u + 3u];
+    return true;
+}
+
 unsigned int ImGuiLayer::getSceneTextureId() const {
 #if defined(VNE_TESTBED_OPENGL) || defined(VNE_TESTBED_OPENGLES)
     if (scene_fbo_ && scene_fbo_->isValid()) {

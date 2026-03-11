@@ -173,6 +173,14 @@ class ImGuiLayer : public ILayer {
      */
     [[nodiscard]] std::string getViewportName(int index) const;
 
+    /**
+     * @brief Get the screen-space rect of a viewport (min_x, min_y, max_x, max_y).
+     * @param index 0-based viewport index
+     * @param[out] min_x, min_y, max_x, max_y Rect in window coordinates
+     * @return true if index valid and rect available
+     */
+    [[nodiscard]] bool getViewportRect(int index, float& min_x, float& min_y, float& max_x, float& max_y) const;
+
    private:
     void tryInitFromContext();  // Init ImGui; no-op if already initialized or no window
     void ensureSceneFbo(int width, int height);
