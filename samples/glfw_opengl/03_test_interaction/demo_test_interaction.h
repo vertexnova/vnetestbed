@@ -109,6 +109,10 @@ class InteractionTestLayer : public vne::testbed::ILayer {
     void setRotationEnabled(bool enabled);
     void setPanEnabled(bool enabled);
     void setZoomEnabled(bool enabled);
+
+#ifdef VNE_TESTBED_IMGUI
+    void setMeshLayer(vne::testbed::MeshLayer* layer) noexcept { mesh_layer_ = layer; }
+#endif
     void setNavigationMode(vne::interaction::NavigateMode mode);
 
     [[nodiscard]] vne::math::Vec3f cameraPosition() const;
@@ -130,6 +134,9 @@ class InteractionTestLayer : public vne::testbed::ILayer {
     std::shared_ptr<vne::scene::ICamera> camera_;
     std::array<ControllerVariant, kMaxViewports> controllers_;
     ControllerKind current_kind_{ControllerKind::eInspectArcball};
+#ifdef VNE_TESTBED_IMGUI
+    vne::testbed::MeshLayer* mesh_layer_{nullptr};
+#endif
     vne::interaction::NavigateMode navigation_mode_{vne::interaction::NavigateMode::eFps};
     double last_x_{0.0};
     double last_y_{0.0};
