@@ -6,6 +6,7 @@
  * Created:   January 2026
  *
  * Sample 03_test_interaction — implementation (interaction layer, settings panel).
+ * Uses vneinteraction InspectController, Navigation3DController, Ortho2DController, FollowController.
  * ----------------------------------------------------------------------
  */
 
@@ -23,11 +24,10 @@
 #include "vertexnova/events/types.h"
 #include "vertexnova/events/window_event.h"
 
-#include "vertexnova/interaction/arcball_manipulator.h"
-#include "vertexnova/interaction/fly_manipulator.h"
-#include "vertexnova/interaction/fps_manipulator.h"
-#include "vertexnova/interaction/orbit_manipulator.h"
-#include "vertexnova/interaction/ortho_pan_zoom_manipulator.h"
+#include "vertexnova/interaction/orbit_arcball_behavior.h"
+#include "vertexnova/interaction/free_look_behavior.h"
+#include "vertexnova/interaction/ortho_pan_zoom_behavior.h"
+#include "vertexnova/interaction/follow_behavior.h"
 
 #ifdef VNE_TESTBED_IMGUI
 #include "vertexnova/testbed/imgui/imgui_layer.h"
@@ -47,12 +47,43 @@
 #include <filesystem>
 #include <memory>
 #include <string>
+#include <type_traits>
 #include <utility>
 #include <vector>
 
-namespace {}  // namespace
-
 namespace vne::samples::test_interaction {
+
+namespace {
+
+ControllerVariant makeController(ControllerKind kind,
+                                 vne::interaction::NavigateMode nav_mode) {
+    switch (kind) {
+        case ControllerKind::eInspectOrbit: {
+            vne::interaction::InspectController c;
+            c.setRotationMode(vne::interaction::OrbitRotationMode::eOrbit);
+            return c;
+        }
+        case ControllerKind::eInspectArcball: {
+            vne::interaction::InspectController c;
+            c.setRotationMode(vne::interaction::OrbitRotationMode::eArcball);
+            return c;
+        }
+        case ControllerKind::eNavigation: {
+            vne::interaction::Navigation3DController c;
+            c.setMode(nav_mode);
+            return c;
+        }
+        case ControllerKind::eOrtho: {
+            return vne::interaction::Ortho2DController{};
+        }
+        case ControllerKind::eFollow: {
+            return vne::interaction::FollowController{};
+        }
+    }
+    return vne::interaction::InspectController{};
+}
+
+}  // namespace
 
 // ---------------------------------------------------------------------------
 // InteractionTestLayer implementation
@@ -60,19 +91,14 @@ namespace vne::samples::test_interaction {
 
 InteractionTestLayer::InteractionTestLayer()
     : vne::testbed::ILayer("InteractionTestLayer") {
-    controllers_.resize(static_cast<size_t>(kMaxViewports));
     for (size_t i = 0; i < static_cast<size_t>(kMaxViewports); ++i) {
-        auto ctrl = std::make_unique<vne::interaction::CameraSystemController>();
-        ctrl->setManipulator(factory_.create(vne::interaction::CameraManipulatorType::eOrbit));
-        controllers_[i] = std::move(ctrl);
+        controllers_[i] = makeController(ControllerKind::eInspectArcball, navigation_mode_);
     }
 }
 
 void InteractionTestLayer::setCamera(std::shared_ptr<vne::scene::ICamera> cam) {
     camera_ = std::move(cam);
-    if (!controllers_.empty() && controllers_[0]) {
-        controllers_[0]->setCamera(camera_);
-    }
+    dispatchSetCamera(camera_);
 }
 
 void InteractionTestLayer::setSceneLayer(BaseSceneLayer* scene) {
@@ -86,18 +112,23 @@ void InteractionTestLayer::setCamerasFromScene() {
     }
     const auto cams = scene_layer_->getActiveCameras();
     camera_ = cams.empty() ? nullptr : cams[0];
-    for (size_t i = 0; i < cams.size() && i < controllers_.size(); ++i) {
-        if (controllers_[i] && cams[i]) {
-            controllers_[i]->setCamera(cams[i]);
-        }
+    for (size_t i = 0; i < static_cast<size_t>(kMaxViewports); ++i) {
+        auto cam = (i < cams.size()) ? cams[i] : (cams.empty() ? nullptr : cams[0]);
+        std::visit(
+            [&cam](auto& c) {
+                if (cam) {
+                    c.setCamera(cam);
+                }
+            },
+            controllers_[i]);
     }
 }
 
 bool InteractionTestLayer::isManipulatorCompatibleWithCamera(bool use_perspective) const {
-    if (current_manipulator_type_ == vne::interaction::CameraManipulatorType::eOrthoPanZoom) {
-        return !use_perspective;  // OrthoPanZoom requires orthographic
+    if (current_kind_ == ControllerKind::eOrtho) {
+        return !use_perspective;
     }
-    return true;  // Orbit, Arcball, Fps, Fly, Follow support both
+    return true;
 }
 
 #ifdef VNE_TESTBED_IMGUI
@@ -106,14 +137,72 @@ void InteractionTestLayer::setImGuiLayer(vne::testbed::ImGuiLayer* layer) {
 }
 #endif
 
+void InteractionTestLayer::dispatchViewportSize(float w, float h) {
+    for (auto& v : controllers_) {
+        std::visit([w, h](auto& c) { c.setViewportSize(w, h); }, v);
+    }
+}
+
+void InteractionTestLayer::dispatchEvent(const vne::events::Event& event, int viewport_index) {
+    if (viewport_index < 0 || viewport_index >= kMaxViewports) {
+        viewport_index = 0;
+    }
+    auto& v = controllers_[static_cast<size_t>(viewport_index)];
+    std::visit(
+        [&event](auto& c) {
+            const bool needs_cursor_position =
+                (event.type() == vne::events::EventType::eMouseScrolled
+                 || event.type() == vne::events::EventType::eMouseButtonPressed
+                 || event.type() == vne::events::EventType::eMouseButtonReleased
+                 || event.type() == vne::events::EventType::eMouseButtonDoubleClicked);
+
+            // Scroll events don't carry cursor position; some mouse button events may also omit it.
+            // Controllers depend on their last seen mouse position to compute zoom-to-cursor.
+            if (needs_cursor_position) {
+                const auto [mx, my] = vne::events::Input::mousePosition();
+                const vne::events::MouseMovedEvent mm(mx, my);
+                if constexpr (std::is_same_v<std::decay_t<decltype(c)>, vne::interaction::Ortho2DController>
+                              || std::is_same_v<std::decay_t<decltype(c)>, vne::interaction::FollowController>) {
+                    c.onEvent(mm);
+                } else {
+                    c.onEvent(mm, 0.0);
+                }
+            }
+            if constexpr (std::is_same_v<std::decay_t<decltype(c)>, vne::interaction::Ortho2DController>
+                          || std::is_same_v<std::decay_t<decltype(c)>, vne::interaction::FollowController>) {
+                c.onEvent(event);
+            } else {
+                c.onEvent(event, kFixedDt);
+            }
+        },
+        v);
+}
+
+void InteractionTestLayer::dispatchUpdate(double dt) {
+    for (auto& v : controllers_) {
+        std::visit([dt](auto& c) { c.onUpdate(dt); }, v);
+    }
+}
+
+void InteractionTestLayer::dispatchSetCamera(std::shared_ptr<vne::scene::ICamera> cam) {
+    if (!cam) {
+        return;
+    }
+    for (auto& v : controllers_) {
+        std::visit([&cam](auto& c) { c.setCamera(cam); }, v);
+    }
+}
+
+void InteractionTestLayer::dispatchReset() {
+    for (auto& v : controllers_) {
+        std::visit([](auto& c) { c.reset(); }, v);
+    }
+}
+
 void InteractionTestLayer::onAttach(vne::testbed::AppContext& ctx) {
     const float vpw = ctx.window ? static_cast<float>(ctx.window->getWidth()) : 1280.0f;
     const float vph = ctx.window ? static_cast<float>(ctx.window->getHeight()) : 720.0f;
-    for (auto& ctrl : controllers_) {
-        if (ctrl) {
-            ctrl->setViewportSize(vpw, vph);
-        }
-    }
+    dispatchViewportSize(vpw, vph);
 }
 
 void InteractionTestLayer::onDetach() {}
@@ -121,39 +210,25 @@ void InteractionTestLayer::onDetach() {}
 void InteractionTestLayer::onUpdate(float dt) {
 #ifdef VNE_TESTBED_IMGUI
     if (imgui_layer_) {
-        const int n = static_cast<int>(controllers_.size());
-        for (int i = 0; i < n; ++i) {
+        for (int i = 0; i < kMaxViewports; ++i) {
             float min_x = 0.0f, min_y = 0.0f, max_x = 0.0f, max_y = 0.0f;
-            if (imgui_layer_->getViewportRect(i, min_x, min_y, max_x, max_y) && controllers_[static_cast<size_t>(i)]) {
+            if (imgui_layer_->getViewportRect(i, min_x, min_y, max_x, max_y)) {
                 const float vp_w = max_x - min_x;
                 const float vp_h = max_y - min_y;
-                controllers_[static_cast<size_t>(i)]->setViewportSize(vp_w, vp_h);
+                auto& v = controllers_[static_cast<size_t>(i)];
+                std::visit([vp_w, vp_h](auto& c) { c.setViewportSize(vp_w, vp_h); }, v);
             }
         }
     }
 #endif
-    for (auto& ctrl : controllers_) {
-        if (ctrl) {
-            ctrl->update(static_cast<double>(dt));
-        }
-    }
+    dispatchUpdate(static_cast<double>(dt));
 }
 
 void InteractionTestLayer::onEvent(const vne::events::Event& event) {
-    if (controllers_.empty() || !controllers_[0]) {
-        return;
-    }
     using ET = vne::events::EventType;
-    // Handle resize early so viewport is updated regardless of mouse position.
     if (event.type() == ET::eWindowResize) {
         const auto& e = static_cast<const vne::events::WindowResizeEvent&>(event);
-        const float vpw = static_cast<float>(e.width());
-        const float vph = static_cast<float>(e.height());
-        for (auto& ctrl : controllers_) {
-            if (ctrl) {
-                ctrl->setViewportSize(vpw, vph);
-            }
-        }
+        dispatchViewportSize(static_cast<float>(e.width()), static_cast<float>(e.height()));
         return;
     }
     float check_x = static_cast<float>(last_x_);
@@ -168,9 +243,6 @@ void InteractionTestLayer::onEvent(const vne::events::Event& event) {
     if (imgui_layer_) {
         const int idx = imgui_layer_->getHoveredViewportIndex(check_x, check_y);
         viewport_index = (idx >= 0) ? idx : 0;
-        // When mouse is over ImGui panel (idx < 0), do not forward mouse events to
-        // the camera — e.g. scrolling in the control panel should scroll the panel,
-        // not zoom the scene.
         if (idx < 0) {
             const auto t = event.type();
             if (t == ET::eMouseScrolled || t == ET::eMouseMoved || t == ET::eMouseButtonPressed
@@ -180,161 +252,76 @@ void InteractionTestLayer::onEvent(const vne::events::Event& event) {
                     last_x_ = e.x();
                     last_y_ = e.y();
                     first_mouse_ = false;
-                } else if (t == ET::eMouseScrolled) {
-                    const auto [mx, my] = vne::events::Input::mousePosition();
-                    last_x_ = static_cast<double>(mx);
-                    last_y_ = static_cast<double>(my);
                 }
                 return;
             }
         }
     }
 #endif
-    auto* controller = (viewport_index >= 0 && viewport_index < static_cast<int>(controllers_.size()))
-                           ? controllers_[static_cast<size_t>(viewport_index)].get()
-                           : controllers_[0].get();
-    if (!controller) {
-        return;
-    }
-    // Viewport-local coordinates: when ImGui viewports are used, convert window coords to viewport-local
-    float vp_min_x = 0.0f;
-    float vp_min_y = 0.0f;
-    float vp_max_x = 0.0f;
-    float vp_max_y = 0.0f;
-    bool use_viewport_local = false;
 #ifdef VNE_TESTBED_IMGUI
-    if (imgui_layer_ && imgui_layer_->getViewportRect(viewport_index, vp_min_x, vp_min_y, vp_max_x, vp_max_y)) {
-        use_viewport_local = true;
-        const float vp_w = vp_max_x - vp_min_x;
-        const float vp_h = vp_max_y - vp_min_y;
-        controller->setViewportSize(vp_w, vp_h);
+    if (imgui_layer_) {
+        float vp_min_x = 0.0f, vp_min_y = 0.0f, vp_max_x = 0.0f, vp_max_y = 0.0f;
+        if (imgui_layer_->getViewportRect(viewport_index, vp_min_x, vp_min_y, vp_max_x, vp_max_y)) {
+            const float vp_w = vp_max_x - vp_min_x;
+            const float vp_h = vp_max_y - vp_min_y;
+            auto& v = controllers_[static_cast<size_t>(viewport_index)];
+            std::visit([vp_w, vp_h](auto& c) { c.setViewportSize(vp_w, vp_h); }, v);
+        }
     }
 #endif
-    auto toLocal = [&](float wx, float wy) -> std::pair<float, float> {
-        if (use_viewport_local) {
-            return {wx - vp_min_x, wy - vp_min_y};
-        }
-        return {wx, wy};
-    };
-    switch (event.type()) {
-        case ET::eMouseMoved: {
-            const auto& e = static_cast<const vne::events::MouseMovedEvent&>(event);
-            const double dx = first_mouse_ ? 0.0 : (e.x() - last_x_);
-            const double dy = first_mouse_ ? 0.0 : (e.y() - last_y_);
-            last_x_ = e.x();
-            last_y_ = e.y();
-            first_mouse_ = false;
-            const auto [lx, ly] = toLocal(static_cast<float>(e.x()), static_cast<float>(e.y()));
-            controller->handleMouseMove(lx, ly, static_cast<float>(dx), static_cast<float>(dy), kFixedDt);
-            break;
-        }
-        case ET::eMouseButtonPressed: {
-            const auto& e = static_cast<const vne::events::MouseButtonEvent&>(event);
-            const auto [mx, my] = vne::events::Input::mousePosition();
-            last_x_ = static_cast<double>(mx);
-            last_y_ = static_cast<double>(my);
-            first_mouse_ = false;
-            const auto [lx, ly] = toLocal(static_cast<float>(mx), static_cast<float>(my));
-            controller->handleMouseButton(static_cast<int>(e.button()), true, lx, ly, kFixedDt);
-            break;
-        }
-        case ET::eMouseButtonReleased: {
-            const auto& e = static_cast<const vne::events::MouseButtonEvent&>(event);
-            const auto [mx, my] = vne::events::Input::mousePosition();
-            last_x_ = static_cast<double>(mx);
-            last_y_ = static_cast<double>(my);
-            const auto [lx, ly] = toLocal(static_cast<float>(mx), static_cast<float>(my));
-            controller->handleMouseButton(static_cast<int>(e.button()), false, lx, ly, kFixedDt);
-            break;
-        }
-        case ET::eMouseScrolled: {
-            const auto& e = static_cast<const vne::events::MouseScrolledEvent&>(event);
-            const auto [mx, my] = vne::events::Input::mousePosition();
-            last_x_ = static_cast<double>(mx);
-            last_y_ = static_cast<double>(my);
-            const auto [lx, ly] = toLocal(static_cast<float>(mx), static_cast<float>(my));
-            controller->handleMouseScroll(static_cast<float>(e.xOffset()),
-                                          static_cast<float>(e.yOffset()),
-                                          lx,
-                                          ly,
-                                          kFixedDt);
-            break;
-        }
-        case ET::eKeyPressed: {
-            const auto& e = static_cast<const vne::events::KeyEvent&>(event);
-            controller->handleKeyboard(static_cast<int>(e.keyCode()), true, kFixedDt);
-            break;
-        }
-        case ET::eKeyReleased: {
-            const auto& e = static_cast<const vne::events::KeyEvent&>(event);
-            controller->handleKeyboard(static_cast<int>(e.keyCode()), false, kFixedDt);
-            break;
-        }
-        default:
-            break;
+    dispatchEvent(event, viewport_index);
+    if (event.type() == ET::eMouseMoved) {
+        const auto& e = static_cast<const vne::events::MouseMovedEvent&>(event);
+        last_x_ = e.x();
+        last_y_ = e.y();
+        first_mouse_ = false;
     }
 }
 
-void InteractionTestLayer::setManipulatorType(vne::interaction::CameraManipulatorType type) {
-    current_manipulator_type_ = type;
-    for (auto& ctrl : controllers_) {
-        if (ctrl) {
-            ctrl->setManipulator(factory_.create(type));
-            if (camera_) {
-                ctrl->setCamera(camera_);
-            }
-        }
+void InteractionTestLayer::setControllerKind(ControllerKind kind) {
+    current_kind_ = kind;
+    const float vpw = 1280.0f;
+    const float vph = 720.0f;
+    for (size_t i = 0; i < static_cast<size_t>(kMaxViewports); ++i) {
+        controllers_[i] = makeController(kind, navigation_mode_);
+        std::visit(
+            [this, vpw, vph](auto& c) {
+                c.setViewportSize(vpw, vph);
+                if (camera_) {
+                    c.setCamera(camera_);
+                }
+            },
+            controllers_[i]);
     }
-}
-
-vne::interaction::CameraManipulatorType InteractionTestLayer::getManipulatorType() const {
-    return current_manipulator_type_;
-}
-
-vne::interaction::CameraSystemController* InteractionTestLayer::getController() const {
-    return controllers_.empty() ? nullptr : controllers_[0].get();
-}
-
-vne::interaction::CameraSystemController* InteractionTestLayer::getController(int index) const {
-    if (index >= 0 && index < static_cast<int>(controllers_.size())) {
-        return controllers_[static_cast<size_t>(index)].get();
-    }
-    return getController();
 }
 
 void InteractionTestLayer::setZoomMethod(vne::interaction::ZoomMethod method) {
-    for (auto& ctrl : controllers_) {
-        if (!ctrl)
-            continue;
-        auto m = ctrl->getManipulator();
-        if (!m)
-            continue;
-        if (auto* orbit = dynamic_cast<vne::interaction::OrbitManipulator*>(m.get())) {
-            orbit->setZoomMethod(method);
-        } else if (auto* arc = dynamic_cast<vne::interaction::ArcballManipulator*>(m.get())) {
-            arc->setZoomMethod(method);
-        } else if (auto* fps = dynamic_cast<vne::interaction::FpsManipulator*>(m.get())) {
-            fps->setZoomMethod(method);
-        } else if (auto* fly = dynamic_cast<vne::interaction::FlyManipulator*>(m.get())) {
-            fly->setZoomMethod(method);
-        } else if (auto* ortho = dynamic_cast<vne::interaction::OrthoPanZoomManipulator*>(m.get())) {
-            ortho->setZoomMethod(method);
-        }
+    for (auto& v : controllers_) {
+        std::visit(
+            [method](auto& c) {
+                if constexpr (std::is_same_v<std::decay_t<decltype(c)>, vne::interaction::InspectController>) {
+                    c.orbitArcballBehavior().setZoomMethod(method);
+                } else if constexpr (std::is_same_v<std::decay_t<decltype(c)>, vne::interaction::Navigation3DController>) {
+                    c.freeLookBehavior().setZoomMethod(method);
+                } else if constexpr (std::is_same_v<std::decay_t<decltype(c)>, vne::interaction::Ortho2DController>) {
+                    c.orthoPanZoomBehavior().setZoomMethod(method);
+                } else if constexpr (std::is_same_v<std::decay_t<decltype(c)>, vne::interaction::FollowController>) {
+                    c.followBehavior().setZoomMethod(method);
+                }
+            },
+            v);
     }
 }
 
 void InteractionTestLayer::setViewDirection(vne::interaction::ViewDirection dir) {
-    for (auto& ctrl : controllers_) {
-        if (!ctrl) {
-            continue;
-        }
-        auto m = ctrl->getManipulator();
-        if (!m) {
-            continue;
-        }
-        if (auto* orbit = dynamic_cast<vne::interaction::OrbitManipulator*>(m.get())) {
-            orbit->setViewDirection(dir);
-        }
+    for (auto& v : controllers_) {
+        std::visit(
+            [dir](auto& c) {
+                if constexpr (std::is_same_v<std::decay_t<decltype(c)>, vne::interaction::InspectController>) {
+                    c.orbitArcballBehavior().setViewDirection(dir);
+                }
+            },
+            v);
     }
 }
 
@@ -345,43 +332,87 @@ void InteractionTestLayer::resetCamera() {
     camera_->setPosition({4.f, 3.f, 6.f});
     camera_->setTarget({0.f, 0.f, 0.f});
     camera_->updateMatrices();
-    for (auto& ctrl : controllers_) {
-        if (ctrl) {
-            ctrl->reset();
-        }
+    dispatchReset();
+}
+
+void InteractionTestLayer::setMoveSpeed(float speed) {
+    auto* nav = getNavController(0);
+    if (nav) {
+        nav->setMoveSpeed(speed);
     }
 }
 
-void InteractionTestLayer::setFpsSpeed(float speed) {
-    for (auto& ctrl : controllers_) {
-        if (!ctrl) {
-            continue;
-        }
-        auto m = ctrl->getManipulator();
-        if (!m) {
-            continue;
-        }
-        if (auto* fps = dynamic_cast<vne::interaction::FpsManipulator*>(m.get())) {
-            fps->setMoveSpeed(speed);
-        } else if (auto* fly = dynamic_cast<vne::interaction::FlyManipulator*>(m.get())) {
-            fly->setMoveSpeed(speed);
-        }
+void InteractionTestLayer::setMouseSensitivity(float sensitivity) {
+    auto* nav = getNavController(0);
+    if (nav) {
+        nav->setMouseSensitivity(sensitivity);
     }
 }
 
-void InteractionTestLayer::setFpsSensitivity(float sensitivity) {
-    for (auto& ctrl : controllers_) {
-        if (!ctrl) {
-            continue;
-        }
-        auto m = ctrl->getManipulator();
-        if (!m) {
-            continue;
-        }
-        if (auto* fps = dynamic_cast<vne::interaction::FpsManipulator*>(m.get())) {
-            fps->setMouseSensitivity(sensitivity);
-        } else if (auto* fly = dynamic_cast<vne::interaction::FlyManipulator*>(m.get())) {
-            fly->setMouseSensitivity(sensitivity);
+void InteractionTestLayer::setSprintMultiplier(float mult) {
+    auto* nav = getNavController(0);
+    if (nav) {
+        nav->setSprintMultiplier(mult);
+    }
+}
+
+void InteractionTestLayer::setSlowMultiplier(float mult) {
+    auto* nav = getNavController(0);
+    if (nav) {
+        nav->setSlowMultiplier(mult);
+    }
+}
+
+void InteractionTestLayer::setRotationPivotMode(vne::interaction::OrbitPivotMode mode) {
+    for (auto& v : controllers_) {
+        std::visit(
+            [mode](auto& c) {
+                if constexpr (std::is_same_v<std::decay_t<decltype(c)>, vne::interaction::InspectController>) {
+                    c.orbitArcballBehavior().setPivotMode(mode);
+                }
+            },
+            v);
+    }
+}
+
+void InteractionTestLayer::setRotationEnabled(bool enabled) {
+    auto* insp = getInspectController(0);
+    if (insp) {
+        insp->setRotationEnabled(enabled);
+    }
+    auto* ortho = getOrthoController(0);
+    if (ortho) {
+        ortho->setRotationEnabled(enabled);
+    }
+}
+
+void InteractionTestLayer::setPanEnabled(bool enabled) {
+    auto* insp = getInspectController(0);
+    if (insp) {
+        insp->setPanEnabled(enabled);
+    }
+    auto* ortho = getOrthoController(0);
+    if (ortho) {
+        ortho->setPanEnabled(enabled);
+    }
+}
+
+void InteractionTestLayer::setZoomEnabled(bool enabled) {
+    auto* insp = getInspectController(0);
+    if (insp) {
+        insp->setZoomEnabled(enabled);
+    }
+    auto* ortho = getOrthoController(0);
+    if (ortho) {
+        ortho->setZoomEnabled(enabled);
+    }
+}
+
+void InteractionTestLayer::setNavigationMode(vne::interaction::NavigateMode mode) {
+    navigation_mode_ = mode;
+    for (auto& v : controllers_) {
+        if (auto* nav = std::get_if<vne::interaction::Navigation3DController>(&v)) {
+            nav->setMode(mode);
         }
     }
 }
@@ -392,6 +423,35 @@ vne::math::Vec3f InteractionTestLayer::cameraPosition() const {
 
 vne::math::Vec3f InteractionTestLayer::cameraTarget() const {
     return camera_ ? camera_->getTarget() : vne::math::Vec3f{};
+}
+
+vne::interaction::InspectController* InteractionTestLayer::getInspectController(int index) noexcept {
+    if (index < 0 || index >= kMaxViewports
+        || (current_kind_ != ControllerKind::eInspectOrbit && current_kind_ != ControllerKind::eInspectArcball)) {
+        return nullptr;
+    }
+    return std::get_if<vne::interaction::InspectController>(&controllers_[static_cast<size_t>(index)]);
+}
+
+vne::interaction::Navigation3DController* InteractionTestLayer::getNavController(int index) noexcept {
+    if (index < 0 || index >= kMaxViewports || current_kind_ != ControllerKind::eNavigation) {
+        return nullptr;
+    }
+    return std::get_if<vne::interaction::Navigation3DController>(&controllers_[static_cast<size_t>(index)]);
+}
+
+vne::interaction::Ortho2DController* InteractionTestLayer::getOrthoController(int index) noexcept {
+    if (index < 0 || index >= kMaxViewports || current_kind_ != ControllerKind::eOrtho) {
+        return nullptr;
+    }
+    return std::get_if<vne::interaction::Ortho2DController>(&controllers_[static_cast<size_t>(index)]);
+}
+
+vne::interaction::FollowController* InteractionTestLayer::getFollowController(int index) noexcept {
+    if (index < 0 || index >= kMaxViewports || current_kind_ != ControllerKind::eFollow) {
+        return nullptr;
+    }
+    return std::get_if<vne::interaction::FollowController>(&controllers_[static_cast<size_t>(index)]);
 }
 
 // ---------------------------------------------------------------------------
@@ -446,7 +506,6 @@ void InteractionSettingsLayer::setMeshesDir(std::string dir) {
     }
     std::sort(mesh_files_.begin(), mesh_files_.end());
 
-    // Pre-select the currently loaded mesh if known.
     if (mesh_layer_ && !mesh_layer_->getMeshPath().empty()) {
         std::filesystem::path cur(mesh_layer_->getMeshPath());
         for (int i = 0; i < static_cast<int>(mesh_files_.size()); ++i) {
@@ -491,7 +550,6 @@ void InteractionSettingsLayer::handleViewportDrop(int /*viewport_index*/) {
             const char* path_str = static_cast<const char*>(payload->Data);
             std::filesystem::path dropped(path_str);
             loadMesh(dropped);
-            // Update selection highlight.
             for (int i = 0; i < static_cast<int>(mesh_files_.size()); ++i) {
                 if (mesh_files_[static_cast<size_t>(i)] == dropped) {
                     selected_mesh_idx_ = i;
@@ -513,26 +571,19 @@ void InteractionSettingsLayer::renderPanel() {
     }
     auto& il = *interaction_layer_;
 
-    // ---- Scene (grid, axes) ----
     if (scene_layer_ && ImGui::CollapsingHeader("Scene", ImGuiTreeNodeFlags_DefaultOpen)) {
         ImGui::Checkbox("Show grid", &scene_layer_->show_grid_);
         ImGui::Checkbox("Show axes", &scene_layer_->show_axes_);
     }
 
-    // ---- Camera (perspective / orthographic) ----
     renderCameraSettings();
-
-    // ---- Manipulator ----
     renderManipulatorSettings();
 
-    const auto cur_type = il.getManipulatorType();
-
-    // ---- Zoom method (Orbit, Arcball, Fps, Fly, OrthoPanZoom) ----
-    if (cur_type == vne::interaction::CameraManipulatorType::eOrbit
-        || cur_type == vne::interaction::CameraManipulatorType::eArcball
-        || cur_type == vne::interaction::CameraManipulatorType::eFps
-        || cur_type == vne::interaction::CameraManipulatorType::eFly
-        || cur_type == vne::interaction::CameraManipulatorType::eOrthoPanZoom) {
+    const ControllerKind cur = il.getControllerKind();
+    const bool show_zoom = (cur == ControllerKind::eInspectOrbit || cur == ControllerKind::eInspectArcball
+                            || cur == ControllerKind::eNavigation || cur == ControllerKind::eOrtho
+                            || cur == ControllerKind::eFollow);
+    if (show_zoom) {
         if (ImGui::CollapsingHeader("Zoom Method", ImGuiTreeNodeFlags_DefaultOpen)) {
             using ZM = vne::interaction::ZoomMethod;
             const char* znames[] = {"DollyToCoi", "SceneScale", "ChangeFov"};
@@ -547,9 +598,7 @@ void InteractionSettingsLayer::renderPanel() {
         }
     }
 
-    // ---- View direction presets (Orbit / Arcball only) ----
-    if (cur_type == vne::interaction::CameraManipulatorType::eOrbit
-        || cur_type == vne::interaction::CameraManipulatorType::eArcball) {
+    if (cur == ControllerKind::eInspectOrbit || cur == ControllerKind::eInspectArcball) {
         if (ImGui::CollapsingHeader("View Direction", ImGuiTreeNodeFlags_DefaultOpen)) {
             using VD = vne::interaction::ViewDirection;
             struct {
@@ -574,7 +623,6 @@ void InteractionSettingsLayer::renderPanel() {
         }
     }
 
-    // ---- Camera readout ----
     if (ImGui::CollapsingHeader("Camera State", ImGuiTreeNodeFlags_DefaultOpen)) {
         const auto pos = il.cameraPosition();
         const auto tgt = il.cameraTarget();
@@ -592,13 +640,8 @@ void InteractionSettingsLayer::renderPanel() {
         }
     }
 
-    // ---- Mesh Browser ----
     renderMeshBrowser();
-
-    // ---- Lighting ----
     renderLightingSettings();
-
-    // ---- Mesh Transform ----
     renderMeshTransform();
 }
 
@@ -620,14 +663,14 @@ void InteractionSettingsLayer::renderCameraSettings() {
                 sl.syncCameraPositionTargetUp();
                 sl.setUsePerspective(use_persp);
                 if (!use_persp && !il.isManipulatorCompatibleWithCamera(false)) {
-                    il.setManipulatorType(vne::interaction::CameraManipulatorType::eOrbit);
+                    il.setControllerKind(ControllerKind::eInspectArcball);
                 }
                 il.setCamerasFromScene();
             }
         }
         if (ImGui::BeginPopupModal("ManipulatorIncompatible", nullptr, ImGuiWindowFlags_AlwaysAutoResize)) {
-            ImGui::Text("OrthoPanZoom requires Orthographic camera.");
-            ImGui::Text("Switch to Perspective first, or change manipulator to Orbit/Arcball.");
+            ImGui::Text("Ortho controller requires Orthographic camera.");
+            ImGui::Text("Switch to Perspective first, or change controller to Inspect.");
             if (ImGui::Button("OK")) {
                 ImGui::CloseCurrentPopup();
             }
@@ -688,35 +731,36 @@ void InteractionSettingsLayer::renderManipulatorSettings() {
         return;
     }
     auto& il = *interaction_layer_;
-    using MT = vne::interaction::CameraManipulatorType;
+    const ControllerKind cur = il.getControllerKind();
 
-    if (ImGui::CollapsingHeader("Manipulator", ImGuiTreeNodeFlags_DefaultOpen)) {
-        const char* types[] = {"Orbit", "Arcball", "Fps", "Fly", "OrthoPanZoom", "Follow"};
-        const MT values[] = {MT::eOrbit, MT::eArcball, MT::eFps, MT::eFly, MT::eOrthoPanZoom, MT::eFollow};
+    if (ImGui::CollapsingHeader("Controller", ImGuiTreeNodeFlags_DefaultOpen)) {
+        const char* types[] = {"Inspect (Orbit)", "Inspect (Arcball)", "Navigation", "Ortho", "Follow"};
+        const ControllerKind values[] = {ControllerKind::eInspectOrbit, ControllerKind::eInspectArcball,
+                                         ControllerKind::eNavigation,  ControllerKind::eOrtho,
+                                         ControllerKind::eFollow};
         int idx = 0;
-        const MT cur = il.getManipulatorType();
-        for (int i = 0; i < 6; ++i) {
+        for (int i = 0; i < 5; ++i) {
             if (values[i] == cur) {
                 idx = i;
                 break;
             }
         }
-        const bool ortho_only = (cur == MT::eOrthoPanZoom);
+        const bool ortho_only = (cur == ControllerKind::eOrtho);
         const bool need_ortho = ortho_only && scene_layer_->use_perspective_;
         if (need_ortho) {
-            ImGui::TextColored(ImVec4(1.f, 0.4f, 0.4f, 1.f), "OrthoPanZoom requires Orthographic camera");
+            ImGui::TextColored(ImVec4(1.f, 0.4f, 0.4f, 1.f), "Ortho requires Orthographic camera");
         }
-        if (ImGui::Combo("Type##manip", &idx, types, 6)) {
-            const MT new_type = values[idx];
-            if (new_type == MT::eOrthoPanZoom && scene_layer_->use_perspective_) {
-                ImGui::OpenPopup("OrthoPanZoomNeedsOrtho");
+        if (ImGui::Combo("Type##ctrl", &idx, types, 5)) {
+            const ControllerKind new_kind = values[idx];
+            if (new_kind == ControllerKind::eOrtho && scene_layer_->use_perspective_) {
+                ImGui::OpenPopup("OrthoNeedsOrtho");
             } else {
-                il.setManipulatorType(new_type);
+                il.setControllerKind(new_kind);
                 il.setCamerasFromScene();
             }
         }
-        if (ImGui::BeginPopupModal("OrthoPanZoomNeedsOrtho", nullptr, ImGuiWindowFlags_AlwaysAutoResize)) {
-            ImGui::Text("OrthoPanZoom works only with Orthographic camera.");
+        if (ImGui::BeginPopupModal("OrthoNeedsOrtho", nullptr, ImGuiWindowFlags_AlwaysAutoResize)) {
+            ImGui::Text("Ortho works only with Orthographic camera.");
             ImGui::Text("Switch camera to Orthographic first.");
             if (ImGui::Button("OK")) {
                 ImGui::CloseCurrentPopup();
@@ -724,137 +768,137 @@ void InteractionSettingsLayer::renderManipulatorSettings() {
             ImGui::EndPopup();
         }
 
+        if (cur == ControllerKind::eNavigation) {
+            if (auto* nav = il.getNavController()) {
+                const int mode_from_controller = static_cast<int>(nav->getMode());
+                if (mode_from_controller >= 0 && mode_from_controller <= 2) {
+                    nav_mode_idx_ = mode_from_controller;
+                }
+            }
+            const char* modes[] = {"Fps", "Fly", "Game"};
+            const vne::interaction::NavigateMode modes_val[] = {vne::interaction::NavigateMode::eFps,
+                                                               vne::interaction::NavigateMode::eFly,
+                                                               vne::interaction::NavigateMode::eGame};
+            if (ImGui::Combo("Navigation mode##nav_sub", &nav_mode_idx_, modes, 3)) {
+                il.setNavigationMode(modes_val[nav_mode_idx_]);
+            }
+        }
+
         ImGui::Spacing();
         switch (cur) {
-            case MT::eOrbit:
+            case ControllerKind::eInspectOrbit:
                 ImGui::TextDisabled("LMB rotate  RMB pan  Scroll zoom");
                 break;
-            case MT::eArcball:
+            case ControllerKind::eInspectArcball:
                 ImGui::TextDisabled("LMB rotate  RMB pan  Scroll zoom (arcball)");
                 break;
-            case MT::eFps:
-                ImGui::TextDisabled("RMB + WASD/QE move  Mouse look");
+            case ControllerKind::eNavigation:
+                ImGui::TextDisabled("RMB + WASD/QE move  Mouse look (Fps/Fly/Game)");
                 break;
-            case MT::eFly:
-                ImGui::TextDisabled("RMB + WASD/QE move  Mouse look (fly)");
-                break;
-            case MT::eOrthoPanZoom:
+            case ControllerKind::eOrtho:
                 ImGui::TextDisabled("LMB/RMB pan  Scroll zoom (no rotate)");
                 break;
-            case MT::eFollow:
-                ImGui::TextDisabled("Camera follows the target object");
+            case ControllerKind::eFollow:
+                ImGui::TextDisabled("Camera follows the target");
                 break;
         }
 
-        // Per-manipulator settings
-        auto* ctrl = il.getController();
-        if (ctrl) {
-            auto m = ctrl->getManipulator();
-            if (m) {
-                if (auto* orbit = dynamic_cast<vne::interaction::OrbitManipulator*>(m.get())) {
-                    if (ImGui::TreeNodeEx("Orbit Settings", ImGuiTreeNodeFlags_DefaultOpen)) {
-                        using RPM = vne::interaction::RotationPivotMode;
-                        int pivot_idx = static_cast<int>(orbit->getPivotMode());
-                        const char* pivot_names[] = {"COI (pan moves pivot)",
-                                                     "View center (pan end updates COI)",
-                                                     "Fixed world (pan translates eye+target)"};
-                        if (ImGui::Combo("Rotation pivot##orb", &pivot_idx, pivot_names, 3))
-                            orbit->setPivotMode(static_cast<RPM>(pivot_idx));
-                        float rs = orbit->getRotationSpeed();
-                        if (ImGui::SliderFloat("Rotation speed##orb", &rs, 0.1f, 5.f))
-                            orbit->setRotationSpeed(rs);
-                        float ps = orbit->getPanSpeed();
-                        if (ImGui::SliderFloat("Pan speed##orb", &ps, 0.1f, 10.f))
-                            orbit->setPanSpeed(ps);
-                        float zs = orbit->getZoomSpeed();
-                        if (ImGui::SliderFloat("Zoom speed##orb", &zs, 1.01f, 1.5f, "%.3f"))
-                            orbit->setZoomSpeed(zs);
-                        float fs = orbit->getFovZoomSpeed();
-                        if (ImGui::SliderFloat("FOV zoom speed##orb", &fs, 1.01f, 1.2f, "%.3f"))
-                            orbit->setFovZoomSpeed(fs);
-                        float rd = orbit->getRotationDamping();
-                        if (ImGui::SliderFloat("Rotation damping##orb", &rd, 0.f, 20.f))
-                            orbit->setRotationDamping(rd);
-                        float pd = orbit->getPanDamping();
-                        if (ImGui::SliderFloat("Pan damping##orb", &pd, 0.f, 20.f))
-                            orbit->setPanDamping(pd);
-                        ImGui::TreePop();
-                    }
-                } else if (auto* arc = dynamic_cast<vne::interaction::ArcballManipulator*>(m.get())) {
-                    if (ImGui::TreeNodeEx("Arcball Settings", ImGuiTreeNodeFlags_DefaultOpen)) {
-                        using RPM = vne::interaction::RotationPivotMode;
-                        int pivot_idx = static_cast<int>(arc->getPivotMode());
-                        const char* pivot_names[] = {"COI (pan moves pivot)",
-                                                     "View center (pan end updates COI)",
-                                                     "Fixed world (pan translates eye+target)"};
-                        if (ImGui::Combo("Rotation pivot##arc", &pivot_idx, pivot_names, 3))
-                            arc->setPivotMode(static_cast<RPM>(pivot_idx));
-                        float rs = arc->getRotationSpeed();
-                        if (ImGui::SliderFloat("Rotation speed##arc", &rs, 0.1f, 5.f))
-                            arc->setRotationSpeed(rs);
-                        float ps = arc->getPanSpeed();
-                        if (ImGui::SliderFloat("Pan speed##arc", &ps, 0.1f, 10.f))
-                            arc->setPanSpeed(ps);
-                        float zs = arc->getZoomSpeed();
-                        if (ImGui::SliderFloat("Zoom speed##arc", &zs, 1.01f, 1.5f, "%.3f"))
-                            arc->setZoomSpeed(zs);
-                        float rd = arc->getRotationDamping();
-                        if (ImGui::SliderFloat("Rotation damping##arc", &rd, 0.f, 20.f))
-                            arc->setRotationDamping(rd);
-                        float pd = arc->getPanDamping();
-                        if (ImGui::SliderFloat("Pan damping##arc", &pd, 0.f, 20.f))
-                            arc->setPanDamping(pd);
-                        ImGui::TreePop();
-                    }
-                } else if (auto* ortho = dynamic_cast<vne::interaction::OrthoPanZoomManipulator*>(m.get())) {
-                    if (ImGui::TreeNodeEx("OrthoPanZoom Settings", ImGuiTreeNodeFlags_DefaultOpen)) {
-                        float zs = ortho->getZoomSpeed();
-                        if (ImGui::SliderFloat("Zoom speed##ortho", &zs, 1.01f, 1.5f, "%.3f"))
-                            ortho->setZoomSpeed(zs);
-                        float pd = ortho->getPanDamping();
-                        if (ImGui::SliderFloat("Pan damping##ortho", &pd, 0.f, 20.f))
-                            ortho->setPanDamping(pd);
-                        ImGui::TreePop();
-                    }
-                } else if (auto* fps = dynamic_cast<vne::interaction::FpsManipulator*>(m.get())) {
-                    if (ImGui::TreeNodeEx("Fps Settings", ImGuiTreeNodeFlags_DefaultOpen)) {
-                        float ms = fps->getMoveSpeed();
-                        if (ImGui::SliderFloat("Move speed##fps", &ms, 0.5f, 20.f))
-                            fps->setMoveSpeed(ms);
-                        float sens = fps->getMouseSensitivity();
-                        if (ImGui::SliderFloat("Mouse sensitivity##fps", &sens, 0.05f, 0.5f))
-                            fps->setMouseSensitivity(sens);
-                        float zs = fps->getZoomSpeed();
-                        if (ImGui::SliderFloat("Zoom speed##fps", &zs, 0.1f, 5.f))
-                            fps->setZoomSpeed(zs);
-                        float sprint = fps->getSprintMultiplier();
-                        if (ImGui::SliderFloat("Sprint multiplier##fps", &sprint, 1.f, 5.f))
-                            fps->setSprintMultiplier(sprint);
-                        float slow = fps->getSlowMultiplier();
-                        if (ImGui::SliderFloat("Slow multiplier##fps", &slow, 0.1f, 1.f))
-                            fps->setSlowMultiplier(slow);
-                        ImGui::TreePop();
-                    }
-                } else if (auto* fly = dynamic_cast<vne::interaction::FlyManipulator*>(m.get())) {
-                    if (ImGui::TreeNodeEx("Fly Settings", ImGuiTreeNodeFlags_DefaultOpen)) {
-                        float ms = fly->getMoveSpeed();
-                        if (ImGui::SliderFloat("Move speed##fly", &ms, 0.5f, 20.f))
-                            fly->setMoveSpeed(ms);
-                        float sens = fly->getMouseSensitivity();
-                        if (ImGui::SliderFloat("Mouse sensitivity##fly", &sens, 0.05f, 0.5f))
-                            fly->setMouseSensitivity(sens);
-                        float zs = fly->getZoomSpeed();
-                        if (ImGui::SliderFloat("Zoom speed##fly", &zs, 0.1f, 5.f))
-                            fly->setZoomSpeed(zs);
-                        float sprint = fly->getSprintMultiplier();
-                        if (ImGui::SliderFloat("Sprint multiplier##fly", &sprint, 1.f, 5.f))
-                            fly->setSprintMultiplier(sprint);
-                        float slow = fly->getSlowMultiplier();
-                        if (ImGui::SliderFloat("Slow multiplier##fly", &slow, 0.1f, 1.f))
-                            fly->setSlowMultiplier(slow);
-                        ImGui::TreePop();
-                    }
+        // Per-controller settings
+        if (auto* insp = il.getInspectController()) {
+            auto& orb = insp->orbitArcballBehavior();
+            if (ImGui::TreeNodeEx("Inspect Settings", ImGuiTreeNodeFlags_DefaultOpen)) {
+                using OPM = vne::interaction::OrbitPivotMode;
+                int pivot_idx = static_cast<int>(orb.getPivotMode());
+                const char* pivot_names[] = {"COI (pan moves pivot)",
+                                             "View center (pan end updates COI)",
+                                             "Fixed world (pan translates eye+target)"};
+                if (ImGui::Combo("Rotation pivot##insp", &pivot_idx, pivot_names, 3)) {
+                    orb.setPivotMode(static_cast<OPM>(pivot_idx));
                 }
+                if (ImGui::Checkbox("Rotation enabled##insp", &rotation_enabled_insp_)) {
+                    insp->setRotationEnabled(rotation_enabled_insp_);
+                }
+                if (ImGui::Checkbox("Pan enabled##insp", &pan_enabled_insp_)) {
+                    insp->setPanEnabled(pan_enabled_insp_);
+                }
+                if (ImGui::Checkbox("Zoom enabled##insp", &zoom_enabled_insp_)) {
+                    insp->setZoomEnabled(zoom_enabled_insp_);
+                }
+                float rs = orb.getRotationSpeed();
+                if (ImGui::SliderFloat("Rotation speed##insp", &rs, 0.1f, 5.f)) {
+                    orb.setRotationSpeed(rs);
+                }
+                float ps = orb.getPanSpeed();
+                if (ImGui::SliderFloat("Pan speed##insp", &ps, 0.1f, 10.f)) {
+                    orb.setPanSpeed(ps);
+                }
+                float zs = orb.getZoomSpeed();
+                if (ImGui::SliderFloat("Zoom speed##insp", &zs, 1.01f, 1.5f, "%.3f")) {
+                    orb.setZoomSpeed(zs);
+                }
+                float fs = orb.getFovZoomSpeed();
+                if (ImGui::SliderFloat("FOV zoom speed##insp", &fs, 1.01f, 1.2f, "%.3f")) {
+                    orb.setFovZoomSpeed(fs);
+                }
+                float rd = orb.getRotationDamping();
+                if (ImGui::SliderFloat("Rotation damping##insp", &rd, 0.f, 20.f)) {
+                    orb.setRotationDamping(rd);
+                }
+                float pd = orb.getPanDamping();
+                if (ImGui::SliderFloat("Pan damping##insp", &pd, 0.f, 20.f)) {
+                    orb.setPanDamping(pd);
+                }
+                ImGui::TreePop();
+            }
+        } else if (auto* nav = il.getNavController()) {
+            if (ImGui::TreeNodeEx("Navigation Settings", ImGuiTreeNodeFlags_DefaultOpen)) {
+                move_speed_ = nav->getMoveSpeed();
+                if (ImGui::SliderFloat("Move speed##nav", &move_speed_, 0.5f, 20.f)) {
+                    nav->setMoveSpeed(move_speed_);
+                }
+                mouse_sensitivity_ = nav->getMouseSensitivity();
+                if (ImGui::SliderFloat("Mouse sensitivity##nav", &mouse_sensitivity_, 0.05f, 0.5f)) {
+                    nav->setMouseSensitivity(mouse_sensitivity_);
+                }
+                sprint_mult_ = nav->getSprintMultiplier();
+                if (ImGui::SliderFloat("Sprint multiplier##nav", &sprint_mult_, 1.f, 5.f)) {
+                    nav->setSprintMultiplier(sprint_mult_);
+                }
+                slow_mult_ = nav->getSlowMultiplier();
+                if (ImGui::SliderFloat("Slow multiplier##nav", &slow_mult_, 0.1f, 1.f)) {
+                    nav->setSlowMultiplier(slow_mult_);
+                }
+                ImGui::TreePop();
+            }
+        } else if (auto* ortho = il.getOrthoController()) {
+            auto& opz = ortho->orthoPanZoomBehavior();
+            if (ImGui::TreeNodeEx("Ortho Settings", ImGuiTreeNodeFlags_DefaultOpen)) {
+                bool rot_en = ortho->isRotationEnabled();
+                if (ImGui::Checkbox("Rotation enabled##ortho", &rot_en)) {
+                    ortho->setRotationEnabled(rot_en);
+                }
+                float zs = opz.getZoomSpeed();
+                if (ImGui::SliderFloat("Zoom speed##ortho", &zs, 1.01f, 1.5f, "%.3f")) {
+                    opz.setZoomSpeed(zs);
+                }
+                float pd = opz.getPanDamping();
+                if (ImGui::SliderFloat("Pan damping##ortho", &pd, 0.f, 20.f)) {
+                    opz.setPanDamping(pd);
+                }
+                ImGui::TreePop();
+            }
+        } else if (auto* follow = il.getFollowController()) {
+            if (ImGui::TreeNodeEx("Follow Settings", ImGuiTreeNodeFlags_DefaultOpen)) {
+                vne::math::Vec3f off = follow->getOffset();
+                float o[3] = {off.x(), off.y(), off.z()};
+                if (ImGui::SliderFloat3("Offset##follow", o, -20.f, 20.f)) {
+                    follow->setOffset({o[0], o[1], o[2]});
+                }
+                float lag = follow->getLag();
+                if (ImGui::SliderFloat("Lag##follow", &lag, 0.01f, 0.5f, "%.3f")) {
+                    follow->setLag(lag);
+                }
+                ImGui::TreePop();
             }
         }
     }
@@ -871,7 +915,6 @@ void InteractionSettingsLayer::renderMeshBrowser() {
             return;
         }
 
-        // Currently loaded mesh.
         if (mesh_layer_ && !mesh_layer_->getMeshPath().empty()) {
             std::filesystem::path cur(mesh_layer_->getMeshPath());
             ImGui::TextDisabled("Loaded: %s", cur.filename().string().c_str());
@@ -889,7 +932,6 @@ void InteractionSettingsLayer::renderMeshBrowser() {
             return;
         }
 
-        // Scrollable list of mesh files.
         const float list_height = std::min(static_cast<float>(mesh_files_.size()) * 22.0f + 8.0f, 200.0f);
         ImGui::BeginChild("MeshFileList", ImVec2(0.0f, list_height), true);
         for (int i = 0; i < static_cast<int>(mesh_files_.size()); ++i) {
@@ -903,7 +945,6 @@ void InteractionSettingsLayer::renderMeshBrowser() {
                 loadMesh(p);
             }
 
-            // Drag source: drag any item onto the viewport to load it.
             if (ImGui::BeginDragDropSource(ImGuiDragDropFlags_SourceAllowNullID)) {
                 const std::string full = p.string();
                 ImGui::SetDragDropPayload("VNE_MESH_PATH", full.c_str(), full.size() + 1u, ImGuiCond_Once);
@@ -920,7 +961,7 @@ void InteractionSettingsLayer::renderMeshBrowser() {
             ImGui::PopID();
         }
         ImGui::EndChild();
-#endif  // VNE_TESTBED_VNEIO
+#endif
     }
 }
 
@@ -929,12 +970,10 @@ void InteractionSettingsLayer::renderLightingSettings() {
     if (!mesh_layer_) {
         return;
     }
-    // Access the real vnescene light objects stored in MeshLayer.
     auto amb = mesh_layer_->getAmbientLight();
     auto dir = mesh_layer_->getDirectionalLight();
 
     if (ImGui::CollapsingHeader("Lighting", ImGuiTreeNodeFlags_DefaultOpen)) {
-        // ---- Ambient light (vne::scene::AmbientLight) ----
         if (amb && ImGui::TreeNodeEx("Ambient", ImGuiTreeNodeFlags_DefaultOpen)) {
             vne::math::Vec3f ac = amb->getColor();
             float ambCol[3] = {ac.x(), ac.y(), ac.z()};
@@ -948,7 +987,6 @@ void InteractionSettingsLayer::renderLightingSettings() {
             ImGui::TreePop();
         }
 
-        // ---- Directional light (vne::scene::DirectionalLight) ----
         if (dir && ImGui::TreeNodeEx("Directional Light", ImGuiTreeNodeFlags_DefaultOpen)) {
             bool enabled = dir->isEnabled();
             if (ImGui::Checkbox("Enabled##dir", &enabled)) {
@@ -987,7 +1025,6 @@ void InteractionSettingsLayer::renderLightingSettings() {
             ImGui::TreePop();
         }
 
-        // ---- Point lights (if any) ----
         int ptIdx = 0;
         for (const auto& light : mesh_layer_->getSceneState().getLights()) {
             if (!light || light->getLightType() != vne::scene::LightType::ePoint) {
@@ -1025,13 +1062,11 @@ void InteractionSettingsLayer::renderMeshTransform() {
         return;
     }
     if (ImGui::CollapsingHeader("Mesh Transform")) {
-        // Sync scale from MeshLayer so it resets properly when a new mesh is loaded.
         float scale = mesh_layer_->getUniformScale();
         if (ImGui::SliderFloat("Scale##mesh", &scale, 0.001f, 10.0f, "%.3f")) {
             mesh_layer_->setUniformScale(scale);
         }
 
-        // Auto-fit: scale so the mesh AABB fits inside a ~1.5-unit radius sphere.
         if (ImGui::Button("Auto-fit")) {
             const float* mn = mesh_layer_->getAabbMin();
             const float* mx = mesh_layer_->getAabbMax();
@@ -1052,7 +1087,6 @@ void InteractionSettingsLayer::renderMeshTransform() {
             mesh_layer_->setUniformScale(1.0f);
         }
 
-        // AABB display (mesh-local space)
         const float* mn = mesh_layer_->getAabbMin();
         const float* mx = mesh_layer_->getAabbMax();
         ImGui::TextDisabled("AABB min: %.2f %.2f %.2f",
@@ -1082,11 +1116,10 @@ void RegisterTestInteractionDemo(vne::testbed::Application& app) {
     app.getLayerStack().pushLayer(std::unique_ptr<InteractionTestLayer>(interaction), app.getAppContext());
 
 #ifdef VNE_TESTBED_VNEIO
-    // Default mesh: box.ply so there's something to see on startup.
     auto* mesh_layer = new vne::testbed::MeshLayer();
     mesh_layer->setMeshPath(vne::samples::common::getTestdataPath("resources/meshes/box.ply"));
     mesh_layer->setCameraProvider([scene](int i) { return scene->getCamera(i); });
-    mesh_layer->setRenderSortKey(10);  // after grid (0) so mesh draws on top
+    mesh_layer->setRenderSortKey(10);
     app.getLayerStack().pushLayer(std::unique_ptr<vne::testbed::MeshLayer>(mesh_layer), app.getAppContext());
 #endif
 
@@ -1101,9 +1134,7 @@ void RegisterTestInteractionDemo(vne::testbed::Application& app) {
     settings->setSceneLayer(scene);
 
 #ifdef VNE_TESTBED_VNEIO
-    // Connect mesh layer to the settings panel for the mesh browser.
     settings->setMeshLayer(mesh_layer);
-    // Point the browser at the testdata meshes directory.
     settings->setMeshesDir(vne::samples::common::getTestdataPath("resources/meshes"));
 #endif
 
