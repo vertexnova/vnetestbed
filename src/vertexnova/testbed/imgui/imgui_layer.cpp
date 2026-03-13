@@ -575,14 +575,12 @@ void ImGuiLayer::renderViewportWindows(const RenderContext& ctx) {
 #endif
 
         if (ImGui::Begin(title, nullptr, ImGuiWindowFlags_None)) {
-            ImVec2 pos = ImGui::GetWindowPos();
-            ImVec2 size = ImGui::GetWindowSize();
-            viewport_rects_.push_back(pos.x);
-            viewport_rects_.push_back(pos.y);
-            viewport_rects_.push_back(pos.x + size.x);
-            viewport_rects_.push_back(pos.y + size.y);
-
+            ImVec2 content_pos = ImGui::GetCursorScreenPos();
             ImVec2 content_size = ImGui::GetContentRegionAvail();
+            viewport_rects_.push_back(content_pos.x);
+            viewport_rects_.push_back(content_pos.y);
+            viewport_rects_.push_back(content_pos.x + content_size.x);
+            viewport_rects_.push_back(content_pos.y + content_size.y);
             if (tex_id != 0u && content_size.x > 0 && content_size.y > 0) {
                 // ImTextureID via (ImTextureID)(intptr_t) (OpenGL convention; works for void* or ImU64)
                 ImGui::Image(im_tex_id, content_size, ImVec2(0, 1), ImVec2(1, 0));
