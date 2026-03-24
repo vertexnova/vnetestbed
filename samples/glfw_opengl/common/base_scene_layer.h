@@ -1,3 +1,4 @@
+#pragma once
 /* ---------------------------------------------------------------------
  * Copyright (c) 2026 Ajeet Singh Yadav. All rights reserved.
  * Licensed under the Apache License, Version 2.0 (the "License")
@@ -9,8 +10,6 @@
  *
  * ----------------------------------------------------------------------
  */
-
-#pragma once
 
 #include "vertexnova/testbed/app_context.h"
 #include "vertexnova/testbed/debug_draw.h"
@@ -24,8 +23,6 @@
 
 #ifdef VNE_TESTBED_INTERACTION
 #include "vertexnova/events/event.h"
-#include "vertexnova/events/input/input.h"
-#include "vertexnova/events/key_event.h"
 #include "vertexnova/events/mouse_event.h"
 #include "vertexnova/events/types.h"
 #include "vertexnova/events/window_event.h"
@@ -109,34 +106,46 @@ class BaseSceneLayer : public vne::testbed::ILayer {
             }
         }
         debug_draw_->setViewProjectionMatrix(camera->getViewProjectionMatrix());
-        if (show_grid_)
+        if (show_grid_) {
             drawGrid();
-        if (show_axes_)
+        }
+        if (show_axes_) {
             drawAxes();
+        }
         debug_draw_->flush();
     }
 
-    /** @brief Active camera for viewport (ICamera for perspective or orthographic). */
+    /**
+     * @brief Active camera for viewport (ICamera for perspective or orthographic).
+     */
     [[nodiscard]] vne::scene::ICamera* getActiveCamera(int index) const {
         const size_t i = static_cast<size_t>(index >= 0 && index < kMaxViewports ? index : 0);
-        if (use_perspective_ && i < cameras_.size() && cameras_[i])
+        if (use_perspective_ && i < cameras_.size() && cameras_[i]) {
             return cameras_[i].get();
-        if (!use_perspective_ && i < cameras_ortho_.size() && cameras_ortho_[i])
+        }
+        if (!use_perspective_ && i < cameras_ortho_.size() && cameras_ortho_[i]) {
             return cameras_ortho_[i].get();
+        }
         return nullptr;
     }
 
-    /** @brief Active cameras as ICamera for interaction layer. */
+    /**
+     * @brief Active cameras as ICamera for interaction layer.
+     */
     [[nodiscard]] std::vector<std::shared_ptr<vne::scene::ICamera>> getActiveCameras() const {
         std::vector<std::shared_ptr<vne::scene::ICamera>> out;
         if (use_perspective_) {
-            for (const auto& c : cameras_)
-                if (c)
+            for (const auto& c : cameras_) {
+                if (c) {
                     out.push_back(c);
+                }
+            }
         } else {
-            for (const auto& c : cameras_ortho_)
-                if (c)
+            for (const auto& c : cameras_ortho_) {
+                if (c) {
                     out.push_back(c);
+                }
+            }
         }
         return out;
     }
@@ -147,12 +156,14 @@ class BaseSceneLayer : public vne::testbed::ILayer {
             return nullptr;
         if (use_perspective_) {
             const size_t i = static_cast<size_t>(index >= 0 && index < kMaxViewports ? index : 0);
-            if (i < cameras_.size() && cameras_[i])
+            if (i < cameras_.size() && cameras_[i]) {
                 return cameras_[i];
+            }
         } else {
             const size_t i = static_cast<size_t>(index >= 0 && index < kMaxViewports ? index : 0);
-            if (i < cameras_ortho_.size() && cameras_ortho_[i])
+            if (i < cameras_ortho_.size() && cameras_ortho_[i]) {
                 return cameras_ortho_[i];
+            }
         }
         return nullptr;
     }
