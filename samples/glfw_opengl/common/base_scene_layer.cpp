@@ -25,9 +25,8 @@ BaseSceneLayer::BaseSceneLayer(const char* name)
 
 void BaseSceneLayer::onAttach(vne::testbed::AppContext& app_context) {
     buildCameras(1280, 720);
-    scene_state_.setActiveCamera(use_perspective_
-                                     ? std::static_pointer_cast<vne::scene::ICamera>(cameras_[0])
-                                     : std::static_pointer_cast<vne::scene::ICamera>(cameras_ortho_[0]));
+    scene_state_.setActiveCamera(use_perspective_ ? std::static_pointer_cast<vne::scene::ICamera>(cameras_[0])
+                                                  : std::static_pointer_cast<vne::scene::ICamera>(cameras_ortho_[0]));
     debug_draw_ = app_context.debugDraw;
 }
 
@@ -62,8 +61,8 @@ void BaseSceneLayer::onRender(const vne::testbed::RenderContext& render_context)
     if (render_context.frame_info.width > 0 && render_context.frame_info.height > 0) {
         last_vp_w_ = render_context.frame_info.width;
         last_vp_h_ = render_context.frame_info.height;
-        const float aspect = static_cast<float>(render_context.frame_info.width)
-                             / static_cast<float>(render_context.frame_info.height);
+        const float aspect =
+            static_cast<float>(render_context.frame_info.width) / static_cast<float>(render_context.frame_info.height);
         if (use_perspective_) {
             if (auto* p = dynamic_cast<vne::scene::PerspectiveCamera*>(camera)) {
                 p->setAspectRatio(aspect);
@@ -174,9 +173,8 @@ void BaseSceneLayer::setUsePerspective(bool use_persp) {
             }
         }
     }
-    scene_state_.setActiveCamera(use_perspective_
-                                     ? std::static_pointer_cast<vne::scene::ICamera>(cameras_[0])
-                                     : std::static_pointer_cast<vne::scene::ICamera>(cameras_ortho_[0]));
+    scene_state_.setActiveCamera(use_perspective_ ? std::static_pointer_cast<vne::scene::ICamera>(cameras_[0])
+                                                  : std::static_pointer_cast<vne::scene::ICamera>(cameras_ortho_[0]));
 }
 
 void BaseSceneLayer::syncCameraPositionTargetUp() {
@@ -197,9 +195,8 @@ void BaseSceneLayer::syncCameraPositionTargetUp() {
 
 void BaseSceneLayer::rebuildCameras(int w, int h) {
     buildCameras(w, h);
-    scene_state_.setActiveCamera(use_perspective_
-                                     ? std::static_pointer_cast<vne::scene::ICamera>(cameras_[0])
-                                     : std::static_pointer_cast<vne::scene::ICamera>(cameras_ortho_[0]));
+    scene_state_.setActiveCamera(use_perspective_ ? std::static_pointer_cast<vne::scene::ICamera>(cameras_[0])
+                                                  : std::static_pointer_cast<vne::scene::ICamera>(cameras_ortho_[0]));
 }
 
 void BaseSceneLayer::buildCameras(int w, int h) {
