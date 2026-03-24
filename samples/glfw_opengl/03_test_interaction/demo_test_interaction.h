@@ -4,10 +4,10 @@
  * Licensed under the Apache License, Version 2.0 (the "License")
  *
  * Author:    Ajeet Singh Yadav
- * Created:   January 2026
+ * Created:   February 2026
  *
- * Sample 03_test_interaction — declarations (InteractionTestLayer, InteractionSettingsLayer).
- * Uses vneinteraction InspectController, Navigation3DController, Ortho2DController, FollowController.
+ * Autodoc:   yes
+ *
  * ----------------------------------------------------------------------
  */
 
@@ -76,12 +76,12 @@ class InteractionTestLayer : public vne::testbed::ILayer {
 
     InteractionTestLayer();
 
-    void onAttach(vne::testbed::AppContext& ctx) override;
+    void onAttach(vne::testbed::AppContext& app_context) override;
     void onDetach() override;
     void onUpdate(float dt) override;
     void onEvent(const vne::events::Event& event) override;
 
-    void setCamera(std::shared_ptr<vne::scene::ICamera> cam);
+    void setCamera(std::shared_ptr<vne::scene::ICamera> camera);
     void setSceneLayer(BaseSceneLayer* scene);
 
 #ifdef VNE_TESTBED_IMGUI
@@ -127,7 +127,7 @@ class InteractionTestLayer : public vne::testbed::ILayer {
     void dispatchViewportSize(float w, float h);
     void dispatchEvent(const vne::events::Event& event, int viewport_index);
     void dispatchUpdate(double dt);
-    void dispatchSetCamera(std::shared_ptr<vne::scene::ICamera> cam);
+    void dispatchSetCamera(std::shared_ptr<vne::scene::ICamera> camera);
     void dispatchReset();
 
     BaseSceneLayer* scene_layer_{nullptr};
@@ -174,7 +174,7 @@ class InteractionSettingsLayer : public vne::testbed::ILayer {
      */
     void setMeshesDir(std::string dir);
 
-    void onAttach(vne::testbed::AppContext& ctx) override;
+    void onAttach(vne::testbed::AppContext& app_context) override;
     void onDetach() override;
 
    private:
@@ -212,7 +212,7 @@ class InteractionSettingsLayer : public vne::testbed::ILayer {
 };
 #endif
 
-void RegisterTestInteractionDemo(vne::testbed::Application& app);
+void registerTestInteractionDemo(vne::testbed::Application& app);
 
 }  // namespace vne::samples::test_interaction
 

@@ -5,7 +5,8 @@
  * Author:    Ajeet Singh Yadav
  * Created:   March 2026
  *
- * CoreRenderer: registry init in sort order; getMeshRenderer, getDebugDraw, getRendererByName.
+ * Autodoc:   yes
+ *
  * ----------------------------------------------------------------------
  */
 

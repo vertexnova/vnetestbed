@@ -5,7 +5,8 @@
  * Author:    Ajeet Singh Yadav
  * Created:   March 2026
  *
- * PhongMaterial: embedded Blinn-Phong vert/frag, compile and setUniforms.
+ * Autodoc:   yes
+ *
  * ----------------------------------------------------------------------
  */
 

@@ -5,7 +5,8 @@
  * Author:    Ajeet Singh Yadav
  * Created:   March 2026
  *
- * MeshRenderer: init Phong material, drawMesh uses it for indexed draw.
+ * AutoDoc:   Yes
+ *
  * ----------------------------------------------------------------------
  */
 

@@ -3,9 +3,11 @@
  * Copyright (c) 2026 Ajeet Singh Yadav. All rights reserved.
  * Licensed under the Apache License, Version 2.0 (the "License")
  *
- * Shared path helpers for glfw_opengl samples (testdata root, shader lookup).
- * Include from sample .cpp; ensure VNETESTBED_TESTDATA_DIR is defined in CMake
- * when the sample needs getTestdataPath().
+ * Author:    Ajeet Singh Yadav
+ * Created:   March 2026
+ *
+ * Autodoc:   yes
+ *
  * ----------------------------------------------------------------------
  */
 

@@ -3,9 +3,10 @@
  * Licensed under the Apache License, Version 2.0 (the "License")
  *
  * Author:    Ajeet Singh Yadav
- * Created:   January 2026
+ * Created:   February 2026
  *
- * Sample 02_test_scene — implementation (camera, cubes, lights, ImGui panels).
+ * Autodoc:   yes
+ *
  * ----------------------------------------------------------------------
  */
 
@@ -34,6 +35,7 @@ namespace {
 CREATE_VNE_LOGGER_CATEGORY("vnetestbed.samples.test_scene")
 
 // File-scope constants (anonymous namespace, kPascalCase per CODING_GUIDELINES)
+constexpr int kRenderSortKey = 999;  //!< Settings panel layer — just before ImGuiLayer (1000)
 constexpr int kDefaultWidth = 1280;
 constexpr int kDefaultHeight = 720;
 constexpr float kDefaultAspectRatio = 16.0f / 9.0f;
@@ -128,9 +130,9 @@ namespace vne::samples::test_scene {
 SceneTestLayer::SceneTestLayer()
     : vne::testbed::ILayer("SceneTestLayer") {}
 
-void SceneTestLayer::onAttach(vne::testbed::AppContext& ctx) {
-    device_ = ctx.device;
-    debug_draw_ = ctx.debugDraw;
+void SceneTestLayer::onAttach(vne::testbed::AppContext& app_context) {
+    device_ = app_context.device;
+    debug_draw_ = app_context.debugDraw;
 
     buildCamera(kDefaultWidth, kDefaultHeight);
     buildGeometry();
@@ -176,18 +178,20 @@ void SceneTestLayer::onUpdate(float dt) {
     }
 }
 
-void SceneTestLayer::onRender(const vne::testbed::RenderContext& ctx) {
+void SceneTestLayer::onRender(const vne::testbed::RenderContext& render_context) {
     if (!device_ || !shader_.isValid())
         return;
 
     const int vp_idx =
-        (ctx.active_viewport_index >= 0 && ctx.active_viewport_index < kMaxViewports) ? ctx.active_viewport_index : 0;
+        (render_context.active_viewport_index >= 0 && render_context.active_viewport_index < kMaxViewports)
+            ? render_context.active_viewport_index
+            : 0;
 
     // Aspect / resize — only update when the viewport size actually changes
-    if (ctx.frame_info.width > 0 && ctx.frame_info.height > 0) {
-        if (ctx.frame_info.width != last_vp_w || ctx.frame_info.height != last_vp_h) {
-            last_vp_w = ctx.frame_info.width;
-            last_vp_h = ctx.frame_info.height;
+    if (render_context.frame_info.width > 0 && render_context.frame_info.height > 0) {
+        if (render_context.frame_info.width != last_vp_w || render_context.frame_info.height != last_vp_h) {
+            last_vp_w = render_context.frame_info.width;
+            last_vp_h = render_context.frame_info.height;
             updateCameraAspect(last_vp_w, last_vp_h);
         }
     }
@@ -815,22 +819,22 @@ void SceneTestLayer::drawAxes() const {
 #ifdef VNE_TESTBED_IMGUI
 SceneSettingsLayer::SceneSettingsLayer()
     : vne::testbed::ILayer("SceneSettingsLayer") {
-    setRenderSortKey(999);
+    setRenderSortKey(kRenderSortKey);
 }
 
-void SceneSettingsLayer::setImGuiLayer(vne::testbed::ImGuiLayer* l) {
-    imgui_layer_ = l;
+void SceneSettingsLayer::setImGuiLayer(vne::testbed::ImGuiLayer* layer) {
+    imgui_layer_ = layer;
 }
-void SceneSettingsLayer::setSceneLayer(SceneTestLayer* l) {
-    scene_layer_ = l;
+void SceneSettingsLayer::setSceneLayer(SceneTestLayer* layer) {
+    scene_layer_ = layer;
 }
 #ifdef VNE_TESTBED_INTERACTION
-void SceneSettingsLayer::setInteractionLayer(BaseInteractionLayer* l) {
-    interaction_layer_ = l;
+void SceneSettingsLayer::setInteractionLayer(BaseInteractionLayer* layer) {
+    interaction_layer_ = layer;
 }
 #endif
 
-void SceneSettingsLayer::onAttach(vne::testbed::AppContext& /*ctx*/) {
+void SceneSettingsLayer::onAttach(vne::testbed::AppContext& /*app_context*/) {
     if (imgui_layer_) {
         imgui_layer_->setSettingsCallback([this]() { renderPanel(); });
     }
@@ -1068,7 +1072,7 @@ void SceneSettingsLayer::renderPanel() {
 
 // ---------------------------------------------------------------------------
 
-void RegisterTestSceneDemo(vne::testbed::Application& app) {
+void registerTestSceneDemo(vne::testbed::Application& app) {
     // Layer 1: scene (camera + cubes + lights)
     auto* scene = new SceneTestLayer();
     app.getLayerStack().pushLayer(std::unique_ptr<SceneTestLayer>(scene), app.getAppContext());
@@ -1095,6 +1099,6 @@ void RegisterTestSceneDemo(vne::testbed::Application& app) {
 #endif
 }
 
-VNETESTBED_REGISTER_DEMO("test_scene", RegisterTestSceneDemo)
+VNETESTBED_REGISTER_DEMO("test_scene", registerTestSceneDemo)
 
 }  // namespace vne::samples::test_scene

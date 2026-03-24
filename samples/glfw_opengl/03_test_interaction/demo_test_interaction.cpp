@@ -3,10 +3,10 @@
  * Licensed under the Apache License, Version 2.0 (the "License")
  *
  * Author:    Ajeet Singh Yadav
- * Created:   January 2026
+ * Created:   March 2026
  *
- * Sample 03_test_interaction — implementation (interaction layer, settings panel).
- * Uses vneinteraction InspectController, Navigation3DController, Ortho2DController, FollowController.
+ * Autodoc:   yes
+ *
  * ----------------------------------------------------------------------
  */
 
@@ -95,8 +95,8 @@ InteractionTestLayer::InteractionTestLayer()
     }
 }
 
-void InteractionTestLayer::setCamera(std::shared_ptr<vne::scene::ICamera> cam) {
-    camera_ = std::move(cam);
+void InteractionTestLayer::setCamera(std::shared_ptr<vne::scene::ICamera> camera) {
+    camera_ = std::move(camera);
     dispatchSetCamera(camera_);
 }
 
@@ -112,11 +112,11 @@ void InteractionTestLayer::setCamerasFromScene() {
     const auto cams = scene_layer_->getActiveCameras();
     camera_ = cams.empty() ? nullptr : cams[0];
     for (size_t i = 0; i < static_cast<size_t>(kMaxViewports); ++i) {
-        auto cam = (i < cams.size()) ? cams[i] : (cams.empty() ? nullptr : cams[0]);
+        auto viewport_camera = (i < cams.size()) ? cams[i] : (cams.empty() ? nullptr : cams[0]);
         std::visit(
-            [&cam](auto& c) {
-                if (cam) {
-                    c.setCamera(cam);
+            [&viewport_camera](auto& c) {
+                if (viewport_camera) {
+                    c.setCamera(viewport_camera);
                 }
             },
             controllers_[i]);
@@ -182,12 +182,12 @@ void InteractionTestLayer::dispatchUpdate(double dt) {
     }
 }
 
-void InteractionTestLayer::dispatchSetCamera(std::shared_ptr<vne::scene::ICamera> cam) {
-    if (!cam) {
+void InteractionTestLayer::dispatchSetCamera(std::shared_ptr<vne::scene::ICamera> camera) {
+    if (!camera) {
         return;
     }
     for (auto& v : controllers_) {
-        std::visit([&cam](auto& c) { c.setCamera(cam); }, v);
+        std::visit([&camera](auto& c) { c.setCamera(camera); }, v);
     }
 }
 
@@ -197,9 +197,9 @@ void InteractionTestLayer::dispatchReset() {
     }
 }
 
-void InteractionTestLayer::onAttach(vne::testbed::AppContext& ctx) {
-    const float vpw = ctx.window ? static_cast<float>(ctx.window->getWidth()) : 1280.0f;
-    const float vph = ctx.window ? static_cast<float>(ctx.window->getHeight()) : 720.0f;
+void InteractionTestLayer::onAttach(vne::testbed::AppContext& app_context) {
+    const float vpw = app_context.window ? static_cast<float>(app_context.window->getWidth()) : 1280.0f;
+    const float vph = app_context.window ? static_cast<float>(app_context.window->getHeight()) : 720.0f;
     dispatchViewportSize(vpw, vph);
 }
 
@@ -524,7 +524,7 @@ void InteractionSettingsLayer::setMeshesDir(std::string dir) {
     }
 }
 
-void InteractionSettingsLayer::onAttach(vne::testbed::AppContext& /*ctx*/) {
+void InteractionSettingsLayer::onAttach(vne::testbed::AppContext& /*app_context*/) {
     if (imgui_layer_) {
         imgui_layer_->setSettingsCallback([this]() { renderPanel(); });
         imgui_layer_->setViewportOverlayCallback([this](int idx) { handleViewportDrop(idx); });
@@ -1116,7 +1116,7 @@ void InteractionSettingsLayer::renderMeshTransform() {
 // Demo registration
 // ---------------------------------------------------------------------------
 
-void RegisterTestInteractionDemo(vne::testbed::Application& app) {
+void registerTestInteractionDemo(vne::testbed::Application& app) {
     auto* scene = new BaseSceneLayer("TestInteractionBaseSceneLayer");
     app.getLayerStack().pushLayer(std::unique_ptr<BaseSceneLayer>(scene), app.getAppContext());
 
@@ -1152,7 +1152,7 @@ void RegisterTestInteractionDemo(vne::testbed::Application& app) {
 #endif
 }
 
-VNETESTBED_REGISTER_DEMO("test_interaction", RegisterTestInteractionDemo)
+VNETESTBED_REGISTER_DEMO("test_interaction", registerTestInteractionDemo)
 
 }  // namespace vne::samples::test_interaction
 

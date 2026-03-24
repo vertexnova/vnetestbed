@@ -2,15 +2,11 @@
  * Copyright (c) 2026 Ajeet Singh Yadav. All rights reserved.
  * Licensed under the Apache License, Version 2.0 (the "License")
  *
- * Shared base layer for testbed samples: perspective camera + orbit-arcball
- * interaction + grid + axes drawn via IDebugDraw.
+ * Author:    Ajeet Singh Yadav
+ * Created:   February 2026
  *
- * Include this header inside an anonymous namespace in each sample .cpp.
- * The layer is intentionally self-contained so each sample binary has no
- * extra link-time dependencies beyond what its own CMakeLists already lists.
+ * Autodoc:   yes
  *
- * Requires: vne::testbed, vne::scene, vne::events, vne::interaction
- *           (guards below; omit interaction layer if not available)
  * ----------------------------------------------------------------------
  */
 

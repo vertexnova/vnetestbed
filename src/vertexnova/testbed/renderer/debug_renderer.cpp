@@ -5,7 +5,8 @@
  * Author:    Ajeet Singh Yadav
  * Created:   March 2026
  *
- * DebugRenderer: IDebugDraw + IRenderer; batched OpenGL line rendering.
+ * Autodoc:   yes
+ *
  * ----------------------------------------------------------------------
  */
 

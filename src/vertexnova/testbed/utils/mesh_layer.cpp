@@ -5,8 +5,8 @@
  * Author:    Ajeet Singh Yadav
  * Created:   March 2026
  *
- * MeshLayer: loads mesh via vneio, converts vnescene ILight objects to
- * PhongLightParams each frame, and draws with MeshRenderer.
+ * Autodoc:   yes
+ *
  * ----------------------------------------------------------------------
  */
 
