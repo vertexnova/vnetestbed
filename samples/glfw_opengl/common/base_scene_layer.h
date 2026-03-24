@@ -24,9 +24,6 @@
 #ifdef VNE_TESTBED_INTERACTION
 #include "vertexnova/events/event.h"
 #include "vertexnova/events/event_listener.h"
-#include "vertexnova/events/mouse_event.h"
-#include "vertexnova/events/types.h"
-#include "vertexnova/events/window_event.h"
 #include "vertexnova/interaction/inspect_controller.h"
 #include "vertexnova/interaction/interaction_types.h"
 #endif
@@ -36,8 +33,6 @@
 #endif
 
 #include <memory>
-#include <string>
-#include <utility>
 #include <vector>
 
 // ---------------------------------------------------------------------------
@@ -65,6 +60,16 @@ class BaseSceneLayer : public vne::testbed::ILayer {
     [[nodiscard]] std::shared_ptr<vne::scene::PerspectiveCamera> getPerspectiveCamera(int index) const;
     [[nodiscard]] const std::vector<std::shared_ptr<vne::scene::PerspectiveCamera>>& getCameras() const;
 
+    void setUsePerspective(bool use_persp);
+    void syncCameraPositionTargetUp();
+    void rebuildCameras(int w, int h);
+
+   private:
+    void buildCameras(int w, int h);
+    void drawGrid() const;
+    void drawAxes() const;
+
+   public:
     bool show_grid_{true};
     bool show_axes_{true};
     bool use_perspective_{true};
@@ -80,16 +85,8 @@ class BaseSceneLayer : public vne::testbed::ILayer {
     float cam_target_[3]{0.f, 0.f, 0.f};
     float cam_up_[3]{0.f, 1.f, 0.f};
 
-    void setUsePerspective(bool use_persp);
-    void syncCameraPositionTargetUp();
-    void rebuildCameras(int w, int h);
-
    private:
-    void buildCameras(int w, int h);
-    void drawGrid() const;
-    void drawAxes() const;
-
-    std::vector<std::shared_ptr<vne::scene::PerspectiveCamera>> cameras_;
+    std::vector<std::shared_ptr<vne::scene::PerspectiveCamera>> camera_persp_;
     std::vector<std::shared_ptr<vne::scene::OrthographicCamera>> cameras_ortho_;
     vne::scene::SceneState scene_state_;
     vne::testbed::IDebugDraw* debug_draw_{nullptr};
@@ -104,8 +101,6 @@ class BaseSceneLayer : public vne::testbed::ILayer {
 
 class BaseInteractionLayer : public vne::testbed::ILayer, public vne::events::EventListener {
    public:
-    static constexpr double kFixedDt = 0.016;
-
     explicit BaseInteractionLayer(const char* name = "BaseInteractionLayer");
 
     void setCamera(std::shared_ptr<vne::scene::ICamera> camera);

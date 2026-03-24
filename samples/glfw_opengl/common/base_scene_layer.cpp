@@ -14,7 +14,22 @@
 
 #include <vertexnova/math/core/core.h>
 
+#include "vertexnova/events/types.h"
+#include "vertexnova/events/mouse_event.h"
+#include "vertexnova/events/window_event.h"
+
 #include <string>
+
+namespace {
+
+constexpr int kWidth = 1280;
+constexpr int kHight = 720;
+
+#ifdef VNE_TESTBED_INTERACTION
+constexpr double kFixedDt = 0.016;
+#endif
+
+}  // namespace
 
 // ---------------------------------------------------------------------------
 // BaseSceneLayer
@@ -24,8 +39,8 @@ BaseSceneLayer::BaseSceneLayer(const char* name)
     : vne::testbed::ILayer(name) {}
 
 void BaseSceneLayer::onAttach(vne::testbed::AppContext& app_context) {
-    buildCameras(1280, 720);
-    scene_state_.setActiveCamera(use_perspective_ ? std::static_pointer_cast<vne::scene::ICamera>(cameras_[0])
+    buildCameras(kWidth, kHight);
+    scene_state_.setActiveCamera(use_perspective_ ? std::static_pointer_cast<vne::scene::ICamera>(camera_persp_[0])
                                                   : std::static_pointer_cast<vne::scene::ICamera>(cameras_ortho_[0]));
     debug_draw_ = app_context.debugDraw;
 }
@@ -33,12 +48,12 @@ void BaseSceneLayer::onAttach(vne::testbed::AppContext& app_context) {
 void BaseSceneLayer::onDetach() {
     debug_draw_ = nullptr;
     scene_state_.setActiveCamera(nullptr);
-    cameras_.clear();
+    camera_persp_.clear();
     cameras_ortho_.clear();
 }
 
 void BaseSceneLayer::onUpdate(float /*dt*/) {
-    for (auto& cam : cameras_) {
+    for (auto& cam : camera_persp_) {
         if (cam) {
             cam->updateMatrices();
         }
@@ -87,9 +102,9 @@ void BaseSceneLayer::onRender(const vne::testbed::RenderContext& render_context)
 }
 
 vne::scene::ICamera* BaseSceneLayer::getActiveCamera(int index) const {
-    const size_t i = static_cast<size_t>(index >= 0 && index < kMaxViewports ? index : 0);
-    if (use_perspective_ && i < cameras_.size() && cameras_[i]) {
-        return cameras_[i].get();
+    const auto i = static_cast<size_t>(index >= 0 && index < kMaxViewports ? index : 0);
+    if (use_perspective_ && i < camera_persp_.size() && camera_persp_[i]) {
+        return camera_persp_[i].get();
     }
     if (!use_perspective_ && i < cameras_ortho_.size() && cameras_ortho_[i]) {
         return cameras_ortho_[i].get();
@@ -100,7 +115,7 @@ vne::scene::ICamera* BaseSceneLayer::getActiveCamera(int index) const {
 std::vector<std::shared_ptr<vne::scene::ICamera>> BaseSceneLayer::getActiveCameras() const {
     std::vector<std::shared_ptr<vne::scene::ICamera>> out;
     if (use_perspective_) {
-        for (const auto& c : cameras_) {
+        for (const auto& c : camera_persp_) {
             if (c) {
                 out.push_back(c);
             }
@@ -121,12 +136,12 @@ std::shared_ptr<vne::scene::ICamera> BaseSceneLayer::getCamera(int index) const 
         return nullptr;
     }
     if (use_perspective_) {
-        const size_t i = static_cast<size_t>(index >= 0 && index < kMaxViewports ? index : 0);
-        if (i < cameras_.size() && cameras_[i]) {
-            return cameras_[i];
+        const auto i = static_cast<size_t>(index >= 0 && index < kMaxViewports ? index : 0);
+        if (i < camera_persp_.size() && camera_persp_[i]) {
+            return camera_persp_[i];
         }
     } else {
-        const size_t i = static_cast<size_t>(index >= 0 && index < kMaxViewports ? index : 0);
+        const auto i = static_cast<size_t>(index >= 0 && index < kMaxViewports ? index : 0);
         if (i < cameras_ortho_.size() && cameras_ortho_[i]) {
             return cameras_ortho_[i];
         }
@@ -135,14 +150,14 @@ std::shared_ptr<vne::scene::ICamera> BaseSceneLayer::getCamera(int index) const 
 }
 
 std::shared_ptr<vne::scene::PerspectiveCamera> BaseSceneLayer::getPerspectiveCamera(int index) const {
-    if (index >= 0 && index < static_cast<int>(cameras_.size())) {
-        return cameras_[static_cast<size_t>(index)];
+    if (index >= 0 && index < static_cast<int>(camera_persp_.size())) {
+        return camera_persp_[static_cast<size_t>(index)];
     }
-    return cameras_.empty() ? nullptr : cameras_[0];
+    return camera_persp_.empty() ? nullptr : camera_persp_[0];
 }
 
 const std::vector<std::shared_ptr<vne::scene::PerspectiveCamera>>& BaseSceneLayer::getCameras() const {
-    return cameras_;
+    return camera_persp_;
 }
 
 void BaseSceneLayer::setUsePerspective(bool use_persp) {
@@ -155,7 +170,7 @@ void BaseSceneLayer::setUsePerspective(bool use_persp) {
     const vne::math::Vec3f up(cam_up_[0], cam_up_[1], cam_up_[2]);
     use_perspective_ = use_persp;
     if (use_perspective_) {
-        for (auto& c : cameras_) {
+        for (auto& c : camera_persp_) {
             if (c) {
                 c->setPosition(pos);
                 c->setTarget(tgt);
@@ -173,7 +188,7 @@ void BaseSceneLayer::setUsePerspective(bool use_persp) {
             }
         }
     }
-    scene_state_.setActiveCamera(use_perspective_ ? std::static_pointer_cast<vne::scene::ICamera>(cameras_[0])
+    scene_state_.setActiveCamera(use_perspective_ ? std::static_pointer_cast<vne::scene::ICamera>(camera_persp_[0])
                                                   : std::static_pointer_cast<vne::scene::ICamera>(cameras_ortho_[0]));
 }
 
@@ -195,13 +210,13 @@ void BaseSceneLayer::syncCameraPositionTargetUp() {
 
 void BaseSceneLayer::rebuildCameras(int w, int h) {
     buildCameras(w, h);
-    scene_state_.setActiveCamera(use_perspective_ ? std::static_pointer_cast<vne::scene::ICamera>(cameras_[0])
+    scene_state_.setActiveCamera(use_perspective_ ? std::static_pointer_cast<vne::scene::ICamera>(camera_persp_[0])
                                                   : std::static_pointer_cast<vne::scene::ICamera>(cameras_ortho_[0]));
 }
 
 void BaseSceneLayer::buildCameras(int w, int h) {
     const float aspect = (h > 0) ? (static_cast<float>(w) / static_cast<float>(h)) : (16.0f / 9.0f);
-    cameras_.resize(static_cast<size_t>(kMaxViewports));
+    camera_persp_.resize(static_cast<size_t>(kMaxViewports));
     cameras_ortho_.resize(static_cast<size_t>(kMaxViewports));
     const vne::math::Vec3f pos(cam_position_[0], cam_position_[1], cam_position_[2]);
     const vne::math::Vec3f tgt(cam_target_[0], cam_target_[1], cam_target_[2]);
@@ -218,7 +233,7 @@ void BaseSceneLayer::buildCameras(int w, int h) {
         persp->setUp(up);
         persp->setGraphicsApi(vne::math::GraphicsApi::eOpenGL);
         persp->updateMatrices();
-        cameras_[static_cast<size_t>(i)] = std::move(persp);
+        camera_persp_[static_cast<size_t>(i)] = std::move(persp);
 
         const float hw = ortho_half_ * aspect;
         auto ortho = std::make_shared<vne::scene::OrthographicCamera>(-hw,
@@ -347,15 +362,15 @@ void BaseInteractionLayer::onEvent(const vne::events::Event& event) {
     using ET = vne::events::EventType;
     if (event.type() == ET::eWindowResize) {
         const auto& e = static_cast<const vne::events::WindowResizeEvent&>(event);
-        const float vpw = static_cast<float>(e.width());
-        const float vph = static_cast<float>(e.height());
+        const auto vpw = static_cast<float>(e.width());
+        const auto vph = static_cast<float>(e.height());
         for (auto& ctrl : controllers_) {
             ctrl.onResize(vpw, vph);
         }
         return;
     }
-    float check_x = static_cast<float>(last_x_);
-    float check_y = static_cast<float>(last_y_);
+    auto check_x = static_cast<float>(last_x_);
+    auto check_y = static_cast<float>(last_y_);
     if (event.type() == ET::eMouseMoved) {
         const auto& e = static_cast<const vne::events::MouseMovedEvent&>(event);
         check_x = static_cast<float>(e.x());
@@ -371,14 +386,14 @@ void BaseInteractionLayer::onEvent(const vne::events::Event& event) {
         viewport_index = idx;
         float vp_min_x = 0.0f, vp_min_y = 0.0f, vp_max_x = 0.0f, vp_max_y = 0.0f;
         if (imgui_layer_->getViewportRect(viewport_index, vp_min_x, vp_min_y, vp_max_x, vp_max_y)) {
-            const size_t vi = static_cast<size_t>(viewport_index);
+            const auto vi = static_cast<size_t>(viewport_index);
             if (vi < controllers_.size()) {
                 controllers_[vi].onResize(vp_max_x - vp_min_x, vp_max_y - vp_min_y);
             }
         }
     }
 #endif
-    const size_t vi = static_cast<size_t>(viewport_index);
+    const auto vi = static_cast<size_t>(viewport_index);
     if (vi < controllers_.size()) {
         controllers_[vi].onEvent(event, kFixedDt);
     }
