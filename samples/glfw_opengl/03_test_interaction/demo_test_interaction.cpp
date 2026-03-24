@@ -55,8 +55,7 @@ namespace vne::samples::test_interaction {
 
 namespace {
 
-ControllerVariant makeController(ControllerKind kind,
-                                 vne::interaction::NavigateMode nav_mode) {
+ControllerVariant makeController(ControllerKind kind, vne::interaction::NavigateMode nav_mode) {
     switch (kind) {
         case ControllerKind::eInspectOrbit: {
             vne::interaction::InspectController c;
@@ -150,11 +149,10 @@ void InteractionTestLayer::dispatchEvent(const vne::events::Event& event, int vi
     auto& v = controllers_[static_cast<size_t>(viewport_index)];
     std::visit(
         [&event](auto& c) {
-            const bool needs_cursor_position =
-                (event.type() == vne::events::EventType::eMouseScrolled
-                 || event.type() == vne::events::EventType::eMouseButtonPressed
-                 || event.type() == vne::events::EventType::eMouseButtonReleased
-                 || event.type() == vne::events::EventType::eMouseButtonDoubleClicked);
+            const bool needs_cursor_position = (event.type() == vne::events::EventType::eMouseScrolled
+                                                || event.type() == vne::events::EventType::eMouseButtonPressed
+                                                || event.type() == vne::events::EventType::eMouseButtonReleased
+                                                || event.type() == vne::events::EventType::eMouseButtonDoubleClicked);
 
             // Scroll events don't carry cursor position; some mouse button events may also omit it.
             // Controllers depend on their last seen mouse position to compute zoom-to-cursor.
@@ -309,7 +307,8 @@ void InteractionTestLayer::setZoomMethod(vne::interaction::ZoomMethod method) {
             [method](auto& c) {
                 if constexpr (std::is_same_v<std::decay_t<decltype(c)>, vne::interaction::InspectController>) {
                     c.orbitArcballBehavior().setZoomMethod(method);
-                } else if constexpr (std::is_same_v<std::decay_t<decltype(c)>, vne::interaction::Navigation3DController>) {
+                } else if constexpr (std::is_same_v<std::decay_t<decltype(c)>,
+                                                    vne::interaction::Navigation3DController>) {
                     c.freeLookBehavior().setZoomMethod(method);
                 } else if constexpr (std::is_same_v<std::decay_t<decltype(c)>, vne::interaction::Ortho2DController>) {
                     c.orthoPanZoomBehavior().setZoomMethod(method);
@@ -588,9 +587,9 @@ void InteractionSettingsLayer::renderPanel() {
     renderManipulatorSettings();
 
     const ControllerKind cur = il.getControllerKind();
-    const bool show_zoom = (cur == ControllerKind::eInspectOrbit || cur == ControllerKind::eInspectArcball
-                            || cur == ControllerKind::eNavigation || cur == ControllerKind::eOrtho
-                            || cur == ControllerKind::eFollow);
+    const bool show_zoom =
+        (cur == ControllerKind::eInspectOrbit || cur == ControllerKind::eInspectArcball
+         || cur == ControllerKind::eNavigation || cur == ControllerKind::eOrtho || cur == ControllerKind::eFollow);
     if (show_zoom) {
         if (ImGui::CollapsingHeader("Zoom Method", ImGuiTreeNodeFlags_DefaultOpen)) {
             using ZM = vne::interaction::ZoomMethod;
@@ -743,8 +742,10 @@ void InteractionSettingsLayer::renderManipulatorSettings() {
 
     if (ImGui::CollapsingHeader("Controller", ImGuiTreeNodeFlags_DefaultOpen)) {
         const char* types[] = {"Inspect (Orbit)", "Inspect (Arcball)", "Navigation", "Ortho", "Follow"};
-        const ControllerKind values[] = {ControllerKind::eInspectOrbit, ControllerKind::eInspectArcball,
-                                         ControllerKind::eNavigation,  ControllerKind::eOrtho,
+        const ControllerKind values[] = {ControllerKind::eInspectOrbit,
+                                         ControllerKind::eInspectArcball,
+                                         ControllerKind::eNavigation,
+                                         ControllerKind::eOrtho,
                                          ControllerKind::eFollow};
         int idx = 0;
         for (int i = 0; i < 5; ++i) {
@@ -785,8 +786,8 @@ void InteractionSettingsLayer::renderManipulatorSettings() {
             }
             const char* modes[] = {"Fps", "Fly", "Game"};
             const vne::interaction::NavigateMode modes_val[] = {vne::interaction::NavigateMode::eFps,
-                                                               vne::interaction::NavigateMode::eFly,
-                                                               vne::interaction::NavigateMode::eGame};
+                                                                vne::interaction::NavigateMode::eFly,
+                                                                vne::interaction::NavigateMode::eGame};
             if (ImGui::Combo("Navigation mode##nav_sub", &nav_mode_idx_, modes, 3)) {
                 il.setNavigationMode(modes_val[nav_mode_idx_]);
             }
