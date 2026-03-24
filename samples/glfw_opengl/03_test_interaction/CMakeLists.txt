@@ -40,6 +40,7 @@ add_sample_platform_sources(03_test_interaction)
 
 target_link_libraries(03_test_interaction
     PRIVATE
+    vne::glfw_sample_common
     vne::testbed
 )
 

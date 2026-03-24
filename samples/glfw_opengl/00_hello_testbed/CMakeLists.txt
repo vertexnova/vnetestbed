@@ -39,6 +39,7 @@ add_sample_platform_sources(00_hello_testbed)
 
 target_link_libraries(00_hello_testbed
     PRIVATE
+    vne::glfw_sample_common
     vne::testbed
 )
 

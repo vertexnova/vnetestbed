@@ -39,6 +39,7 @@ add_sample_platform_sources(01_test_events)
 
 target_link_libraries(01_test_events
     PRIVATE
+    vne::glfw_sample_common
     vne::testbed
 )
 

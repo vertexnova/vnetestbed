@@ -21,6 +21,30 @@ if(NOT VNE_TESTBED_OPENGL AND NOT VNE_TESTBED_OPENGLES)
 endif()
 
 # ==============================================================================
+# Shared sample code (BaseSceneLayer, BaseInteractionLayer)
+# ==============================================================================
+
+add_library(glfw_sample_common STATIC
+    common/base_scene_layer.cpp
+    common/base_scene_layer.h
+)
+
+add_library(vne::glfw_sample_common ALIAS glfw_sample_common)
+
+target_include_directories(glfw_sample_common PUBLIC
+    "${CMAKE_CURRENT_SOURCE_DIR}"
+)
+
+target_link_libraries(glfw_sample_common PUBLIC
+    vne::testbed
+    vne::scene
+)
+
+if(TARGET vne::interaction)
+    target_link_libraries(glfw_sample_common PUBLIC vne::interaction)
+endif()
+
+# ==============================================================================
 # Subdirectories (baseline → events → scene → interaction)
 # ==============================================================================
 
