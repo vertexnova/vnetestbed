@@ -6,8 +6,8 @@
  * Author:    Ajeet Singh Yadav
  * Created:   March 2026
  *
- * Blinn-Phong n-lights material: ambient, directional, 4 point, spot, attenuation.
- * Used only by MeshRenderer. Vertex layout: position(3) + normal(3) + color(3).
+ * Autodoc:   yes
+ *
  * ----------------------------------------------------------------------
  */
 

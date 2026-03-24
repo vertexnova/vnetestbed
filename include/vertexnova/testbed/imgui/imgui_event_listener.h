@@ -3,12 +3,11 @@
  * Copyright (c) 2026 Ajeet Singh Yadav. All rights reserved.
  * Licensed under the Apache License, Version 2.0 (the "License")
  *
- * ImGui event listener — forwards vne::events to ImGui for manual input handling.
- * Mirrors vertexnova samples/core/imgui/imgui_event_listener pattern.
+ * Author:    Ajeet Singh Yadav
+ * Created:   February 2026
  *
- * Register with EventManager in ImGuiLayer::onAttach. Use with
- * ImGui_ImplGlfw_InitForOpenGL(window, false) so ImGui gets input from
- * this listener instead of GLFW callbacks.
+ * Autodoc:   yes
+ *
  * ----------------------------------------------------------------------
  */
 

@@ -6,7 +6,8 @@
  * Author:    Ajeet Singh Yadav
  * Created:   March 2026
  *
- * Base interface for scene renderers (mesh, debug, volume, slice, etc.).
+ * Autodoc:   yes
+ *
  * ----------------------------------------------------------------------
  */
 

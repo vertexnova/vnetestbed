@@ -6,8 +6,8 @@
  * Author:    Ajeet Singh Yadav
  * Created:   March 2026
  *
- * MeshRenderer: implements IRenderer; draws meshes with Phong material.
- * Does not load meshes; MeshLayer owns VBO/IBO and calls drawMesh.
+ * Autodoc:   yes
+ *
  * ----------------------------------------------------------------------
  */
 

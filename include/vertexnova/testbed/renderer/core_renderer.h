@@ -6,8 +6,8 @@
  * Author:    Ajeet Singh Yadav
  * Created:   March 2026
  *
- * CoreRenderer: extensible registry of renderers by sort key and name.
- * Application registers MeshRenderer (0), DebugRenderer (100); init runs in sort order.
+ * Autodoc:   yes
+ *
  * ----------------------------------------------------------------------
  */
 

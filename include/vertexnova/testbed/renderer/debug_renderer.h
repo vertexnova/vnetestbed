@@ -6,8 +6,8 @@
  * Author:    Ajeet Singh Yadav
  * Created:   March 2026
  *
- * DebugRenderer: IDebugDraw + IRenderer; batched line rendering (OpenGL).
- * Call setViewProjectionMatrix() before flush(). text() is a no-op.
+ * Autodoc:   yes
+ *
  * ----------------------------------------------------------------------
  */
 

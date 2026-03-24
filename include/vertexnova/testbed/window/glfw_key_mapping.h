@@ -6,7 +6,8 @@
  * Author:    Ajeet Singh Yadav
  * Created:   February 2026
  *
- * GLFW → vne::events key/mouse/modifier mapping (xwin-style).
+ * Autodoc:   yes
+ *
  * ----------------------------------------------------------------------
  */
 

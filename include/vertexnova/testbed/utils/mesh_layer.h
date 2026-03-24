@@ -6,10 +6,8 @@
  * Author:    Ajeet Singh Yadav
  * Created:   March 2026
  *
- * MeshLayer: loads a mesh from path (vneio when available), uploads to GPU,
- * draws with MeshRenderer (Blinn-Phong). Lights are managed as vnescene ILight
- * objects in a SceneState; buildLightParams() converts them to PhongLightParams
- * just before each draw call.
+ * Autodoc:   yes
+ *
  * ----------------------------------------------------------------------
  */
 
