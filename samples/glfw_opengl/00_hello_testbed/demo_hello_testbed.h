@@ -23,7 +23,7 @@ class ImGuiLayer;
 }
 #endif
 
-namespace vne::samples::hello_testbed {
+namespace vne::samples {
 
 // ---------------------------------------------------------------------------
 // HelloSettingsLayer — adds the demo-specific section to the Settings panel
@@ -49,4 +49,4 @@ class HelloSettingsLayer : public vne::testbed::ILayer {
 
 void registerHelloTestbedDemo(vne::testbed::Application& app);
 
-}  // namespace vne::samples::hello_testbed
+}  // namespace vne::samples

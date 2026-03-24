@@ -28,7 +28,7 @@ constexpr int kRenderSortKey = 999;  //!< runs just before ImGuiLayer (1000)
 
 }  // namespace
 
-namespace vne::samples::hello_testbed {
+namespace vne::samples {
 
 HelloSettingsLayer::HelloSettingsLayer()
     : vne::testbed::ILayer("HelloSettingsLayer") {
@@ -107,4 +107,4 @@ void registerHelloTestbedDemo(vne::testbed::Application& app) {
 
 VNETESTBED_REGISTER_DEMO("hello_testbed", registerHelloTestbedDemo)
 
-}  // namespace vne::samples::hello_testbed
+}  // namespace vne::samples
