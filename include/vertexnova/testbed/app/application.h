@@ -96,6 +96,13 @@ class Application {
     void registerAsListener();
     /** @brief One frame: events, update, GUI, render, swap. Called repeatedly by run(). */
     void mainLoop();
+    // Opaque backend storage (window, render adapter, device, debug draw); owned in .cpp
+    // Must be declared before layer_stack_ so it is destroyed after the layer stack
+    // (C++ destroys members in reverse declaration order).  Layers call device_->destroy()
+    // in onDetach(), so the device must still be alive when LayerStack::~LayerStack() runs.
+    struct Impl;
+    std::unique_ptr<Impl> impl_;
+
     AppContext app_ctx_{};
     LayerStack layer_stack_;
     bool running_{false};
@@ -103,10 +110,6 @@ class Application {
 #if defined(VNE_TESTBED_EVENTS)
     std::shared_ptr<vne::events::EventListener> application_event_listener_;
 #endif
-
-    // Opaque backend storage (window, render adapter, device, debug draw); owned in .cpp
-    struct Impl;
-    std::unique_ptr<Impl> impl_;
 };
 
 /** Test-only: create/destroy Application so test TUs don't need the complete Impl type. Do not use in production. */
