@@ -365,7 +365,7 @@ class BaseInteractionLayer : public vne::testbed::ILayer, public vne::events::Ev
         const float vpw = ctx.window ? static_cast<float>(ctx.window->getWidth()) : 1280.0f;
         const float vph = ctx.window ? static_cast<float>(ctx.window->getHeight()) : 720.0f;
         for (auto& ctrl : controllers_) {
-            ctrl.setViewportSize(vpw, vph);
+            ctrl.onResize(vpw, vph);
         }
     }
 
@@ -380,7 +380,7 @@ class BaseInteractionLayer : public vne::testbed::ILayer, public vne::events::Ev
                 if (imgui_layer_->getViewportRect(i, min_x, min_y, max_x, max_y)) {
                     const float vp_w = max_x - min_x;
                     const float vp_h = max_y - min_y;
-                    controllers_[static_cast<size_t>(i)].setViewportSize(vp_w, vp_h);
+                    controllers_[static_cast<size_t>(i)].onResize(vp_w, vp_h);
                 }
             }
         }
@@ -400,7 +400,7 @@ class BaseInteractionLayer : public vne::testbed::ILayer, public vne::events::Ev
             const float vpw = static_cast<float>(e.width());
             const float vph = static_cast<float>(e.height());
             for (auto& ctrl : controllers_) {
-                ctrl.setViewportSize(vpw, vph);
+                ctrl.onResize(vpw, vph);
             }
             return;
         }
@@ -423,7 +423,7 @@ class BaseInteractionLayer : public vne::testbed::ILayer, public vne::events::Ev
             if (imgui_layer_->getViewportRect(viewport_index, vp_min_x, vp_min_y, vp_max_x, vp_max_y)) {
                 const size_t vi = static_cast<size_t>(viewport_index);
                 if (vi < controllers_.size()) {
-                    controllers_[vi].setViewportSize(vp_max_x - vp_min_x, vp_max_y - vp_min_y);
+                    controllers_[vi].onResize(vp_max_x - vp_min_x, vp_max_y - vp_min_y);
                 }
             }
         }

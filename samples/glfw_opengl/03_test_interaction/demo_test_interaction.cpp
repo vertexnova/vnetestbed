@@ -139,7 +139,7 @@ void InteractionTestLayer::setImGuiLayer(vne::testbed::ImGuiLayer* layer) {
 
 void InteractionTestLayer::dispatchViewportSize(float w, float h) {
     for (auto& v : controllers_) {
-        std::visit([w, h](auto& c) { c.setViewportSize(w, h); }, v);
+        std::visit([w, h](auto& c) { c.onResize(w, h); }, v);
     }
 }
 
@@ -216,7 +216,7 @@ void InteractionTestLayer::onUpdate(float dt) {
                 const float vp_w = max_x - min_x;
                 const float vp_h = max_y - min_y;
                 auto& v = controllers_[static_cast<size_t>(i)];
-                std::visit([vp_w, vp_h](auto& c) { c.setViewportSize(vp_w, vp_h); }, v);
+                std::visit([vp_w, vp_h](auto& c) { c.onResize(vp_w, vp_h); }, v);
             }
         }
     }
@@ -226,7 +226,7 @@ void InteractionTestLayer::onUpdate(float dt) {
     // Apply scene scale from eSceneScale zoom method to the mesh transform each frame
     if (mesh_layer_) {
         if (auto* insp = getInspectController(0)) {
-            mesh_layer_->setUniformScale(insp->orbitArcballBehavior().getSceneScale());
+            mesh_layer_->setUniformScale(insp->orbitArcballBehavior().getZoomScale());
         }
     }
 #endif
@@ -273,7 +273,7 @@ void InteractionTestLayer::onEvent(const vne::events::Event& event) {
             const float vp_w = vp_max_x - vp_min_x;
             const float vp_h = vp_max_y - vp_min_y;
             auto& v = controllers_[static_cast<size_t>(viewport_index)];
-            std::visit([vp_w, vp_h](auto& c) { c.setViewportSize(vp_w, vp_h); }, v);
+            std::visit([vp_w, vp_h](auto& c) { c.onResize(vp_w, vp_h); }, v);
         }
     }
 #endif
@@ -294,7 +294,7 @@ void InteractionTestLayer::setControllerKind(ControllerKind kind) {
         controllers_[i] = makeController(kind, navigation_mode_);
         std::visit(
             [this, vpw, vph](auto& c) {
-                c.setViewportSize(vpw, vph);
+                c.onResize(vpw, vph);
                 if (camera_) {
                     c.setCamera(camera_);
                 }
