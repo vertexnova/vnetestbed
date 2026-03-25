@@ -310,8 +310,8 @@ bool BaseInteractionLayer::getInteractionEnabled() const {
 }
 
 void BaseInteractionLayer::onAttach(vne::testbed::AppContext& app_context) {
-    const float vpw = app_context.window ? static_cast<float>(app_context.window->getWidth()) : 1280.0f;
-    const float vph = app_context.window ? static_cast<float>(app_context.window->getHeight()) : 720.0f;
+    const float vpw = app_context.window ? static_cast<float>(app_context.window->getWidth()) : kWidth;
+    const float vph = app_context.window ? static_cast<float>(app_context.window->getHeight()) : kHight;
     for (auto& ctrl : controllers_) {
         ctrl.onResize(vpw, vph);
     }
@@ -324,7 +324,10 @@ void BaseInteractionLayer::onUpdate(float dt) {
     if (imgui_layer_) {
         const int n = static_cast<int>(controllers_.size());
         for (int i = 0; i < n; ++i) {
-            float min_x = 0.0f, min_y = 0.0f, max_x = 0.0f, max_y = 0.0f;
+            float min_x = 0.0f;
+            float min_y = 0.0f;
+            float max_x = 0.0f;
+            float max_y = 0.0f;
             if (imgui_layer_->getViewportRect(i, min_x, min_y, max_x, max_y)) {
                 const float vp_w = max_x - min_x;
                 const float vp_h = max_y - min_y;
@@ -342,8 +345,7 @@ void BaseInteractionLayer::onEvent(const vne::events::Event& event) {
     if (!interaction_enabled_ || controllers_.empty()) {
         return;
     }
-    using ET = vne::events::EventType;
-    if (event.type() == ET::eWindowResize) {
+    if (event.type() == vne::events::EventType::eWindowResize) {
         const auto& e = static_cast<const vne::events::WindowResizeEvent&>(event);
         const auto vpw = static_cast<float>(e.width());
         const auto vph = static_cast<float>(e.height());
@@ -354,7 +356,7 @@ void BaseInteractionLayer::onEvent(const vne::events::Event& event) {
     }
     auto check_x = static_cast<float>(last_x_);
     auto check_y = static_cast<float>(last_y_);
-    if (event.type() == ET::eMouseMoved) {
+    if (event.type() == vne::events::EventType::eMouseMoved) {
         const auto& e = static_cast<const vne::events::MouseMovedEvent&>(event);
         check_x = static_cast<float>(e.x());
         check_y = static_cast<float>(e.y());
@@ -367,7 +369,10 @@ void BaseInteractionLayer::onEvent(const vne::events::Event& event) {
             return;
         }
         viewport_index = idx;
-        float vp_min_x = 0.0f, vp_min_y = 0.0f, vp_max_x = 0.0f, vp_max_y = 0.0f;
+        float vp_min_x = 0.0f;
+        float vp_min_y = 0.0f;
+        float vp_max_x = 0.0f;
+        float vp_max_y = 0.0f;
         if (imgui_layer_->getViewportRect(viewport_index, vp_min_x, vp_min_y, vp_max_x, vp_max_y)) {
             const auto vi = static_cast<size_t>(viewport_index);
             if (vi < controllers_.size()) {
@@ -380,7 +385,7 @@ void BaseInteractionLayer::onEvent(const vne::events::Event& event) {
     if (vi < controllers_.size()) {
         controllers_[vi].onEvent(event, kFixedDt);
     }
-    if (event.type() == ET::eMouseMoved) {
+    if (event.type() == vne::events::EventType::eMouseMoved) {
         const auto& e = static_cast<const vne::events::MouseMovedEvent&>(event);
         last_x_ = e.x();
         last_y_ = e.y();
