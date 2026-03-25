@@ -25,6 +25,11 @@ namespace {
 constexpr int kWidth = 1280;
 constexpr int kHight = 720;
 
+static constexpr int kMaxViewports = 4;
+constexpr int kGridLines = 20;
+constexpr float kGridSpacing = 1.0f;
+constexpr float kGridHalf = kGridLines * kGridSpacing * 0.5f;
+
 #ifdef VNE_TESTBED_INTERACTION
 constexpr double kFixedDt = 0.016;
 #endif
@@ -276,8 +281,8 @@ void BaseSceneLayer::drawAxes() const {
 
 BaseInteractionLayer::BaseInteractionLayer(const char* name)
     : vne::testbed::ILayer(name) {
-    controllers_.reserve(static_cast<size_t>(BaseSceneLayer::kMaxViewports));
-    for (int i = 0; i < BaseSceneLayer::kMaxViewports; ++i) {
+    controllers_.reserve(static_cast<size_t>(kMaxViewports));
+    for (int i = 0; i < kMaxViewports; ++i) {
         vne::interaction::InspectController c;
         c.setRotationMode(vne::interaction::OrbitRotationMode::eOrbit);
         controllers_.push_back(std::move(c));

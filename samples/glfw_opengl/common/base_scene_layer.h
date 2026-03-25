@@ -25,7 +25,6 @@
 #include "vertexnova/events/event.h"
 #include "vertexnova/events/event_listener.h"
 #include "vertexnova/interaction/inspect_controller.h"
-#include "vertexnova/interaction/interaction_types.h"
 #endif
 
 #ifdef VNE_TESTBED_IMGUI
@@ -42,11 +41,6 @@
 // ---------------------------------------------------------------------------
 class BaseSceneLayer : public vne::testbed::ILayer {
    public:
-    static constexpr int kMaxViewports = 4;
-    static constexpr int kGridLines = 20;
-    static constexpr float kGridSpacing = 1.0f;
-    static constexpr float kGridHalf = kGridLines * kGridSpacing * 0.5f;
-
     explicit BaseSceneLayer(const char* name = "BaseSceneLayer");
 
     void onAttach(vne::testbed::AppContext& app_context) override;
