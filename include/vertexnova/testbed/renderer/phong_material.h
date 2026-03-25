@@ -63,6 +63,9 @@ struct PhongLightParams {
 /**
  * @class PhongMaterial
  * @brief Holds shader and pipeline for Blinn-Phong; compiles embedded GLSL and exposes setUniforms.
+ *
+ * Vertex shader transforms normals with the inverse-transpose of the model matrix upper-left 3×3
+ * (correct for non-uniform scale; rotation+uniform scale are unchanged vs mat3(u_model)).
  */
 class PhongMaterial {
    public:

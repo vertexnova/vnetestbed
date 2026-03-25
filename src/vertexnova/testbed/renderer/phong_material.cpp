@@ -47,7 +47,8 @@ uniform mat4 u_model;
 void main() {
     vec4 world_pos = u_model * vec4(a_position, 1.0);
     v_world_position = world_pos.xyz;
-    v_normal = normalize(mat3(u_model) * a_normal);
+    mat3 normal_matrix = transpose(inverse(mat3(u_model)));
+    v_normal = normalize(normal_matrix * a_normal);
     v_color = a_color;
     gl_Position = u_mvp * vec4(a_position, 1.0);
 }
@@ -165,7 +166,8 @@ uniform mat4 u_model;
 void main() {
     vec4 world_pos = u_model * vec4(a_position, 1.0);
     v_world_position = world_pos.xyz;
-    v_normal = normalize(mat3(u_model) * a_normal);
+    mat3 normal_matrix = transpose(inverse(mat3(u_model)));
+    v_normal = normalize(normal_matrix * a_normal);
     v_color = a_color;
     gl_Position = u_mvp * vec4(a_position, 1.0);
 }
