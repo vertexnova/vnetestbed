@@ -147,17 +147,6 @@ std::vector<std::shared_ptr<vne::scene::ICamera>> BaseSceneLayer::getActiveCamer
     return out;
 }
 
-std::shared_ptr<vne::scene::PerspectiveCamera> BaseSceneLayer::getPerspectiveCamera(int index) const {
-    if (index >= 0 && index < static_cast<int>(camera_persp_.size())) {
-        return camera_persp_[static_cast<size_t>(index)];
-    }
-    return camera_persp_.empty() ? nullptr : camera_persp_[0];
-}
-
-const std::vector<std::shared_ptr<vne::scene::PerspectiveCamera>>& BaseSceneLayer::getCameras() const {
-    return camera_persp_;
-}
-
 void BaseSceneLayer::setUsePerspective(bool use_persp) {
     if (ui_settings_.use_perspective == use_persp) {
         return;

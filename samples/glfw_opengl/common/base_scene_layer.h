@@ -80,8 +80,6 @@ class BaseSceneLayer : public vne::testbed::ILayer {
      */
     [[nodiscard]] vne::scene::ICamera* getActiveCameraPtr(int index) const;
     [[nodiscard]] std::vector<std::shared_ptr<vne::scene::ICamera>> getActiveCameras() const;
-    [[nodiscard]] std::shared_ptr<vne::scene::PerspectiveCamera> getPerspectiveCamera(int index) const;
-    [[nodiscard]] const std::vector<std::shared_ptr<vne::scene::PerspectiveCamera>>& getCameras() const;
 
     [[nodiscard]] UiSettings& uiSettings() noexcept { return ui_settings_; }
     [[nodiscard]] const UiSettings& uiSettings() const noexcept { return ui_settings_; }
