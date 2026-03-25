@@ -13,6 +13,10 @@
 
 #include "vertexnova/events/event.h"
 
+#include <algorithm>
+#include <utility>
+#include <vector>
+
 namespace vne {
 namespace testbed {
 
@@ -112,22 +116,52 @@ void LayerStack::onBeginRender(const RenderContext& ctx) {
 }
 
 void LayerStack::onRender(const RenderContext& ctx) {
+    std::vector<std::pair<int, ILayer*>> sorted_layers;
+    sorted_layers.reserve(layers_.size());
     for (const auto& layer : layers_) {
         if (layer && layer->isEnabled() && layer->isVisible()) {
-            layer->onRender(ctx);
+            sorted_layers.emplace_back(layer->getRenderSortKey(), layer.get());
         }
     }
+    std::stable_sort(sorted_layers.begin(), sorted_layers.end(), [](const auto& a, const auto& b) {
+        return a.first < b.first;
+    });
+    for (const auto& p : sorted_layers) {
+        if (p.second) {
+            p.second->onRender(ctx);
+        }
+    }
+    std::vector<std::pair<int, ILayer*>> sorted_overlays;
+    sorted_overlays.reserve(overlays_.size());
     for (const auto& overlay : overlays_) {
         if (overlay && overlay->isEnabled() && overlay->isVisible()) {
-            overlay->onRender(ctx);
+            sorted_overlays.emplace_back(overlay->getRenderSortKey(), overlay.get());
+        }
+    }
+    std::stable_sort(sorted_overlays.begin(), sorted_overlays.end(), [](const auto& a, const auto& b) {
+        return a.first < b.first;
+    });
+    for (const auto& p : sorted_overlays) {
+        if (p.second) {
+            p.second->onRender(ctx);
         }
     }
 }
 
 void LayerStack::onRenderLayersOnly(const RenderContext& ctx) {
+    std::vector<std::pair<int, ILayer*>> sorted_layers;
+    sorted_layers.reserve(layers_.size());
     for (const auto& layer : layers_) {
         if (layer && layer->isEnabled() && layer->isVisible()) {
-            layer->onRender(ctx);
+            sorted_layers.emplace_back(layer->getRenderSortKey(), layer.get());
+        }
+    }
+    std::stable_sort(sorted_layers.begin(), sorted_layers.end(), [](const auto& a, const auto& b) {
+        return a.first < b.first;
+    });
+    for (const auto& p : sorted_layers) {
+        if (p.second) {
+            p.second->onRender(ctx);
         }
     }
 }

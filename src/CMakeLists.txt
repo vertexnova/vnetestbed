@@ -42,6 +42,7 @@ set(SOURCE_FILES
     vertexnova/testbed/logging_guard.cpp
     vertexnova/testbed/layer.cpp
     vertexnova/testbed/layer_stack.cpp
+    vertexnova/testbed/utils/mesh_layer.cpp
 )
 
 set(HEADER_FILES
@@ -58,6 +59,8 @@ set(HEADER_FILES
     ${VNE_INCLUDE_DIR}/vertexnova/testbed/render_device.h
     ${VNE_INCLUDE_DIR}/vertexnova/testbed/debug_draw.h
     ${VNE_INCLUDE_DIR}/vertexnova/testbed/window.h
+    ${VNE_INCLUDE_DIR}/vertexnova/testbed/utils/mesh_layer.h
+    ${VNE_INCLUDE_DIR}/vertexnova/testbed/renderer/irenderer.h
 )
 
 # ImGui layer (when imgui submodule + OpenGL available)
@@ -148,7 +151,10 @@ if(VNE_TESTBED_OPENGL OR VNE_TESTBED_OPENGLES)
         vertexnova/testbed/gl/draw.cpp
         vertexnova/testbed/gl/opengl_render_adapter.cpp
         vertexnova/testbed/gl/opengl_render_device.cpp
-        vertexnova/testbed/gl/opengl_debug_draw.cpp
+        vertexnova/testbed/renderer/phong_material.cpp
+        vertexnova/testbed/renderer/mesh_renderer.cpp
+        vertexnova/testbed/renderer/debug_renderer.cpp
+        vertexnova/testbed/renderer/core_renderer.cpp
     )
     if(TARGET vne::interaction)
         target_compile_definitions(vnetestbed PUBLIC VNE_TESTBED_INTERACTION)

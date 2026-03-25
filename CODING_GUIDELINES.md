@@ -490,6 +490,9 @@ Order includes in groups, separated by blank lines:
  *
  * Author:    Ajeet Singh Yadav
  * Created:   January 2026
+ *
+ * Autodoc:   yes
+ *
  * ----------------------------------------------------------------------
  */
 

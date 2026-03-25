@@ -30,17 +30,24 @@ struct FrameInfo {
     float dt{0.0F};
 };
 
+/** @brief Current render target (window or viewport) size. Used for resize and viewport setup. */
+struct FramebufferInfo {
+    int width{0};
+    int height{0};
+};
+
 /**
  * @struct RenderContext
  * @brief Context passed to layers during onBeginRender, onRender, onGuiBegin, onGuiRender, onGuiEnd.
  *
- * Provides frame dimensions, delta time, and optional debug draw. Layers receive
- * const RenderContext& and can use debug_draw for geometry visualization.
+ * Provides framebuffer size, frame dimensions, delta time, and optional debug draw.
+ * Layers receive const RenderContext& and can use debug_draw for geometry visualization.
  *
  * When rendering to multiple viewports, active_viewport_index identifies which
  * viewport (0..N-1) is being rendered; scene layers use this to select the camera.
  */
 struct RenderContext {
+    FramebufferInfo framebuffer{};  ///< Current render target size (for viewport / resize).
     FrameInfo frame_info{};
     IDebugDraw* debug_draw{nullptr};
     int active_viewport_index{0};  ///< 0 for single viewport; 0..N-1 for multi-viewport

@@ -4,9 +4,10 @@
  * Licensed under the Apache License, Version 2.0 (the "License")
  *
  * Author:    Ajeet Singh Yadav
- * Created:   January 2026
+ * Created:   February 2026
  *
- * Sample 02_test_scene — declarations (SceneTestLayer, SceneSettingsLayer).
+ * Autodoc:   yes
+ *
  * ----------------------------------------------------------------------
  */
 
@@ -65,10 +66,10 @@ class SceneTestLayer : public vne::testbed::ILayer {
     SceneTestLayer();
 
     // 3. Public methods (ILayer overrides)
-    void onAttach(vne::testbed::AppContext& ctx) override;
+    void onAttach(vne::testbed::AppContext& app_context) override;
     void onDetach() override;
     void onUpdate(float dt) override;
-    void onRender(const vne::testbed::RenderContext& ctx) override;
+    void onRender(const vne::testbed::RenderContext& render_context) override;
 
     // 4. Public methods (camera, cubes, lights, reset)
     void rebuildCamera(int w, int h);
@@ -186,13 +187,13 @@ class SceneSettingsLayer : public vne::testbed::ILayer {
    public:
     SceneSettingsLayer();
 
-    void setImGuiLayer(vne::testbed::ImGuiLayer* l);
-    void setSceneLayer(SceneTestLayer* l);
+    void setImGuiLayer(vne::testbed::ImGuiLayer* layer);
+    void setSceneLayer(SceneTestLayer* layer);
 #ifdef VNE_TESTBED_INTERACTION
-    void setInteractionLayer(BaseInteractionLayer* l);
+    void setInteractionLayer(BaseInteractionLayer* layer);
 #endif
 
-    void onAttach(vne::testbed::AppContext& ctx) override;
+    void onAttach(vne::testbed::AppContext& app_context) override;
     void onDetach() override;
 
    private:
@@ -206,6 +207,6 @@ class SceneSettingsLayer : public vne::testbed::ILayer {
 };
 #endif
 
-void RegisterTestSceneDemo(vne::testbed::Application& app);
+void registerTestSceneDemo(vne::testbed::Application& app);
 
 }  // namespace vne::samples::test_scene

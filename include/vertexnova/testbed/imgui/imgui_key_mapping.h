@@ -3,8 +3,11 @@
  * Copyright (c) 2026 Ajeet Singh Yadav. All rights reserved.
  * Licensed under the Apache License, Version 2.0 (the "License")
  *
- * Mapping from vne::events key/mouse/modifier types to ImGui equivalents.
- * Used by ImGuiEventListener for manual event forwarding.
+ * Author:    Ajeet Singh Yadav
+ * Created:   February 2026
+ *
+ * Autodoc:   yes
+ *
  * ----------------------------------------------------------------------
  */
 
