@@ -43,7 +43,9 @@
 // ---------------------------------------------------------------------------
 class BaseSceneLayer : public vne::testbed::ILayer {
    public:
-    /** Mutable camera/grid UI state for samples (ImGui binds to these fields). */
+    /**
+     * Mutable camera/grid UI state for samples (ImGui binds to these fields).
+     */
     struct UiSettings {
         bool show_grid{true};
         bool show_axes{true};
