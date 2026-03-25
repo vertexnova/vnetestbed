@@ -20,6 +20,7 @@
 #include "vertexnova/scene/camera/orthographic_camera.h"
 #include "vertexnova/scene/camera/perspective_camera.h"
 #include "vertexnova/scene/scene_state.h"
+#include "vertexnova/math/core/vec.h"
 
 #ifdef VNE_TESTBED_INTERACTION
 #include "vertexnova/events/event.h"
@@ -58,9 +59,9 @@ class BaseSceneLayer : public vne::testbed::ILayer {
         float ortho_far{100.0f};
         int last_viewport_w{1280};
         int last_viewport_h{720};
-        float cam_position[3]{4.f, 3.f, 6.f};
-        float cam_target[3]{0.f, 0.f, 0.f};
-        float cam_up[3]{0.f, 1.f, 0.f};
+        vne::math::Vec3f cam_position{4.0f, 3.0f, 6.0f};
+        vne::math::Vec3f cam_target{0.0f, 0.0f, 0.0f};
+        vne::math::Vec3f cam_up{0.0f, 1.0f, 0.0f};
     };
 
     explicit BaseSceneLayer(const char* name = "BaseSceneLayer");

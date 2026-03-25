@@ -152,11 +152,9 @@ void BaseSceneLayer::setUsePerspective(bool use_persp) {
         return;
     }
     syncCameraPositionTargetUp();
-    const vne::math::Vec3f pos(ui_settings_.cam_position[0],
-                               ui_settings_.cam_position[1],
-                               ui_settings_.cam_position[2]);
-    const vne::math::Vec3f tgt(ui_settings_.cam_target[0], ui_settings_.cam_target[1], ui_settings_.cam_target[2]);
-    const vne::math::Vec3f up(ui_settings_.cam_up[0], ui_settings_.cam_up[1], ui_settings_.cam_up[2]);
+    const vne::math::Vec3f pos = ui_settings_.cam_position;
+    const vne::math::Vec3f tgt = ui_settings_.cam_target;
+    const vne::math::Vec3f up = ui_settings_.cam_up;
     ui_settings_.use_perspective = use_persp;
     if (ui_settings_.use_perspective) {
         for (auto& c : camera_persp_) {
@@ -187,15 +185,9 @@ void BaseSceneLayer::syncCameraPositionTargetUp() {
     if (!active) {
         return;
     }
-    ui_settings_.cam_position[0] = active->getPosition().x();
-    ui_settings_.cam_position[1] = active->getPosition().y();
-    ui_settings_.cam_position[2] = active->getPosition().z();
-    ui_settings_.cam_target[0] = active->getTarget().x();
-    ui_settings_.cam_target[1] = active->getTarget().y();
-    ui_settings_.cam_target[2] = active->getTarget().z();
-    ui_settings_.cam_up[0] = active->getUp().x();
-    ui_settings_.cam_up[1] = active->getUp().y();
-    ui_settings_.cam_up[2] = active->getUp().z();
+    ui_settings_.cam_position = active->getPosition();
+    ui_settings_.cam_target = active->getTarget();
+    ui_settings_.cam_up = active->getUp();
 }
 
 void BaseSceneLayer::rebuildCameras(int w, int h) {
@@ -209,11 +201,9 @@ void BaseSceneLayer::buildCameras(int w, int h) {
     const float aspect = (h > 0) ? (static_cast<float>(w) / static_cast<float>(h)) : (16.0f / 9.0f);
     camera_persp_.resize(static_cast<size_t>(kMaxViewports));
     cameras_ortho_.resize(static_cast<size_t>(kMaxViewports));
-    const vne::math::Vec3f pos(ui_settings_.cam_position[0],
-                               ui_settings_.cam_position[1],
-                               ui_settings_.cam_position[2]);
-    const vne::math::Vec3f tgt(ui_settings_.cam_target[0], ui_settings_.cam_target[1], ui_settings_.cam_target[2]);
-    const vne::math::Vec3f up(ui_settings_.cam_up[0], ui_settings_.cam_up[1], ui_settings_.cam_up[2]);
+    const vne::math::Vec3f pos = ui_settings_.cam_position;
+    const vne::math::Vec3f tgt = ui_settings_.cam_target;
+    const vne::math::Vec3f up = ui_settings_.cam_up;
     for (int i = 0; i < kMaxViewports; ++i) {
         auto persp = std::make_shared<vne::scene::PerspectiveCamera>(ui_settings_.fov,
                                                                      static_cast<float>(w),
