@@ -75,7 +75,7 @@ void BaseSceneLayer::onRender(const vne::testbed::RenderContext& render_context)
     const int idx = (render_context.active_viewport_index >= 0 && render_context.active_viewport_index < kMaxViewports)
                         ? render_context.active_viewport_index
                         : 0;
-    vne::scene::ICamera* camera = getActiveCamera(idx);
+    vne::scene::ICamera* camera = getActiveCameraPtr(idx);
     if (!camera || !debug_draw_) {
         return;
     }
@@ -102,6 +102,7 @@ void BaseSceneLayer::onRender(const vne::testbed::RenderContext& render_context)
             }
         }
     }
+
     debug_draw_->setViewProjectionMatrix(camera->getViewProjectionMatrix());
     if (ui_settings_.show_grid) {
         drawGrid();
@@ -112,15 +113,20 @@ void BaseSceneLayer::onRender(const vne::testbed::RenderContext& render_context)
     debug_draw_->flush();
 }
 
-vne::scene::ICamera* BaseSceneLayer::getActiveCamera(int index) const {
+std::shared_ptr<vne::scene::ICamera> BaseSceneLayer::getActiveCamera(int index) const {
     const auto i = static_cast<size_t>(index >= 0 && index < kMaxViewports ? index : 0);
-    if (ui_settings_.use_perspective && i < camera_persp_.size() && camera_persp_[i]) {
-        return camera_persp_[i].get();
-    }
-    if (!ui_settings_.use_perspective && i < cameras_ortho_.size() && cameras_ortho_[i]) {
-        return cameras_ortho_[i].get();
+    if (ui_settings_.use_perspective) {
+        if (i < camera_persp_.size() && camera_persp_[i]) {
+            return camera_persp_[i];
+        }
+    } else if (i < cameras_ortho_.size() && cameras_ortho_[i]) {
+        return cameras_ortho_[i];
     }
     return nullptr;
+}
+
+vne::scene::ICamera* BaseSceneLayer::getActiveCameraPtr(int index) const {
+    return getActiveCamera(index).get();
 }
 
 std::vector<std::shared_ptr<vne::scene::ICamera>> BaseSceneLayer::getActiveCameras() const {
@@ -139,25 +145,6 @@ std::vector<std::shared_ptr<vne::scene::ICamera>> BaseSceneLayer::getActiveCamer
         }
     }
     return out;
-}
-
-std::shared_ptr<vne::scene::ICamera> BaseSceneLayer::getCamera(int index) const {
-    vne::scene::ICamera* cam = getActiveCamera(index);
-    if (!cam) {
-        return nullptr;
-    }
-    if (ui_settings_.use_perspective) {
-        const auto i = static_cast<size_t>(index >= 0 && index < kMaxViewports ? index : 0);
-        if (i < camera_persp_.size() && camera_persp_[i]) {
-            return camera_persp_[i];
-        }
-    } else {
-        const auto i = static_cast<size_t>(index >= 0 && index < kMaxViewports ? index : 0);
-        if (i < cameras_ortho_.size() && cameras_ortho_[i]) {
-            return cameras_ortho_[i];
-        }
-    }
-    return nullptr;
 }
 
 std::shared_ptr<vne::scene::PerspectiveCamera> BaseSceneLayer::getPerspectiveCamera(int index) const {
@@ -207,7 +194,7 @@ void BaseSceneLayer::setUsePerspective(bool use_persp) {
 }
 
 void BaseSceneLayer::syncCameraPositionTargetUp() {
-    vne::scene::ICamera* active = getActiveCamera(0);
+    vne::scene::ICamera* active = getActiveCameraPtr(0);
     if (!active) {
         return;
     }

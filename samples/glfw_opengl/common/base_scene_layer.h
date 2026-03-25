@@ -36,7 +36,7 @@
 
 // ---------------------------------------------------------------------------
 // BaseSceneLayer — grid + axes + perspective or orthographic camera
-// Exposes getCamera() / getCamera(i) / getActiveCameras() for interaction layers.
+// Exposes getActiveCamera(i), getActiveCameraPtr(i), and getActiveCameras() for interaction layers.
 // Supports per-viewport cameras for 2 or 4 viewport layouts.
 //
 // UiSettings: sample/ImGui tunables (stable addresses for ImGui::SliderFloat etc.).
@@ -70,9 +70,16 @@ class BaseSceneLayer : public vne::testbed::ILayer {
     void onUpdate(float dt) override;
     void onRender(const vne::testbed::RenderContext& render_context) override;
 
-    [[nodiscard]] vne::scene::ICamera* getActiveCamera(int index) const;
+    /**
+     * @brief ownership shared ownership; perspective or ortho per ui settings.
+     *
+     */
+    [[nodiscard]] std::shared_ptr<vne::scene::ICamera> getActiveCamera(int index) const;
+    /**
+     * Non-owning pointer; same camera as getActiveCamera(index).get().
+     */
+    [[nodiscard]] vne::scene::ICamera* getActiveCameraPtr(int index) const;
     [[nodiscard]] std::vector<std::shared_ptr<vne::scene::ICamera>> getActiveCameras() const;
-    [[nodiscard]] std::shared_ptr<vne::scene::ICamera> getCamera(int index) const;
     [[nodiscard]] std::shared_ptr<vne::scene::PerspectiveCamera> getPerspectiveCamera(int index) const;
     [[nodiscard]] const std::vector<std::shared_ptr<vne::scene::PerspectiveCamera>>& getCameras() const;
 
@@ -97,7 +104,7 @@ class BaseSceneLayer : public vne::testbed::ILayer {
 
 // ---------------------------------------------------------------------------
 // BaseInteractionLayer — orbit-arcball driven by EventManager
-// Pair with BaseSceneLayer: call setCamera(scene->getCamera()) before attach.
+// Pair with BaseSceneLayer: call setCamera(scene->getActiveCamera()) before attach.
 // Only compiled when VNE_TESTBED_INTERACTION is defined.
 // ---------------------------------------------------------------------------
 #ifdef VNE_TESTBED_INTERACTION

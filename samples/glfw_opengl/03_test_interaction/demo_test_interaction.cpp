@@ -709,8 +709,8 @@ void InteractionSettingsLayer::renderCameraSettings() {
 
         ImGui::Checkbox("Show view matrix", &show_view_matrix_);
         ImGui::Checkbox("Show projection matrix", &show_projection_matrix_);
-        if (show_view_matrix_ && sl.getActiveCamera(0)) {
-            const vne::math::Mat4f view = sl.getActiveCamera(0)->getViewMatrix();
+        if (show_view_matrix_ && sl.getActiveCameraPtr(0)) {
+            const vne::math::Mat4f view = sl.getActiveCameraPtr(0)->getViewMatrix();
             ImGui::Text("View matrix (column-major):");
             for (size_t row = 0; row < 4u; ++row) {
                 ImGui::Text("%.4f  %.4f  %.4f  %.4f",
@@ -720,8 +720,8 @@ void InteractionSettingsLayer::renderCameraSettings() {
                             static_cast<double>(view[3][row]));
             }
         }
-        if (show_projection_matrix_ && sl.getActiveCamera(0)) {
-            const vne::math::Mat4f proj = sl.getActiveCamera(0)->getProjectionMatrix();
+        if (show_projection_matrix_ && sl.getActiveCameraPtr(0)) {
+            const vne::math::Mat4f proj = sl.getActiveCameraPtr(0)->getProjectionMatrix();
             ImGui::Text("Projection matrix (column-major):");
             for (size_t row = 0; row < 4u; ++row) {
                 ImGui::Text("%.4f  %.4f  %.4f  %.4f",
@@ -1128,7 +1128,7 @@ void registerTestInteractionDemo(vne::testbed::Application& app) {
 #ifdef VNE_TESTBED_VNEIO
     auto* mesh_layer = new vne::testbed::MeshLayer();
     mesh_layer->setMeshPath(vne::samples::common::getTestdataPath("resources/meshes/box.ply"));
-    mesh_layer->setCameraProvider([scene](int i) { return scene->getCamera(i); });
+    mesh_layer->setCameraProvider([scene](int i) { return scene->getActiveCamera(i); });
     mesh_layer->setRenderSortKey(10);
     app.getLayerStack().pushLayer(std::unique_ptr<vne::testbed::MeshLayer>(mesh_layer), app.getAppContext());
 #endif
