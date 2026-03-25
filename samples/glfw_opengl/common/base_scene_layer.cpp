@@ -45,8 +45,9 @@ BaseSceneLayer::BaseSceneLayer(const char* name)
 
 void BaseSceneLayer::onAttach(vne::testbed::AppContext& app_context) {
     buildCameras(kWidth, kHight);
-    scene_state_.setActiveCamera(use_perspective_ ? std::static_pointer_cast<vne::scene::ICamera>(camera_persp_[0])
-                                                  : std::static_pointer_cast<vne::scene::ICamera>(cameras_ortho_[0]));
+    scene_state_.setActiveCamera(ui_settings_.use_perspective
+                                     ? std::static_pointer_cast<vne::scene::ICamera>(camera_persp_[0])
+                                     : std::static_pointer_cast<vne::scene::ICamera>(cameras_ortho_[0]));
     debug_draw_ = app_context.debugDraw;
 }
 
@@ -79,28 +80,33 @@ void BaseSceneLayer::onRender(const vne::testbed::RenderContext& render_context)
         return;
     }
     if (render_context.frame_info.width > 0 && render_context.frame_info.height > 0) {
-        last_vp_w_ = render_context.frame_info.width;
-        last_vp_h_ = render_context.frame_info.height;
+        ui_settings_.last_viewport_w = render_context.frame_info.width;
+        ui_settings_.last_viewport_h = render_context.frame_info.height;
         const float aspect =
             static_cast<float>(render_context.frame_info.width) / static_cast<float>(render_context.frame_info.height);
-        if (use_perspective_) {
+        if (ui_settings_.use_perspective) {
             if (auto* p = dynamic_cast<vne::scene::PerspectiveCamera*>(camera)) {
                 p->setAspectRatio(aspect);
                 p->updateProjectionMatrix();
             }
         } else {
             if (auto* o = dynamic_cast<vne::scene::OrthographicCamera*>(camera)) {
-                const float hw = ortho_half_ * aspect;
-                o->setBounds(-hw, hw, -ortho_half_, ortho_half_, ortho_near_, ortho_far_);
+                const float hw = ui_settings_.ortho_half * aspect;
+                o->setBounds(-hw,
+                             hw,
+                             -ui_settings_.ortho_half,
+                             ui_settings_.ortho_half,
+                             ui_settings_.ortho_near,
+                             ui_settings_.ortho_far);
                 o->updateProjectionMatrix();
             }
         }
     }
     debug_draw_->setViewProjectionMatrix(camera->getViewProjectionMatrix());
-    if (show_grid_) {
+    if (ui_settings_.show_grid) {
         drawGrid();
     }
-    if (show_axes_) {
+    if (ui_settings_.show_axes) {
         drawAxes();
     }
     debug_draw_->flush();
@@ -108,10 +114,10 @@ void BaseSceneLayer::onRender(const vne::testbed::RenderContext& render_context)
 
 vne::scene::ICamera* BaseSceneLayer::getActiveCamera(int index) const {
     const auto i = static_cast<size_t>(index >= 0 && index < kMaxViewports ? index : 0);
-    if (use_perspective_ && i < camera_persp_.size() && camera_persp_[i]) {
+    if (ui_settings_.use_perspective && i < camera_persp_.size() && camera_persp_[i]) {
         return camera_persp_[i].get();
     }
-    if (!use_perspective_ && i < cameras_ortho_.size() && cameras_ortho_[i]) {
+    if (!ui_settings_.use_perspective && i < cameras_ortho_.size() && cameras_ortho_[i]) {
         return cameras_ortho_[i].get();
     }
     return nullptr;
@@ -119,7 +125,7 @@ vne::scene::ICamera* BaseSceneLayer::getActiveCamera(int index) const {
 
 std::vector<std::shared_ptr<vne::scene::ICamera>> BaseSceneLayer::getActiveCameras() const {
     std::vector<std::shared_ptr<vne::scene::ICamera>> out;
-    if (use_perspective_) {
+    if (ui_settings_.use_perspective) {
         for (const auto& c : camera_persp_) {
             if (c) {
                 out.push_back(c);
@@ -140,7 +146,7 @@ std::shared_ptr<vne::scene::ICamera> BaseSceneLayer::getCamera(int index) const 
     if (!cam) {
         return nullptr;
     }
-    if (use_perspective_) {
+    if (ui_settings_.use_perspective) {
         const auto i = static_cast<size_t>(index >= 0 && index < kMaxViewports ? index : 0);
         if (i < camera_persp_.size() && camera_persp_[i]) {
             return camera_persp_[i];
@@ -166,15 +172,17 @@ const std::vector<std::shared_ptr<vne::scene::PerspectiveCamera>>& BaseSceneLaye
 }
 
 void BaseSceneLayer::setUsePerspective(bool use_persp) {
-    if (use_perspective_ == use_persp) {
+    if (ui_settings_.use_perspective == use_persp) {
         return;
     }
     syncCameraPositionTargetUp();
-    const vne::math::Vec3f pos(cam_position_[0], cam_position_[1], cam_position_[2]);
-    const vne::math::Vec3f tgt(cam_target_[0], cam_target_[1], cam_target_[2]);
-    const vne::math::Vec3f up(cam_up_[0], cam_up_[1], cam_up_[2]);
-    use_perspective_ = use_persp;
-    if (use_perspective_) {
+    const vne::math::Vec3f pos(ui_settings_.cam_position[0],
+                               ui_settings_.cam_position[1],
+                               ui_settings_.cam_position[2]);
+    const vne::math::Vec3f tgt(ui_settings_.cam_target[0], ui_settings_.cam_target[1], ui_settings_.cam_target[2]);
+    const vne::math::Vec3f up(ui_settings_.cam_up[0], ui_settings_.cam_up[1], ui_settings_.cam_up[2]);
+    ui_settings_.use_perspective = use_persp;
+    if (ui_settings_.use_perspective) {
         for (auto& c : camera_persp_) {
             if (c) {
                 c->setPosition(pos);
@@ -193,8 +201,9 @@ void BaseSceneLayer::setUsePerspective(bool use_persp) {
             }
         }
     }
-    scene_state_.setActiveCamera(use_perspective_ ? std::static_pointer_cast<vne::scene::ICamera>(camera_persp_[0])
-                                                  : std::static_pointer_cast<vne::scene::ICamera>(cameras_ortho_[0]));
+    scene_state_.setActiveCamera(ui_settings_.use_perspective
+                                     ? std::static_pointer_cast<vne::scene::ICamera>(camera_persp_[0])
+                                     : std::static_pointer_cast<vne::scene::ICamera>(cameras_ortho_[0]));
 }
 
 void BaseSceneLayer::syncCameraPositionTargetUp() {
@@ -202,36 +211,39 @@ void BaseSceneLayer::syncCameraPositionTargetUp() {
     if (!active) {
         return;
     }
-    cam_position_[0] = active->getPosition().x();
-    cam_position_[1] = active->getPosition().y();
-    cam_position_[2] = active->getPosition().z();
-    cam_target_[0] = active->getTarget().x();
-    cam_target_[1] = active->getTarget().y();
-    cam_target_[2] = active->getTarget().z();
-    cam_up_[0] = active->getUp().x();
-    cam_up_[1] = active->getUp().y();
-    cam_up_[2] = active->getUp().z();
+    ui_settings_.cam_position[0] = active->getPosition().x();
+    ui_settings_.cam_position[1] = active->getPosition().y();
+    ui_settings_.cam_position[2] = active->getPosition().z();
+    ui_settings_.cam_target[0] = active->getTarget().x();
+    ui_settings_.cam_target[1] = active->getTarget().y();
+    ui_settings_.cam_target[2] = active->getTarget().z();
+    ui_settings_.cam_up[0] = active->getUp().x();
+    ui_settings_.cam_up[1] = active->getUp().y();
+    ui_settings_.cam_up[2] = active->getUp().z();
 }
 
 void BaseSceneLayer::rebuildCameras(int w, int h) {
     buildCameras(w, h);
-    scene_state_.setActiveCamera(use_perspective_ ? std::static_pointer_cast<vne::scene::ICamera>(camera_persp_[0])
-                                                  : std::static_pointer_cast<vne::scene::ICamera>(cameras_ortho_[0]));
+    scene_state_.setActiveCamera(ui_settings_.use_perspective
+                                     ? std::static_pointer_cast<vne::scene::ICamera>(camera_persp_[0])
+                                     : std::static_pointer_cast<vne::scene::ICamera>(cameras_ortho_[0]));
 }
 
 void BaseSceneLayer::buildCameras(int w, int h) {
     const float aspect = (h > 0) ? (static_cast<float>(w) / static_cast<float>(h)) : (16.0f / 9.0f);
     camera_persp_.resize(static_cast<size_t>(kMaxViewports));
     cameras_ortho_.resize(static_cast<size_t>(kMaxViewports));
-    const vne::math::Vec3f pos(cam_position_[0], cam_position_[1], cam_position_[2]);
-    const vne::math::Vec3f tgt(cam_target_[0], cam_target_[1], cam_target_[2]);
-    const vne::math::Vec3f up(cam_up_[0], cam_up_[1], cam_up_[2]);
+    const vne::math::Vec3f pos(ui_settings_.cam_position[0],
+                               ui_settings_.cam_position[1],
+                               ui_settings_.cam_position[2]);
+    const vne::math::Vec3f tgt(ui_settings_.cam_target[0], ui_settings_.cam_target[1], ui_settings_.cam_target[2]);
+    const vne::math::Vec3f up(ui_settings_.cam_up[0], ui_settings_.cam_up[1], ui_settings_.cam_up[2]);
     for (int i = 0; i < kMaxViewports; ++i) {
-        auto persp = std::make_shared<vne::scene::PerspectiveCamera>(fov_,
+        auto persp = std::make_shared<vne::scene::PerspectiveCamera>(ui_settings_.fov,
                                                                      static_cast<float>(w),
                                                                      static_cast<float>(h),
-                                                                     near_plane_,
-                                                                     far_plane_,
+                                                                     ui_settings_.near_plane,
+                                                                     ui_settings_.far_plane,
                                                                      "BaseCamera" + std::to_string(i));
         persp->setPosition(pos);
         persp->setTarget(tgt);
@@ -240,13 +252,13 @@ void BaseSceneLayer::buildCameras(int w, int h) {
         persp->updateMatrices();
         camera_persp_[static_cast<size_t>(i)] = std::move(persp);
 
-        const float hw = ortho_half_ * aspect;
+        const float hw = ui_settings_.ortho_half * aspect;
         auto ortho = std::make_shared<vne::scene::OrthographicCamera>(-hw,
                                                                       hw,
-                                                                      -ortho_half_,
-                                                                      ortho_half_,
-                                                                      ortho_near_,
-                                                                      ortho_far_,
+                                                                      -ui_settings_.ortho_half,
+                                                                      ui_settings_.ortho_half,
+                                                                      ui_settings_.ortho_near,
+                                                                      ui_settings_.ortho_far,
                                                                       "OrthoCamera" + std::to_string(i));
         ortho->setPosition(pos);
         ortho->setTarget(tgt);

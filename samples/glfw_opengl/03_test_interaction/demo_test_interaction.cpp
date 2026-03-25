@@ -579,8 +579,8 @@ void InteractionSettingsLayer::renderPanel() {
     auto& il = *interaction_layer_;
 
     if (scene_layer_ && ImGui::CollapsingHeader("Scene", ImGuiTreeNodeFlags_DefaultOpen)) {
-        ImGui::Checkbox("Show grid", &scene_layer_->show_grid_);
-        ImGui::Checkbox("Show axes", &scene_layer_->show_axes_);
+        ImGui::Checkbox("Show grid", &scene_layer_->uiSettings().show_grid);
+        ImGui::Checkbox("Show axes", &scene_layer_->uiSettings().show_axes);
     }
 
     renderCameraSettings();
@@ -660,7 +660,7 @@ void InteractionSettingsLayer::renderCameraSettings() {
     auto& il = *interaction_layer_;
 
     if (ImGui::CollapsingHeader("Camera", ImGuiTreeNodeFlags_DefaultOpen)) {
-        int persp_idx = sl.use_perspective_ ? 0 : 1;
+        int persp_idx = sl.uiSettings().use_perspective ? 0 : 1;
         const char* types[] = {"Perspective", "Orthographic"};
         if (ImGui::Combo("Type##cam", &persp_idx, types, 2)) {
             const bool use_persp = (persp_idx == 0);
@@ -685,24 +685,25 @@ void InteractionSettingsLayer::renderCameraSettings() {
         }
 
         bool proj_changed = false;
-        if (sl.use_perspective_) {
+        if (sl.uiSettings().use_perspective) {
             if (ImGui::TreeNodeEx("Perspective", ImGuiTreeNodeFlags_DefaultOpen)) {
-                proj_changed |= ImGui::SliderFloat("FOV##persp", &sl.fov_, 10.f, 120.f, "%.0f deg");
-                proj_changed |= ImGui::SliderFloat("Near##persp", &sl.near_plane_, 0.01f, 10.f, "%.3f");
-                proj_changed |= ImGui::SliderFloat("Far##persp", &sl.far_plane_, 100.f, 5000.f, "%.0f");
+                proj_changed |= ImGui::SliderFloat("FOV##persp", &sl.uiSettings().fov, 10.f, 120.f, "%.0f deg");
+                proj_changed |= ImGui::SliderFloat("Near##persp", &sl.uiSettings().near_plane, 0.01f, 10.f, "%.3f");
+                proj_changed |= ImGui::SliderFloat("Far##persp", &sl.uiSettings().far_plane, 100.f, 5000.f, "%.0f");
                 ImGui::TreePop();
             }
         } else {
             if (ImGui::TreeNodeEx("Orthographic", ImGuiTreeNodeFlags_DefaultOpen)) {
-                proj_changed |= ImGui::SliderFloat("Half extent##ortho", &sl.ortho_half_, 0.5f, 50.f, "%.1f");
-                proj_changed |= ImGui::SliderFloat("Near##ortho", &sl.ortho_near_, -500.f, 500.f);
-                proj_changed |= ImGui::SliderFloat("Far##ortho", &sl.ortho_far_, -500.f, 500.f);
+                proj_changed |=
+                    ImGui::SliderFloat("Half extent##ortho", &sl.uiSettings().ortho_half, 0.5f, 50.f, "%.1f");
+                proj_changed |= ImGui::SliderFloat("Near##ortho", &sl.uiSettings().ortho_near, -500.f, 500.f);
+                proj_changed |= ImGui::SliderFloat("Far##ortho", &sl.uiSettings().ortho_far, -500.f, 500.f);
                 ImGui::TreePop();
             }
         }
 
         if (proj_changed) {
-            sl.rebuildCameras(sl.last_vp_w_, sl.last_vp_h_);
+            sl.rebuildCameras(sl.uiSettings().last_viewport_w, sl.uiSettings().last_viewport_h);
             il.setCamerasFromScene();
         }
 
@@ -755,13 +756,13 @@ void InteractionSettingsLayer::renderManipulatorSettings() {
             }
         }
         const bool ortho_only = (cur == ControllerKind::eOrtho);
-        const bool need_ortho = ortho_only && scene_layer_->use_perspective_;
+        const bool need_ortho = ortho_only && scene_layer_->uiSettings().use_perspective;
         if (need_ortho) {
             ImGui::TextColored(ImVec4(1.f, 0.4f, 0.4f, 1.f), "Ortho requires Orthographic camera");
         }
         if (ImGui::Combo("Type##ctrl", &idx, types, 5)) {
             const ControllerKind new_kind = values[idx];
-            if (new_kind == ControllerKind::eOrtho && scene_layer_->use_perspective_) {
+            if (new_kind == ControllerKind::eOrtho && scene_layer_->uiSettings().use_perspective) {
                 ImGui::OpenPopup("OrthoNeedsOrtho");
             } else {
                 il.setControllerKind(new_kind);
