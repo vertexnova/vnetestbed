@@ -284,6 +284,12 @@ endif()
 add_library(TestbedWarnings INTERFACE)
 include(ProjectWarnings)
 set_project_warnings(TestbedWarnings)
+# MSVC C4251: exported vnescene classes (DLL) hold std::string, vne::math::Vec/Mat, shared_ptr, etc.
+# Those types are not built with dll-interface; the warning is expected for consumers. vnescene
+# suppresses it for its own target; testbed and dependents need the same when WARNINGS_AS_ERRORS is on.
+if(MSVC)
+    target_compile_options(TestbedWarnings INTERFACE /wd4251)
+endif()
 add_library(vne::testbed::Warnings ALIAS TestbedWarnings)
 
 #==============================================================================
