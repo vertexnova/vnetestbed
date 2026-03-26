@@ -158,7 +158,7 @@ void SceneTestLayer::onUpdate(float dt) {
 }
 
 void SceneTestLayer::onRender(const vne::testbed::RenderContext& render_context) {
-    if (!device_ || !mesh_renderer_ || !vbo_.isValid()) {
+    if (!device_ || !mesh_renderer_ || !vbo_.isValid() || !ibo_.isValid()) {
         return;
     }
 
@@ -399,14 +399,15 @@ void SceneTestLayer::removeLastPointLight() {
 void SceneTestLayer::resetToDefault() {
     const int save_w = ui_.last_vp_w;
     const int save_h = ui_.last_vp_h;
+    // Remove point lights from scene_state_ while ui_.point_lights still lists them.
+    // Assigning ui_ first would clear the vector and skip this loop, leaking lights in scene_state_.
+    while (!ui_.point_lights.empty()) {
+        removeLastPointLight();
+    }
     ui_ = SceneUiSettings{};
     ui_.last_vp_w = save_w;
     ui_.last_vp_h = save_h;
     cube_angle_ = 0.f;
-
-    while (!ui_.point_lights.empty()) {
-        removeLastPointLight();
-    }
 
     rebuildCamera(ui_.last_vp_w, ui_.last_vp_h);
     syncCameraPositionTargetUp();
