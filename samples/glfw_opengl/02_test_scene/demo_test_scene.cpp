@@ -14,6 +14,8 @@
 
 #include "vertexnova/testbed/app/application.h"
 #include "vertexnova/testbed/app/demo_factory.h"
+#include "vertexnova/testbed/renderer/core_renderer.h"
+#include "vertexnova/testbed/renderer/mesh_renderer.h"
 
 #ifdef VNE_TESTBED_IMGUI
 #include "vertexnova/testbed/imgui/imgui_layer.h"
@@ -27,7 +29,6 @@
 
 #include <algorithm>
 #include <cmath>
-#include <filesystem>
 #include <string>
 
 namespace {
@@ -39,26 +40,6 @@ constexpr int kRenderSortKey = 999;  //!< Settings panel layer — just before I
 constexpr int kDefaultWidth = 1280;
 constexpr int kDefaultHeight = 720;
 constexpr float kDefaultAspectRatio = 16.0f / 9.0f;
-
-/** Resolve shader path: try cwd and cwd/bin/samples so it works from build or bin/samples. */
-static std::filesystem::path resolveShaderPath(const char* filename) {
-    std::error_code ec;
-    std::filesystem::path p = std::filesystem::current_path(ec) / filename;
-    if (ec) {
-        return {};
-    }
-    if (std::filesystem::exists(p, ec)) {
-        return p;
-    }
-    p = std::filesystem::current_path(ec) / "bin/samples" / filename;
-    if (ec) {
-        return {};
-    }
-    if (std::filesystem::exists(p, ec)) {
-        return p;
-    }
-    return {};
-}
 
 // ---------------------------------------------------------------------------
 // Cube geometry — 24 vertices (unique normals per face), 36 indices
@@ -110,15 +91,6 @@ const uint32_t kCubeIdx[] = {
 
 constexpr uint32_t kCubeIdxCount = 36u;
 
-// Shader filenames by backend (kPascalCase constants in anonymous namespace)
-#if defined(VNE_TESTBED_OPENGL)
-constexpr const char* kSceneVertFilename = "scene_vert.glsl";
-constexpr const char* kSceneFragFilename = "scene_frag.glsl";
-#else
-constexpr const char* kSceneVertFilename = "scene_vert_es.glsl";
-constexpr const char* kSceneFragFilename = "scene_frag_es.glsl";
-#endif
-
 }  // namespace
 
 namespace vne::samples::test_scene {
@@ -133,6 +105,12 @@ SceneTestLayer::SceneTestLayer()
 void SceneTestLayer::onAttach(vne::testbed::AppContext& app_context) {
     device_ = app_context.device;
     debug_draw_ = app_context.debugDraw;
+    if (app_context.coreRenderer) {
+        mesh_renderer_ = app_context.coreRenderer->getMeshRenderer();
+    }
+    if (!mesh_renderer_) {
+        VNE_LOG_ERROR << "SceneTestLayer: AppContext has no MeshRenderer (coreRenderer missing or not initialized)";
+    }
 
     buildCamera(kDefaultWidth, kDefaultHeight);
     buildGeometry();
@@ -141,10 +119,6 @@ void SceneTestLayer::onAttach(vne::testbed::AppContext& app_context) {
 
 void SceneTestLayer::onDetach() {
     if (device_) {
-        if (pipeline_.isValid())
-            device_->destroy(pipeline_);
-        if (shader_.isValid())
-            device_->destroy(shader_);
         if (ibo_.isValid())
             device_->destroy(ibo_);
         if (vbo_.isValid())
@@ -155,6 +129,7 @@ void SceneTestLayer::onDetach() {
     cameras_persp_.clear();
     cameras_ortho_.clear();
     debug_draw_ = nullptr;
+    mesh_renderer_ = nullptr;
     device_ = nullptr;
 }
 
@@ -179,7 +154,7 @@ void SceneTestLayer::onUpdate(float dt) {
 }
 
 void SceneTestLayer::onRender(const vne::testbed::RenderContext& render_context) {
-    if (!device_ || !shader_.isValid())
+    if (!device_ || !mesh_renderer_ || !vbo_.isValid())
         return;
 
     const int vp_idx =
@@ -197,7 +172,6 @@ void SceneTestLayer::onRender(const vne::testbed::RenderContext& render_context)
     }
 
     const auto vp = getActiveViewProjectionMatrix(vp_idx);
-    const auto cam_pos = getActiveCameraPosition(vp_idx);
 
     // Draw grid + axes via debug draw
     if (debug_draw_) {
@@ -235,63 +209,30 @@ void SceneTestLayer::onRender(const vne::testbed::RenderContext& render_context)
         debug_draw_->flush();
     }
 
-    // Upload lighting uniforms
-    device_->setVec3(shader_, "u_ambientColor", ambient_light_->getColor());
-    device_->setFloat(shader_,
-                      "u_ambientIntensity",
-                      ambient_light_->isEnabled() ? ambient_light_->getIntensity() : 0.f);
-
-    const auto& dl = dir_light_;
-    device_->setInt(shader_, "u_dirLightEnabled", dl->isEnabled() ? 1 : 0);
-    device_->setVec3(shader_, "u_dirLightDir", dl->getDirection());
-    device_->setVec3(shader_, "u_dirLightColor", dl->getColor());
-    device_->setFloat(shader_, "u_dirLightIntensity", dl->getIntensity());
-
-    const int npt = static_cast<int>(point_lights.size());
-    device_->setInt(shader_, "u_numPointLights", npt);
-    for (int i = 0; i < npt && i < 4; ++i) {
-        const auto& e = point_lights[static_cast<std::size_t>(i)];
-        const std::string idx = "[" + std::to_string(i) + "]";
-        device_->setVec3(shader_, ("u_ptLightPos" + idx).c_str(), e.light->getPosition());
-        device_->setVec3(shader_, ("u_ptLightColor" + idx).c_str(), e.light->getColor());
-        device_->setFloat(shader_, ("u_ptLightIntensity" + idx).c_str(), e.light->getIntensity());
-        device_->setFloat(shader_, ("u_ptLightRange" + idx).c_str(), e.light->getRange());
-        device_->setInt(shader_, ("u_ptLightEnabled" + idx).c_str(), e.enabled ? 1 : 0);
-    }
-    device_->setInt(shader_, "u_spotLightEnabled", spot_light_->isEnabled() ? 1 : 0);
-    device_->setVec3(shader_, "u_spotLightPos", spot_light_->getPosition());
-    device_->setVec3(shader_, "u_spotLightDir", spot_light_->getDirection());
-    device_->setVec3(shader_, "u_spotLightColor", spot_light_->getColor());
-    device_->setFloat(shader_, "u_spotLightIntensity", spot_light_->getIntensity());
-    device_->setFloat(shader_, "u_spotLightRange", spot_light_->getRange());
     // Enforce outer > inner + eps so (innerCos - outerCos) in shader is never 0 (avoids NaNs)
-    float inner_deg = spot_light_inner_deg;
-    float outer_deg = spot_light_outer_deg;
-    if (outer_deg <= inner_deg + kSpotAngleEpsDeg) {
-        outer_deg = inner_deg + kSpotAngleEpsDeg;
-        spot_light_outer_deg = outer_deg;
+    {
+        float inner_deg = spot_light_inner_deg;
+        float outer_deg = spot_light_outer_deg;
+        if (outer_deg <= inner_deg + kSpotAngleEpsDeg) {
+            outer_deg = inner_deg + kSpotAngleEpsDeg;
+            spot_light_outer_deg = outer_deg;
+        }
+        if (inner_deg > outer_deg - kSpotAngleEpsDeg) {
+            inner_deg = outer_deg - kSpotAngleEpsDeg;
+            spot_light_inner_deg = inner_deg;
+        }
     }
-    if (inner_deg > outer_deg - kSpotAngleEpsDeg) {
-        inner_deg = outer_deg - kSpotAngleEpsDeg;
-        spot_light_inner_deg = inner_deg;
-    }
-    const float inner_rad = inner_deg * 3.14159265f / 180.f;
-    const float outer_rad = outer_deg * 3.14159265f / 180.f;
-    device_->setFloat(shader_, "u_spotLightInnerCos", std::cos(inner_rad));
-    device_->setFloat(shader_, "u_spotLightOuterCos", std::cos(outer_rad));
-    device_->setInt(shader_, "u_useAttnFormula", use_attn_formula ? 1 : 0);
-    device_->setFloat(shader_, "u_attnConst", attn_const);
-    device_->setFloat(shader_, "u_attnLinear", attn_linear);
-    device_->setFloat(shader_, "u_attnQuad", attn_quad);
-    device_->setVec3(shader_, "u_camPos", cam_pos);
 
-    // Draw cubes
+    vne::scene::ICamera* cam = activeCamera(vp_idx);
+    if (!cam) {
+        return;
+    }
+
+    const vne::testbed::PhongLightParams lights = buildPhongLightParams();
+
     for (int i = 0; i < cube_count; ++i) {
         const vne::math::Mat4f model = getCubeModelMatrix(i);
-        const vne::math::Mat4f mvp = vp * model;
-        device_->setMat4(shader_, "u_mvp", mvp);
-        device_->setMat4(shader_, "u_model", model);
-        device_->drawIndexed(pipeline_, vbo_, ibo_, kCubeIdxCount, vne::testbed::DrawMode::eTriangles);
+        mesh_renderer_->drawMesh(device_, cam, vbo_, ibo_, kCubeIdxCount, model, lights);
     }
 }
 
@@ -340,6 +281,46 @@ vne::scene::ICamera* SceneTestLayer::activeCamera(int vp_idx) const {
     if (!use_perspective && i < cameras_ortho_.size() && cameras_ortho_[i])
         return cameras_ortho_[i].get();
     return nullptr;
+}
+
+vne::testbed::PhongLightParams SceneTestLayer::buildPhongLightParams() {
+    vne::testbed::PhongLightParams out{};
+    out.ambient_color = ambient_light_->getColor();
+    out.ambient_intensity = ambient_light_->isEnabled() ? ambient_light_->getIntensity() : 0.f;
+
+    out.dir_light_enabled = dir_light_->isEnabled();
+    out.dir_light_dir = dir_light_->getDirection();
+    out.dir_light_color = dir_light_->getColor();
+    out.dir_light_intensity = dir_light_->getIntensity();
+
+    const int npt = static_cast<int>(point_lights.size());
+    for (int i = 0; i < npt && i < vne::testbed::PhongLightParams::kMaxPointLights; ++i) {
+        const auto& e = point_lights[static_cast<std::size_t>(i)];
+        auto& pt = out.point_lights[i];
+        pt.enabled = e.enabled;
+        pt.position = e.light->getPosition();
+        pt.color = e.light->getColor();
+        pt.intensity = e.light->getIntensity();
+        pt.range = e.light->getRange();
+    }
+
+    out.spot_light.enabled = spot_light_->isEnabled();
+    out.spot_light.position = spot_light_->getPosition();
+    out.spot_light.direction = spot_light_->getDirection();
+    out.spot_light.color = spot_light_->getColor();
+    out.spot_light.intensity = spot_light_->getIntensity();
+    out.spot_light.range = spot_light_->getRange();
+    const float inner_rad = spot_light_inner_deg * 3.14159265f / 180.f;
+    const float outer_rad = spot_light_outer_deg * 3.14159265f / 180.f;
+    out.spot_light.inner_angle_rad = inner_rad;
+    out.spot_light.outer_angle_rad = outer_rad;
+
+    out.use_attn_formula = use_attn_formula;
+    out.attn_const = attn_const;
+    out.attn_linear = attn_linear;
+    out.attn_quad = attn_quad;
+
+    return out;
 }
 
 void SceneTestLayer::syncAmbientLight() {
@@ -556,24 +537,6 @@ void SceneTestLayer::buildGeometry() {
     }
     vbo_ = device_->createVertexBuffer(kCubeVerts, sizeof(kCubeVerts));
     ibo_ = device_->createIndexBuffer(kCubeIdx, kCubeIdxCount);
-
-    std::filesystem::path vert_path = resolveShaderPath(kSceneVertFilename);
-    std::filesystem::path frag_path = resolveShaderPath(kSceneFragFilename);
-    if (!vert_path.empty() && !frag_path.empty()) {
-        shader_ = device_->createShader(vert_path, frag_path);
-    }
-    if (!shader_.isValid()) {
-        VNE_LOG_ERROR << "Scene shaders not loaded: ensure " << kSceneVertFilename << " and " << kSceneFragFilename
-                      << " are next to the executable (e.g. run from build bin/samples).";
-    }
-
-    vne::testbed::PipelineDesc pd{};
-    pd.shader = shader_;
-    pd.layout = {{3}, {3}, {3}};
-    pd.depth.testEnabled = true;
-    pd.depth.writeEnabled = true;
-    pd.rasterizer.cull = vne::testbed::CullMode::eBack;
-    pipeline_ = device_->createPipeline(pd);
 }
 
 void SceneTestLayer::buildLights() {

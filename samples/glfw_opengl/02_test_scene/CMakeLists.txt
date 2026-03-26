@@ -9,8 +9,8 @@
 # ==============================================================================
 
 # ==============================================================================
-# Sample 02_test_scene: camera switcher, lights, rotating cubes.
-# Extends 01_test_events with a Scene panel (vnescene lights + IRenderDevice).
+# Sample 02_test_scene: camera switcher, lights, rotating cubes (MeshRenderer).
+# Scene demo: vnescene cameras/lights + shared testbed mesh rendering (embedded Phong).
 # ==============================================================================
 
 if(NOT TARGET vne::scene)
@@ -63,23 +63,3 @@ if(MSVC)
 else()
     target_compile_options(02_test_scene PRIVATE -Wall -Wextra -Wpedantic)
 endif()
-
-# ==============================================================================
-# Post-build: copy shaders (OpenGL and OpenGL ES; runtime picks by backend)
-# ==============================================================================
-
-add_custom_command(TARGET 02_test_scene POST_BUILD
-    COMMAND ${CMAKE_COMMAND} -E copy_if_different
-        "${CMAKE_CURRENT_SOURCE_DIR}/shaders/scene_vert.glsl"
-        "$<TARGET_FILE_DIR:02_test_scene>/scene_vert.glsl"
-    COMMAND ${CMAKE_COMMAND} -E copy_if_different
-        "${CMAKE_CURRENT_SOURCE_DIR}/shaders/scene_frag.glsl"
-        "$<TARGET_FILE_DIR:02_test_scene>/scene_frag.glsl"
-    COMMAND ${CMAKE_COMMAND} -E copy_if_different
-        "${CMAKE_CURRENT_SOURCE_DIR}/shaders/scene_vert_es.glsl"
-        "$<TARGET_FILE_DIR:02_test_scene>/scene_vert_es.glsl"
-    COMMAND ${CMAKE_COMMAND} -E copy_if_different
-        "${CMAKE_CURRENT_SOURCE_DIR}/shaders/scene_frag_es.glsl"
-        "$<TARGET_FILE_DIR:02_test_scene>/scene_frag_es.glsl"
-    COMMENT "Copying 02_test_scene shaders (GL + ES) to output directory"
-)

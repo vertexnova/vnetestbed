@@ -14,6 +14,7 @@
 #include "vertexnova/testbed/layer.h"
 #include "vertexnova/testbed/render_context.h"
 #include "vertexnova/testbed/render_device.h"
+#include "vertexnova/testbed/renderer/phong_material.h"
 
 #include "vertexnova/scene/camera/orthographic_camera.h"
 #include "vertexnova/scene/camera/perspective_camera.h"
@@ -32,6 +33,7 @@ class ICamera;
 }
 namespace vne::testbed {
 class Application;
+class MeshRenderer;
 }
 
 #ifdef VNE_TESTBED_IMGUI
@@ -160,13 +162,14 @@ class SceneTestLayer : public vne::testbed::ILayer {
     void drawGrid() const;
     void drawAxes() const;
 
+    [[nodiscard]] vne::testbed::PhongLightParams buildPhongLightParams();
+
     // Private members
     vne::testbed::IRenderDevice* device_{nullptr};
     vne::testbed::IDebugDraw* debug_draw_{nullptr};
-    vne::testbed::ShaderHandle shader_{};
+    vne::testbed::MeshRenderer* mesh_renderer_{nullptr};
     vne::testbed::BufferHandle vbo_{};
     vne::testbed::BufferHandle ibo_{};
-    vne::testbed::PipelineHandle pipeline_{};
 
     std::vector<std::shared_ptr<vne::scene::PerspectiveCamera>> cameras_persp_;
     std::vector<std::shared_ptr<vne::scene::OrthographicCamera>> cameras_ortho_;
