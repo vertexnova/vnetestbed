@@ -56,40 +56,8 @@ struct PointLightEntry {
     bool enabled{true};
 };
 
-// ---------------------------------------------------------------------------
-// SceneTestLayer — camera management + cube rendering + lights
-// ---------------------------------------------------------------------------
-class SceneTestLayer : public vne::testbed::ILayer {
-   public:
-    // 1. Types and constants
-    static constexpr int kMaxViewports = 4;
-
-    // 2. Constructors and destructor
-    SceneTestLayer();
-
-    // 3. Public methods (ILayer overrides)
-    void onAttach(vne::testbed::AppContext& app_context) override;
-    void onDetach() override;
-    void onUpdate(float dt) override;
-    void onRender(const vne::testbed::RenderContext& render_context) override;
-
-    // 4. Public methods (camera, cubes, lights, reset)
-    void rebuildCamera(int w, int h);
-    void syncCameraPositionTargetUp();
-    [[nodiscard]] vne::math::Mat4f getCubeModelMatrix(int i) const;
-    [[nodiscard]] vne::scene::ICamera* activeCamera(int vp_idx) const;
-    void syncAmbientLight();
-    void syncDirLight();
-    void syncSpotLight();
-    void addPointLight();
-    void removeLastPointLight();
-    void resetToDefault();
-    void syncPointLight(std::size_t i);
-    [[nodiscard]] std::shared_ptr<vne::scene::PerspectiveCamera> cameraPersp() const;
-    [[nodiscard]] const std::vector<std::shared_ptr<vne::scene::PerspectiveCamera>>& getCameras() const;
-    [[nodiscard]] std::vector<std::shared_ptr<vne::scene::ICamera>> getActiveCameras() const;
-
-    // 5. Public data (Settings panel / ImGui bindings) — snake_case, no trailing underscore
+// Camera / cubes / lights state edited via ImGui (private on SceneTestLayer; access via uiSettings()).
+struct SceneUiSettings {
     bool use_perspective{true};
     float fov{60.0f};
     float near_plane{0.1f};
@@ -142,6 +110,44 @@ class SceneTestLayer : public vne::testbed::ILayer {
     float attn_quad{0.032f};
 
     std::vector<PointLightEntry> point_lights;
+};
+
+// ---------------------------------------------------------------------------
+// SceneTestLayer — camera management + cube rendering + lights
+// ---------------------------------------------------------------------------
+class SceneTestLayer : public vne::testbed::ILayer {
+   public:
+    // 1. Types and constants
+    static constexpr int kMaxViewports = 4;
+
+    // 2. Constructors and destructor
+    SceneTestLayer();
+
+    // 3. Public methods (ILayer overrides)
+    void onAttach(vne::testbed::AppContext& app_context) override;
+    void onDetach() override;
+    void onUpdate(float dt) override;
+    void onRender(const vne::testbed::RenderContext& render_context) override;
+
+    // 4. UI / settings bundle (mutable for ImGui bindings)
+    [[nodiscard]] SceneUiSettings& uiSettings() { return ui_; }
+    [[nodiscard]] const SceneUiSettings& uiSettings() const { return ui_; }
+
+    // 5. Public methods (camera, cubes, lights, reset)
+    void rebuildCamera(int w, int h);
+    void syncCameraPositionTargetUp();
+    [[nodiscard]] vne::math::Mat4f getCubeModelMatrix(int i) const;
+    [[nodiscard]] vne::scene::ICamera* activeCamera(int vp_idx) const;
+    void syncAmbientLight();
+    void syncDirLight();
+    void syncSpotLight();
+    void addPointLight();
+    void removeLastPointLight();
+    void resetToDefault();
+    void syncPointLight(std::size_t i);
+    [[nodiscard]] std::shared_ptr<vne::scene::PerspectiveCamera> cameraPersp() const;
+    [[nodiscard]] const std::vector<std::shared_ptr<vne::scene::PerspectiveCamera>>& getCameras() const;
+    [[nodiscard]] std::vector<std::shared_ptr<vne::scene::ICamera>> getActiveCameras() const;
 
    private:
     // Private constants
@@ -165,6 +171,7 @@ class SceneTestLayer : public vne::testbed::ILayer {
     [[nodiscard]] vne::testbed::PhongLightParams buildPhongLightParams();
 
     // Private members
+    SceneUiSettings ui_{};
     vne::testbed::IRenderDevice* device_{nullptr};
     vne::testbed::IDebugDraw* debug_draw_{nullptr};
     vne::testbed::MeshRenderer* mesh_renderer_{nullptr};

@@ -134,10 +134,10 @@ void SceneTestLayer::onDetach() {
 }
 
 void SceneTestLayer::onUpdate(float dt) {
-    cube_angle_ += cube_rotation_speed * dt;
+    cube_angle_ += ui_.cube_rotation_speed * dt;
 
     // Orbit point lights
-    for (auto& entry : point_lights) {
+    for (auto& entry : ui_.point_lights) {
         entry.orbit_angle += entry.orbit_speed * dt;
         const float r = entry.orbit_radius;
         entry.light->setPosition({r * std::cos(entry.orbit_angle), 1.5f, r * std::sin(entry.orbit_angle)});
@@ -164,10 +164,10 @@ void SceneTestLayer::onRender(const vne::testbed::RenderContext& render_context)
 
     // Aspect / resize — only update when the viewport size actually changes
     if (render_context.frame_info.width > 0 && render_context.frame_info.height > 0) {
-        if (render_context.frame_info.width != last_vp_w || render_context.frame_info.height != last_vp_h) {
-            last_vp_w = render_context.frame_info.width;
-            last_vp_h = render_context.frame_info.height;
-            updateCameraAspect(last_vp_w, last_vp_h);
+        if (render_context.frame_info.width != ui_.last_vp_w || render_context.frame_info.height != ui_.last_vp_h) {
+            ui_.last_vp_w = render_context.frame_info.width;
+            ui_.last_vp_h = render_context.frame_info.height;
+            updateCameraAspect(ui_.last_vp_w, ui_.last_vp_h);
         }
     }
 
@@ -184,7 +184,7 @@ void SceneTestLayer::onRender(const vne::testbed::RenderContext& render_context)
         const vne::math::Vec3f kAxis[3] = {vne::math::Vec3f::xAxis(),
                                            vne::math::Vec3f::yAxis(),
                                            vne::math::Vec3f::zAxis()};
-        for (const auto& e : point_lights) {
+        for (const auto& e : ui_.point_lights) {
             if (!e.enabled)
                 continue;
             const vne::math::Vec3f p = e.light->getPosition();
@@ -192,12 +192,12 @@ void SceneTestLayer::onRender(const vne::testbed::RenderContext& render_context)
             for (const auto& ax : kAxis)
                 debug_draw_->line(p - ax * kCrossSize, p + ax * kCrossSize, lc);
         }
-        if (show_camera_visuals)
+        if (ui_.show_camera_visuals)
             drawCameraVisuals(vp_idx);
-        if (spot_light_enabled) {
+        if (ui_.spot_light_enabled) {
             const vne::math::Vec3f p = spot_light_->getPosition();
             const vne::math::Vec3f d = spot_light_->getDirection();
-            const vne::math::Vec3f lc(spot_light_color[0], spot_light_color[1], spot_light_color[2]);
+            const vne::math::Vec3f lc(ui_.spot_light_color[0], ui_.spot_light_color[1], ui_.spot_light_color[2]);
             for (const auto& ax : kAxis)
                 debug_draw_->line(p - ax * kCrossSize, p + ax * kCrossSize, lc);
             const vne::math::Vec3f dir_end = p + d * 1.5f;
@@ -211,15 +211,15 @@ void SceneTestLayer::onRender(const vne::testbed::RenderContext& render_context)
 
     // Enforce outer > inner + eps so (innerCos - outerCos) in shader is never 0 (avoids NaNs)
     {
-        float inner_deg = spot_light_inner_deg;
-        float outer_deg = spot_light_outer_deg;
+        float inner_deg = ui_.spot_light_inner_deg;
+        float outer_deg = ui_.spot_light_outer_deg;
         if (outer_deg <= inner_deg + kSpotAngleEpsDeg) {
             outer_deg = inner_deg + kSpotAngleEpsDeg;
-            spot_light_outer_deg = outer_deg;
+            ui_.spot_light_outer_deg = outer_deg;
         }
         if (inner_deg > outer_deg - kSpotAngleEpsDeg) {
             inner_deg = outer_deg - kSpotAngleEpsDeg;
-            spot_light_inner_deg = inner_deg;
+            ui_.spot_light_inner_deg = inner_deg;
         }
     }
 
@@ -230,7 +230,7 @@ void SceneTestLayer::onRender(const vne::testbed::RenderContext& render_context)
 
     const vne::testbed::PhongLightParams lights = buildPhongLightParams();
 
-    for (int i = 0; i < cube_count; ++i) {
+    for (int i = 0; i < ui_.cube_count; ++i) {
         const vne::math::Mat4f model = getCubeModelMatrix(i);
         mesh_renderer_->drawMesh(device_, cam, vbo_, ibo_, kCubeIdxCount, model, lights);
     }
@@ -238,16 +238,16 @@ void SceneTestLayer::onRender(const vne::testbed::RenderContext& render_context)
 
 void SceneTestLayer::rebuildCamera(int w, int h) {
     if (w > 0 && h > 0) {
-        last_vp_w = w;
-        last_vp_h = h;
+        ui_.last_vp_w = w;
+        ui_.last_vp_h = h;
     }
-    buildCamera(last_vp_w, last_vp_h);
+    buildCamera(ui_.last_vp_w, ui_.last_vp_h);
 }
 
 void SceneTestLayer::syncCameraPositionTargetUp() {
-    const vne::math::Vec3f pos{cam_position[0], cam_position[1], cam_position[2]};
-    const vne::math::Vec3f tgt{cam_target[0], cam_target[1], cam_target[2]};
-    const vne::math::Vec3f up{cam_up[0], cam_up[1], cam_up[2]};
+    const vne::math::Vec3f pos{ui_.cam_position[0], ui_.cam_position[1], ui_.cam_position[2]};
+    const vne::math::Vec3f tgt{ui_.cam_target[0], ui_.cam_target[1], ui_.cam_target[2]};
+    const vne::math::Vec3f up{ui_.cam_up[0], ui_.cam_up[1], ui_.cam_up[2]};
     for (auto& cam : cameras_persp_) {
         if (cam) {
             cam->setPosition(pos);
@@ -270,15 +270,15 @@ void SceneTestLayer::syncCameraPositionTargetUp() {
     if (i < 0 || i >= 4)
         return vne::math::Mat4f::identity();
     const float angle = cube_angle_ + static_cast<float>(i) * 1.0472f;
-    const vne::math::Vec3f trans(cube_position[i][0], cube_position[i][1], cube_position[i][2]);
+    const vne::math::Vec3f trans(ui_.cube_position[i][0], ui_.cube_position[i][1], ui_.cube_position[i][2]);
     return vne::math::Mat4f::translate(trans) * vne::math::Mat4f::rotateY(angle);
 }
 
 vne::scene::ICamera* SceneTestLayer::activeCamera(int vp_idx) const {
     const size_t i = static_cast<size_t>(vp_idx);
-    if (use_perspective && i < cameras_persp_.size() && cameras_persp_[i])
+    if (ui_.use_perspective && i < cameras_persp_.size() && cameras_persp_[i])
         return cameras_persp_[i].get();
-    if (!use_perspective && i < cameras_ortho_.size() && cameras_ortho_[i])
+    if (!ui_.use_perspective && i < cameras_ortho_.size() && cameras_ortho_[i])
         return cameras_ortho_[i].get();
     return nullptr;
 }
@@ -293,9 +293,9 @@ vne::testbed::PhongLightParams SceneTestLayer::buildPhongLightParams() {
     out.dir_light_color = dir_light_->getColor();
     out.dir_light_intensity = dir_light_->getIntensity();
 
-    const int npt = static_cast<int>(point_lights.size());
+    const int npt = static_cast<int>(ui_.point_lights.size());
     for (int i = 0; i < npt && i < vne::testbed::PhongLightParams::kMaxPointLights; ++i) {
-        const auto& e = point_lights[static_cast<std::size_t>(i)];
+        const auto& e = ui_.point_lights[static_cast<std::size_t>(i)];
         auto& pt = out.point_lights[i];
         pt.enabled = e.enabled;
         pt.position = e.light->getPosition();
@@ -310,55 +310,55 @@ vne::testbed::PhongLightParams SceneTestLayer::buildPhongLightParams() {
     out.spot_light.color = spot_light_->getColor();
     out.spot_light.intensity = spot_light_->getIntensity();
     out.spot_light.range = spot_light_->getRange();
-    const float inner_rad = spot_light_inner_deg * 3.14159265f / 180.f;
-    const float outer_rad = spot_light_outer_deg * 3.14159265f / 180.f;
+    const float inner_rad = ui_.spot_light_inner_deg * 3.14159265f / 180.f;
+    const float outer_rad = ui_.spot_light_outer_deg * 3.14159265f / 180.f;
     out.spot_light.inner_angle_rad = inner_rad;
     out.spot_light.outer_angle_rad = outer_rad;
 
-    out.use_attn_formula = use_attn_formula;
-    out.attn_const = attn_const;
-    out.attn_linear = attn_linear;
-    out.attn_quad = attn_quad;
+    out.use_attn_formula = ui_.use_attn_formula;
+    out.attn_const = ui_.attn_const;
+    out.attn_linear = ui_.attn_linear;
+    out.attn_quad = ui_.attn_quad;
 
     return out;
 }
 
 void SceneTestLayer::syncAmbientLight() {
-    ambient_light_->setEnabled(ambient_light_enabled);
-    ambient_light_->setColor({ambient_light_color[0], ambient_light_color[1], ambient_light_color[2]});
-    ambient_light_->setIntensity(ambient_light_intensity);
+    ambient_light_->setEnabled(ui_.ambient_light_enabled);
+    ambient_light_->setColor({ui_.ambient_light_color[0], ui_.ambient_light_color[1], ui_.ambient_light_color[2]});
+    ambient_light_->setIntensity(ui_.ambient_light_intensity);
 }
 
 void SceneTestLayer::syncDirLight() {
-    dir_light_->setEnabled(dir_light_enabled);
-    dir_light_->setDirection({dir_light_dir[0], dir_light_dir[1], dir_light_dir[2]});
-    dir_light_->setColor({dir_light_color[0], dir_light_color[1], dir_light_color[2]});
-    dir_light_->setIntensity(dir_light_intensity);
+    dir_light_->setEnabled(ui_.dir_light_enabled);
+    dir_light_->setDirection({ui_.dir_light_dir[0], ui_.dir_light_dir[1], ui_.dir_light_dir[2]});
+    dir_light_->setColor({ui_.dir_light_color[0], ui_.dir_light_color[1], ui_.dir_light_color[2]});
+    dir_light_->setIntensity(ui_.dir_light_intensity);
 }
 
 void SceneTestLayer::syncSpotLight() {
-    if (spot_light_outer_deg <= spot_light_inner_deg + kSpotAngleEpsDeg)
-        spot_light_outer_deg = spot_light_inner_deg + kSpotAngleEpsDeg;
-    if (spot_light_inner_deg > spot_light_outer_deg - kSpotAngleEpsDeg)
-        spot_light_inner_deg = spot_light_outer_deg - kSpotAngleEpsDeg;
+    if (ui_.spot_light_outer_deg <= ui_.spot_light_inner_deg + kSpotAngleEpsDeg)
+        ui_.spot_light_outer_deg = ui_.spot_light_inner_deg + kSpotAngleEpsDeg;
+    if (ui_.spot_light_inner_deg > ui_.spot_light_outer_deg - kSpotAngleEpsDeg)
+        ui_.spot_light_inner_deg = ui_.spot_light_outer_deg - kSpotAngleEpsDeg;
 
-    spot_light_->setEnabled(spot_light_enabled);
-    spot_light_->setPosition({spot_light_pos[0], spot_light_pos[1], spot_light_pos[2]});
-    vne::math::Vec3f dir(spot_light_dir[0], spot_light_dir[1], spot_light_dir[2]);
+    spot_light_->setEnabled(ui_.spot_light_enabled);
+    spot_light_->setPosition({ui_.spot_light_pos[0], ui_.spot_light_pos[1], ui_.spot_light_pos[2]});
+    vne::math::Vec3f dir(ui_.spot_light_dir[0], ui_.spot_light_dir[1], ui_.spot_light_dir[2]);
     dir = (dir.length() < 1e-6f) ? vne::math::Vec3f(0.f, -1.f, 0.f) : dir.normalized();
     spot_light_->setDirection(dir);
-    spot_light_->setColor({spot_light_color[0], spot_light_color[1], spot_light_color[2]});
-    spot_light_->setIntensity(spot_light_intensity);
-    spot_light_->setRange(spot_light_range);
-    spot_light_->setInnerOuterAnglesDeg(spot_light_inner_deg, spot_light_outer_deg);
+    spot_light_->setColor({ui_.spot_light_color[0], ui_.spot_light_color[1], ui_.spot_light_color[2]});
+    spot_light_->setIntensity(ui_.spot_light_intensity);
+    spot_light_->setRange(ui_.spot_light_range);
+    spot_light_->setInnerOuterAnglesDeg(ui_.spot_light_inner_deg, ui_.spot_light_outer_deg);
 }
 
 void SceneTestLayer::addPointLight() {
-    if (point_lights.size() >= 4)
+    if (ui_.point_lights.size() >= 4)
         return;
     PointLightEntry e;
     static const float kColors[4][3] = {{1, 0.4f, 0.2f}, {0.2f, 0.6f, 1}, {0.4f, 1, 0.4f}, {1, 0.2f, 1}};
-    const std::size_t idx = point_lights.size();
+    const std::size_t idx = ui_.point_lights.size();
     e.color[0] = kColors[idx][0];
     e.color[1] = kColors[idx][1];
     e.color[2] = kColors[idx][2];
@@ -369,95 +369,28 @@ void SceneTestLayer::addPointLight() {
                                                        e.range,
                                                        "PointLight" + std::to_string(idx));
     scene_state_.addLight(e.light);
-    point_lights.push_back(std::move(e));
+    ui_.point_lights.push_back(std::move(e));
 }
 
 void SceneTestLayer::removeLastPointLight() {
-    if (point_lights.empty())
+    if (ui_.point_lights.empty())
         return;
-    scene_state_.removeLight(point_lights.back().light);
-    point_lights.pop_back();
+    scene_state_.removeLight(ui_.point_lights.back().light);
+    ui_.point_lights.pop_back();
 }
 
 void SceneTestLayer::resetToDefault() {
-    use_perspective = true;
-    fov = 60.0f;
-    near_plane = 0.1f;
-    far_plane = 1000.0f;
-    ortho_half = 6.0f;
-    ortho_near = -100.0f;
-    ortho_far = 100.0f;
-    cam_position[0] = 4.f;
-    cam_position[1] = 3.f;
-    cam_position[2] = 6.f;
-    cam_target[0] = 0.f;
-    cam_target[1] = 0.f;
-    cam_target[2] = 0.f;
-    cam_up[0] = 0.f;
-    cam_up[1] = 1.f;
-    cam_up[2] = 0.f;
-    show_view_matrix = false;
-    show_projection_matrix = false;
-    show_camera_visuals = true;
-    show_frustum = true;
-    show_cam_axes = true;
-    show_near_far_planes = true;
-
-    cube_count = 3;
-    cube_rotation_speed = 0.5f;
+    const int save_w = ui_.last_vp_w;
+    const int save_h = ui_.last_vp_h;
+    ui_ = SceneUiSettings{};
+    ui_.last_vp_w = save_w;
+    ui_.last_vp_h = save_h;
     cube_angle_ = 0.f;
-    cube_position[0][0] = 0.f;
-    cube_position[0][1] = 0.5f;
-    cube_position[0][2] = 0.f;
-    cube_position[1][0] = 2.5f;
-    cube_position[1][1] = 0.5f;
-    cube_position[1][2] = 0.f;
-    cube_position[2][0] = -2.5f;
-    cube_position[2][1] = 0.5f;
-    cube_position[2][2] = 0.f;
-    cube_position[3][0] = 0.f;
-    cube_position[3][1] = 0.5f;
-    cube_position[3][2] = 2.5f;
 
-    ambient_light_enabled = true;
-    ambient_light_color[0] = 0.08f;
-    ambient_light_color[1] = 0.08f;
-    ambient_light_color[2] = 0.1f;
-    ambient_light_intensity = 1.0f;
-
-    dir_light_enabled = true;
-    dir_light_dir[0] = -0.5f;
-    dir_light_dir[1] = -1.0f;
-    dir_light_dir[2] = -0.3f;
-    dir_light_color[0] = 1.0f;
-    dir_light_color[1] = 0.97f;
-    dir_light_color[2] = 0.9f;
-    dir_light_intensity = 1.0f;
-
-    spot_light_enabled = false;
-    spot_light_pos[0] = 0.f;
-    spot_light_pos[1] = 4.f;
-    spot_light_pos[2] = 4.f;
-    spot_light_dir[0] = 0.f;
-    spot_light_dir[1] = -0.7f;
-    spot_light_dir[2] = -0.7f;
-    spot_light_color[0] = 1.f;
-    spot_light_color[1] = 0.9f;
-    spot_light_color[2] = 0.7f;
-    spot_light_intensity = 2.f;
-    spot_light_range = 10.f;
-    spot_light_inner_deg = 15.f;
-    spot_light_outer_deg = 30.f;
-
-    use_attn_formula = false;
-    attn_const = 1.f;
-    attn_linear = 0.09f;
-    attn_quad = 0.032f;
-
-    while (!point_lights.empty())
+    while (!ui_.point_lights.empty())
         removeLastPointLight();
 
-    rebuildCamera(last_vp_w, last_vp_h);
+    rebuildCamera(ui_.last_vp_w, ui_.last_vp_h);
     syncCameraPositionTargetUp();
     syncAmbientLight();
     syncDirLight();
@@ -465,9 +398,9 @@ void SceneTestLayer::resetToDefault() {
 }
 
 void SceneTestLayer::syncPointLight(std::size_t i) {
-    if (i >= point_lights.size())
+    if (i >= ui_.point_lights.size())
         return;
-    auto& e = point_lights[i];
+    auto& e = ui_.point_lights[i];
     e.light->setColor({e.color[0], e.color[1], e.color[2]});
     e.light->setIntensity(e.intensity);
     e.light->setRange(e.range);
@@ -482,7 +415,7 @@ void SceneTestLayer::syncPointLight(std::size_t i) {
 }
 [[nodiscard]] std::vector<std::shared_ptr<vne::scene::ICamera>> SceneTestLayer::getActiveCameras() const {
     std::vector<std::shared_ptr<vne::scene::ICamera>> out;
-    if (use_perspective) {
+    if (ui_.use_perspective) {
         for (const auto& c : cameras_persp_)
             if (c)
                 out.push_back(c);
@@ -499,36 +432,36 @@ void SceneTestLayer::buildCamera(int w, int h) {
     cameras_persp_.resize(kMaxViewports);
     cameras_ortho_.resize(kMaxViewports);
     for (int i = 0; i < kMaxViewports; ++i) {
-        auto persp = std::make_shared<vne::scene::PerspectiveCamera>(fov,
+        auto persp = std::make_shared<vne::scene::PerspectiveCamera>(ui_.fov,
                                                                      static_cast<float>(w),
                                                                      static_cast<float>(h),
-                                                                     near_plane,
-                                                                     far_plane,
+                                                                     ui_.near_plane,
+                                                                     ui_.far_plane,
                                                                      "SceneCamera" + std::to_string(i));
-        persp->setPosition({cam_position[0], cam_position[1], cam_position[2]});
-        persp->setTarget({cam_target[0], cam_target[1], cam_target[2]});
-        persp->setUp({cam_up[0], cam_up[1], cam_up[2]});
+        persp->setPosition({ui_.cam_position[0], ui_.cam_position[1], ui_.cam_position[2]});
+        persp->setTarget({ui_.cam_target[0], ui_.cam_target[1], ui_.cam_target[2]});
+        persp->setUp({ui_.cam_up[0], ui_.cam_up[1], ui_.cam_up[2]});
         persp->setGraphicsApi(vne::math::GraphicsApi::eOpenGL);
         persp->updateMatrices();
         cameras_persp_[static_cast<size_t>(i)] = std::move(persp);
 
-        const float hw = ortho_half * aspect;
+        const float hw = ui_.ortho_half * aspect;
         auto ortho = std::make_shared<vne::scene::OrthographicCamera>(-hw,
                                                                       hw,
-                                                                      -ortho_half,
-                                                                      ortho_half,
-                                                                      ortho_near,
-                                                                      ortho_far,
+                                                                      -ui_.ortho_half,
+                                                                      ui_.ortho_half,
+                                                                      ui_.ortho_near,
+                                                                      ui_.ortho_far,
                                                                       "OrthoCamera" + std::to_string(i));
-        ortho->setPosition({cam_position[0], cam_position[1], cam_position[2]});
-        ortho->setTarget({cam_target[0], cam_target[1], cam_target[2]});
-        ortho->setUp({cam_up[0], cam_up[1], cam_up[2]});
+        ortho->setPosition({ui_.cam_position[0], ui_.cam_position[1], ui_.cam_position[2]});
+        ortho->setTarget({ui_.cam_target[0], ui_.cam_target[1], ui_.cam_target[2]});
+        ortho->setUp({ui_.cam_up[0], ui_.cam_up[1], ui_.cam_up[2]});
         ortho->setGraphicsApi(vne::math::GraphicsApi::eOpenGL);
         ortho->updateMatrices();
         cameras_ortho_[static_cast<size_t>(i)] = std::move(ortho);
     }
-    scene_state_.setActiveCamera(use_perspective ? std::static_pointer_cast<vne::scene::ICamera>(cameras_persp_[0])
-                                                 : std::static_pointer_cast<vne::scene::ICamera>(cameras_ortho_[0]));
+    scene_state_.setActiveCamera(ui_.use_perspective ? std::static_pointer_cast<vne::scene::ICamera>(cameras_persp_[0])
+                                                     : std::static_pointer_cast<vne::scene::ICamera>(cameras_ortho_[0]));
 }
 
 void SceneTestLayer::buildGeometry() {
@@ -541,37 +474,37 @@ void SceneTestLayer::buildGeometry() {
 
 void SceneTestLayer::buildLights() {
     ambient_light_ = std::make_shared<vne::scene::AmbientLight>(
-        vne::math::Vec3f{ambient_light_color[0], ambient_light_color[1], ambient_light_color[2]},
-        ambient_light_intensity,
+        vne::math::Vec3f{ui_.ambient_light_color[0], ui_.ambient_light_color[1], ui_.ambient_light_color[2]},
+        ui_.ambient_light_intensity,
         "Ambient");
-    ambient_light_->setEnabled(ambient_light_enabled);
+    ambient_light_->setEnabled(ui_.ambient_light_enabled);
     scene_state_.addLight(ambient_light_);
 
     dir_light_ = std::make_shared<vne::scene::DirectionalLight>(
-        vne::math::Vec3f{dir_light_dir[0], dir_light_dir[1], dir_light_dir[2]},
-        vne::math::Vec3f{dir_light_color[0], dir_light_color[1], dir_light_color[2]},
-        dir_light_intensity,
+        vne::math::Vec3f{ui_.dir_light_dir[0], ui_.dir_light_dir[1], ui_.dir_light_dir[2]},
+        vne::math::Vec3f{ui_.dir_light_color[0], ui_.dir_light_color[1], ui_.dir_light_color[2]},
+        ui_.dir_light_intensity,
         "SunLight");
     scene_state_.addLight(dir_light_);
 
-    vne::math::Vec3f spot_dir(spot_light_dir[0], spot_light_dir[1], spot_light_dir[2]);
+    vne::math::Vec3f spot_dir(ui_.spot_light_dir[0], ui_.spot_light_dir[1], ui_.spot_light_dir[2]);
     spot_dir = (spot_dir.length() < 1e-6f) ? vne::math::Vec3f(0.f, -1.f, 0.f) : spot_dir.normalized();
     spot_light_ = std::make_shared<vne::scene::SpotLight>(
-        vne::math::Vec3f{spot_light_pos[0], spot_light_pos[1], spot_light_pos[2]},
+        vne::math::Vec3f{ui_.spot_light_pos[0], ui_.spot_light_pos[1], ui_.spot_light_pos[2]},
         spot_dir,
-        vne::math::Vec3f{spot_light_color[0], spot_light_color[1], spot_light_color[2]},
-        spot_light_intensity,
-        spot_light_range,
-        spot_light_inner_deg,
-        spot_light_outer_deg,
+        vne::math::Vec3f{ui_.spot_light_color[0], ui_.spot_light_color[1], ui_.spot_light_color[2]},
+        ui_.spot_light_intensity,
+        ui_.spot_light_range,
+        ui_.spot_light_inner_deg,
+        ui_.spot_light_outer_deg,
         "Spot");
-    spot_light_->setEnabled(spot_light_enabled);
+    spot_light_->setEnabled(ui_.spot_light_enabled);
     scene_state_.addLight(spot_light_);
 }
 
 void SceneTestLayer::updateCameraAspect(int w, int h) {
     const float aspect = static_cast<float>(w) / static_cast<float>(h);
-    if (use_perspective) {
+    if (ui_.use_perspective) {
         for (auto& cam : cameras_persp_) {
             if (cam) {
                 cam->setAspectRatio(aspect);
@@ -579,10 +512,10 @@ void SceneTestLayer::updateCameraAspect(int w, int h) {
             }
         }
     } else {
-        const float hw = ortho_half * aspect;
+        const float hw = ui_.ortho_half * aspect;
         for (auto& cam : cameras_ortho_) {
             if (cam) {
-                cam->resize(hw * 2.f, ortho_half * 2.f);
+                cam->resize(hw * 2.f, ui_.ortho_half * 2.f);
                 cam->updateProjectionMatrix();
             }
         }
@@ -591,10 +524,10 @@ void SceneTestLayer::updateCameraAspect(int w, int h) {
 
 vne::math::Mat4f SceneTestLayer::getActiveViewProjectionMatrix(int vp_idx) const {
     const auto i = static_cast<size_t>(vp_idx);
-    if (use_perspective && i < cameras_persp_.size() && cameras_persp_[i]) {
+    if (ui_.use_perspective && i < cameras_persp_.size() && cameras_persp_[i]) {
         return cameras_persp_[i]->getViewProjectionMatrix();
     }
-    if (!use_perspective && i < cameras_ortho_.size() && cameras_ortho_[i]) {
+    if (!ui_.use_perspective && i < cameras_ortho_.size() && cameras_ortho_[i]) {
         return cameras_ortho_[i]->getViewProjectionMatrix();
     }
     return vne::math::Mat4f::identity();
@@ -602,10 +535,10 @@ vne::math::Mat4f SceneTestLayer::getActiveViewProjectionMatrix(int vp_idx) const
 
 vne::math::Vec3f SceneTestLayer::getActiveCameraPosition(int vp_idx) const {
     const auto i = static_cast<size_t>(vp_idx);
-    if (use_perspective && i < cameras_persp_.size() && cameras_persp_[i]) {
+    if (ui_.use_perspective && i < cameras_persp_.size() && cameras_persp_[i]) {
         return cameras_persp_[i]->getPosition();
     }
-    if (!use_perspective && i < cameras_ortho_.size() && cameras_ortho_[i]) {
+    if (!ui_.use_perspective && i < cameras_ortho_.size() && cameras_ortho_[i]) {
         return cameras_ortho_[i]->getPosition();
     }
     return {};
@@ -640,13 +573,13 @@ void SceneTestLayer::drawCameraVisuals(int vp_idx) const {
     debug_draw_->line(tgt - V::zAxis() * s, tgt + V::zAxis() * s, tgt_color);
     debug_draw_->line(pos, tgt, {1.f, 0.5f, 0.2f});
 
-    if (show_cam_axes) {
+    if (ui_.show_cam_axes) {
         constexpr float ax_len = 1.0f;
         debug_draw_->line(pos, pos + up_ortho * ax_len, {0.3f, 0.5f, 1.f});
         debug_draw_->line(pos, pos + right * ax_len, {1.f, 0.3f, 0.3f});
         debug_draw_->line(pos, pos + fwd * ax_len, {0.8f, 1.f, 0.2f});
     }
-    if (show_frustum)
+    if (ui_.show_frustum)
         drawFrustum(pos, fwd, right, up_ortho);
 }
 
@@ -662,8 +595,8 @@ void SceneTestLayer::drawFrustum(vne::math::Vec3f pos,
     // Clamp near to a small positive value and ensure far is beyond near
     // so the frustum visualization stays well-defined even for
     // misconfigured clip planes.
-    const float near_dist = std::max(near_plane, 0.05f);
-    const float far_dist = std::max(far_plane, near_dist + 0.01f);
+    const float near_dist = std::max(ui_.near_plane, 0.05f);
+    const float far_dist = std::max(ui_.far_plane, near_dist + 0.01f);
 
     const auto along = [&](float d) { return pos + fwd * d; };
     const auto corner = [&](const vne::math::Vec3f& c, float rr, float uu) { return c + right * rr + up * uu; };
@@ -672,11 +605,12 @@ void SceneTestLayer::drawFrustum(vne::math::Vec3f pos,
     const vne::math::Vec3f far_col{0.3f, 0.8f, 1.0f};   // cyan   — far  plane
     const vne::math::Vec3f edge_col{0.7f, 0.7f, 0.7f};  // gray   — connecting edges
 
-    const float aspect = (last_vp_h > 0) ? (static_cast<float>(last_vp_w) / static_cast<float>(last_vp_h)) : 1.f;
+    const float aspect =
+        (ui_.last_vp_h > 0) ? (static_cast<float>(ui_.last_vp_w) / static_cast<float>(ui_.last_vp_h)) : 1.f;
 
-    if (use_perspective) {
+    if (ui_.use_perspective) {
         // Tangent of half-FOV gives the slope; multiply by distance to get half-extents.
-        const float half_fov_rad = fov * 0.5f * 3.14159265f / 180.f;
+        const float half_fov_rad = ui_.fov * 0.5f * 3.14159265f / 180.f;
         const float tan_half = std::tan(half_fov_rad);
 
         const float near_half_h = tan_half * near_dist;
@@ -712,15 +646,15 @@ void SceneTestLayer::drawFrustum(vne::math::Vec3f pos,
         debug_draw_->line(pos, far_bl, edge_col);
         debug_draw_->line(pos, far_br, edge_col);
 
-        if (show_near_far_planes) {
+        if (ui_.show_near_far_planes) {
             debug_draw_->line(near_tl, near_br, near_col);
             debug_draw_->line(near_tr, near_bl, near_col);
             debug_draw_->line(far_tl, far_br, far_col);
             debug_draw_->line(far_tr, far_bl, far_col);
         }
     } else {
-        const float half_w = ortho_half * aspect;
-        const float half_h = ortho_half;
+        const float half_w = ui_.ortho_half * aspect;
+        const float half_h = ui_.ortho_half;
 
         const vne::math::Vec3f near_center = along(near_dist);
         const vne::math::Vec3f far_center = along(far_dist);
@@ -750,7 +684,7 @@ void SceneTestLayer::drawFrustum(vne::math::Vec3f pos,
         debug_draw_->line(near_bl, far_bl, edge_col);
         debug_draw_->line(near_br, far_br, edge_col);
 
-        if (show_near_far_planes) {
+        if (ui_.show_near_far_planes) {
             debug_draw_->line(near_tl, near_br, near_col);
             debug_draw_->line(near_tr, near_bl, near_col);
             debug_draw_->line(far_tl, far_br, far_col);
@@ -818,6 +752,7 @@ void SceneSettingsLayer::renderPanel() {
     if (!scene_layer_)
         return;
     auto& sl = *scene_layer_;
+    auto& ui = sl.uiSettings();
 
     if (ImGui::Button("Reset scene to default")) {
         sl.resetToDefault();
@@ -837,56 +772,56 @@ void SceneSettingsLayer::renderPanel() {
             const vne::math::Vec3f pos = cam->getPosition();
             const vne::math::Vec3f tgt = cam->getTarget();
             const vne::math::Vec3f up = cam->getUp();
-            sl.cam_position[0] = pos.x();
-            sl.cam_position[1] = pos.y();
-            sl.cam_position[2] = pos.z();
-            sl.cam_target[0] = tgt.x();
-            sl.cam_target[1] = tgt.y();
-            sl.cam_target[2] = tgt.z();
-            sl.cam_up[0] = up.x();
-            sl.cam_up[1] = up.y();
-            sl.cam_up[2] = up.z();
+            ui.cam_position[0] = pos.x();
+            ui.cam_position[1] = pos.y();
+            ui.cam_position[2] = pos.z();
+            ui.cam_target[0] = tgt.x();
+            ui.cam_target[1] = tgt.y();
+            ui.cam_target[2] = tgt.z();
+            ui.cam_up[0] = up.x();
+            ui.cam_up[1] = up.y();
+            ui.cam_up[2] = up.z();
         }
         bool pos_changed = false;
         bool proj_changed = false;
         const char* types[] = {"Perspective", "Orthographic"};
-        int type_index = sl.use_perspective ? 0 : 1;
+        int type_index = ui.use_perspective ? 0 : 1;
         if (ImGui::Combo("Type", &type_index, types, 2)) {
-            sl.use_perspective = (type_index == 0);
+            ui.use_perspective = (type_index == 0);
             proj_changed = true;
         }
-        pos_changed |= ImGui::SliderFloat3("Position", sl.cam_position, -20.f, 20.f);
-        pos_changed |= ImGui::SliderFloat3("Target", sl.cam_target, -20.f, 20.f);
-        pos_changed |= ImGui::SliderFloat3("Up", sl.cam_up, -1.f, 1.f);
-        if (sl.use_perspective) {
-            proj_changed |= ImGui::SliderFloat("FOV", &sl.fov, 20.f, 120.f);
-            proj_changed |= ImGui::SliderFloat("Near", &sl.near_plane, 0.01f, 10.f);
-            proj_changed |= ImGui::SliderFloat("Far", &sl.far_plane, sl.near_plane + 0.01f, 5000.f);
+        pos_changed |= ImGui::SliderFloat3("Position", ui.cam_position, -20.f, 20.f);
+        pos_changed |= ImGui::SliderFloat3("Target", ui.cam_target, -20.f, 20.f);
+        pos_changed |= ImGui::SliderFloat3("Up", ui.cam_up, -1.f, 1.f);
+        if (ui.use_perspective) {
+            proj_changed |= ImGui::SliderFloat("FOV", &ui.fov, 20.f, 120.f);
+            proj_changed |= ImGui::SliderFloat("Near", &ui.near_plane, 0.01f, 10.f);
+            proj_changed |= ImGui::SliderFloat("Far", &ui.far_plane, ui.near_plane + 0.01f, 5000.f);
         } else {
-            proj_changed |= ImGui::SliderFloat("Half-extent", &sl.ortho_half, 1.f, 20.f);
-            proj_changed |= ImGui::SliderFloat("Near##ortho", &sl.ortho_near, -500.f, 500.f);
-            proj_changed |= ImGui::SliderFloat("Far##ortho", &sl.ortho_far, -500.f, 500.f);
+            proj_changed |= ImGui::SliderFloat("Half-extent", &ui.ortho_half, 1.f, 20.f);
+            proj_changed |= ImGui::SliderFloat("Near##ortho", &ui.ortho_near, -500.f, 500.f);
+            proj_changed |= ImGui::SliderFloat("Far##ortho", &ui.ortho_far, -500.f, 500.f);
         }
         if (pos_changed)
             sl.syncCameraPositionTargetUp();
         if (proj_changed) {
-            sl.rebuildCamera(sl.last_vp_w, sl.last_vp_h);
+            sl.rebuildCamera(ui.last_vp_w, ui.last_vp_h);
 #ifdef VNE_TESTBED_INTERACTION
             if (interaction_layer_)
                 interaction_layer_->setCameras(sl.getActiveCameras());
 #endif
         }
-        ImGui::Checkbox("Show camera visuals", &sl.show_camera_visuals);
-        if (sl.show_camera_visuals) {
+        ImGui::Checkbox("Show camera visuals", &ui.show_camera_visuals);
+        if (ui.show_camera_visuals) {
             ImGui::Indent();
-            ImGui::Checkbox("Frustum wireframe", &sl.show_frustum);
-            ImGui::Checkbox("Camera axes (fwd/right/up)", &sl.show_cam_axes);
-            ImGui::Checkbox("Near plane crosshair", &sl.show_near_far_planes);
+            ImGui::Checkbox("Frustum wireframe", &ui.show_frustum);
+            ImGui::Checkbox("Camera axes (fwd/right/up)", &ui.show_cam_axes);
+            ImGui::Checkbox("Near plane crosshair", &ui.show_near_far_planes);
             ImGui::Unindent();
         }
-        ImGui::Checkbox("Show view matrix", &sl.show_view_matrix);
-        ImGui::Checkbox("Show projection matrix", &sl.show_projection_matrix);
-        if (sl.show_view_matrix) {
+        ImGui::Checkbox("Show view matrix", &ui.show_view_matrix);
+        ImGui::Checkbox("Show projection matrix", &ui.show_projection_matrix);
+        if (ui.show_view_matrix) {
             if (vne::scene::ICamera* cam2 = sl.activeCamera(0)) {
                 vne::math::Mat4f view = cam2->getViewMatrix();
                 ImGui::Text("View matrix (column-major):");
@@ -899,7 +834,7 @@ void SceneSettingsLayer::renderPanel() {
                 }
             }
         }
-        if (sl.show_projection_matrix) {
+        if (ui.show_projection_matrix) {
             if (vne::scene::ICamera* cam2 = sl.activeCamera(0)) {
                 vne::math::Mat4f proj = cam2->getProjectionMatrix();
                 ImGui::Text("Projection matrix (column-major):");
@@ -927,17 +862,17 @@ void SceneSettingsLayer::renderPanel() {
 
     // ---- Cubes ----
     if (ImGui::CollapsingHeader("Cubes", ImGuiTreeNodeFlags_DefaultOpen)) {
-        ImGui::SliderInt("Count##cubes", &sl.cube_count, 0, 4);
-        ImGui::SliderFloat("Rotation speed##cubes", &sl.cube_rotation_speed, 0.f, 4.f);
+        ImGui::SliderInt("Count##cubes", &ui.cube_count, 0, 4);
+        ImGui::SliderFloat("Rotation speed##cubes", &ui.cube_rotation_speed, 0.f, 4.f);
         for (int i = 0; i < 4; ++i) {
             ImGui::PushID(i);
             const std::string label = "Cube " + std::to_string(i + 1);
             if (ImGui::CollapsingHeader(label.c_str())) {
-                const bool active = (i < sl.cube_count);
+                const bool active = (i < ui.cube_count);
                 if (!active)
                     ImGui::TextDisabled("(not drawn)");
                 else
-                    ImGui::SliderFloat3("Position", sl.cube_position[i], -120.f, 120.f);
+                    ImGui::SliderFloat3("Position", ui.cube_position[i], -120.f, 120.f);
                 vne::math::Mat4f model = sl.getCubeModelMatrix(i);
                 ImGui::Text("Model matrix (column-major):");
                 for (size_t row = 0; row < 4u; ++row) {
@@ -955,9 +890,9 @@ void SceneSettingsLayer::renderPanel() {
     // ---- Ambient ----
     if (ImGui::CollapsingHeader("Ambient", ImGuiTreeNodeFlags_DefaultOpen)) {
         bool sync = false;
-        sync |= ImGui::Checkbox("Enabled##amb", &sl.ambient_light_enabled);
-        sync |= ImGui::ColorEdit3("Color##amb", sl.ambient_light_color);
-        sync |= ImGui::SliderFloat("Intensity##amb", &sl.ambient_light_intensity, 0.f, 2.f);
+        sync |= ImGui::Checkbox("Enabled##amb", &ui.ambient_light_enabled);
+        sync |= ImGui::ColorEdit3("Color##amb", ui.ambient_light_color);
+        sync |= ImGui::SliderFloat("Intensity##amb", &ui.ambient_light_intensity, 0.f, 2.f);
         if (sync)
             sl.syncAmbientLight();
     }
@@ -965,17 +900,17 @@ void SceneSettingsLayer::renderPanel() {
     // ---- Directional light ----
     if (ImGui::CollapsingHeader("Directional Light", ImGuiTreeNodeFlags_DefaultOpen)) {
         bool sync = false;
-        sync |= ImGui::Checkbox("Enabled##dir", &sl.dir_light_enabled);
-        sync |= ImGui::SliderFloat3("Direction", sl.dir_light_dir, -1.f, 1.f);
-        sync |= ImGui::ColorEdit3("Color##dir", sl.dir_light_color);
-        sync |= ImGui::SliderFloat("Intensity##dir", &sl.dir_light_intensity, 0.f, 5.f);
+        sync |= ImGui::Checkbox("Enabled##dir", &ui.dir_light_enabled);
+        sync |= ImGui::SliderFloat3("Direction", ui.dir_light_dir, -1.f, 1.f);
+        sync |= ImGui::ColorEdit3("Color##dir", ui.dir_light_color);
+        sync |= ImGui::SliderFloat("Intensity##dir", &ui.dir_light_intensity, 0.f, 5.f);
         if (sync)
             sl.syncDirLight();
     }
 
     // ---- Point lights ----
     if (ImGui::CollapsingHeader("Point Lights", ImGuiTreeNodeFlags_DefaultOpen)) {
-        const int npt = static_cast<int>(sl.point_lights.size());
+        const int npt = static_cast<int>(ui.point_lights.size());
         ImGui::Text("Active: %d / 4", npt);
         if (npt < 4 && ImGui::Button("+ Add point light")) {
             sl.addPointLight();
@@ -987,7 +922,7 @@ void SceneSettingsLayer::renderPanel() {
             }
         }
         for (int i = 0; i < npt; ++i) {
-            auto& e = sl.point_lights[static_cast<std::size_t>(i)];
+            auto& e = ui.point_lights[static_cast<std::size_t>(i)];
             ImGui::PushID(i);
             const std::string point_light_label = "Point Light " + std::to_string(i + 1);
             if (ImGui::TreeNode(point_light_label.c_str())) {
@@ -1009,24 +944,24 @@ void SceneSettingsLayer::renderPanel() {
     // ---- Spot light ----
     if (ImGui::CollapsingHeader("Spot Light", ImGuiTreeNodeFlags_DefaultOpen)) {
         bool sync = false;
-        sync |= ImGui::Checkbox("Enabled##spot", &sl.spot_light_enabled);
-        sync |= ImGui::SliderFloat3("Position##spot", sl.spot_light_pos, -10.f, 10.f);
-        sync |= ImGui::SliderFloat3("Direction##spot", sl.spot_light_dir, -1.f, 1.f);
-        sync |= ImGui::ColorEdit3("Color##spot", sl.spot_light_color);
-        sync |= ImGui::SliderFloat("Intensity##spot", &sl.spot_light_intensity, 0.f, 10.f);
-        sync |= ImGui::SliderFloat("Range##spot", &sl.spot_light_range, 0.5f, 20.f);
-        sync |= ImGui::SliderFloat("Inner angle (deg)##spot", &sl.spot_light_inner_deg, 1.f, 89.f);
-        sync |= ImGui::SliderFloat("Outer angle (deg)##spot", &sl.spot_light_outer_deg, 1.f, 90.f);
+        sync |= ImGui::Checkbox("Enabled##spot", &ui.spot_light_enabled);
+        sync |= ImGui::SliderFloat3("Position##spot", ui.spot_light_pos, -10.f, 10.f);
+        sync |= ImGui::SliderFloat3("Direction##spot", ui.spot_light_dir, -1.f, 1.f);
+        sync |= ImGui::ColorEdit3("Color##spot", ui.spot_light_color);
+        sync |= ImGui::SliderFloat("Intensity##spot", &ui.spot_light_intensity, 0.f, 10.f);
+        sync |= ImGui::SliderFloat("Range##spot", &ui.spot_light_range, 0.5f, 20.f);
+        sync |= ImGui::SliderFloat("Inner angle (deg)##spot", &ui.spot_light_inner_deg, 1.f, 89.f);
+        sync |= ImGui::SliderFloat("Outer angle (deg)##spot", &ui.spot_light_outer_deg, 1.f, 90.f);
         if (sync)
             sl.syncSpotLight();
     }
 
     if (ImGui::CollapsingHeader("Attenuation (point/spot)", ImGuiTreeNodeFlags_DefaultOpen)) {
-        ImGui::Checkbox("Use attenuation formula (const + linear*d + quad*d^2)", &sl.use_attn_formula);
-        if (sl.use_attn_formula) {
-            ImGui::SliderFloat("Constant##attn", &sl.attn_const, 0.01f, 2.f);
-            ImGui::SliderFloat("Linear##attn", &sl.attn_linear, 0.f, 0.5f);
-            ImGui::SliderFloat("Quadratic##attn", &sl.attn_quad, 0.f, 0.1f);
+        ImGui::Checkbox("Use attenuation formula (const + linear*d + quad*d^2)", &ui.use_attn_formula);
+        if (ui.use_attn_formula) {
+            ImGui::SliderFloat("Constant##attn", &ui.attn_const, 0.01f, 2.f);
+            ImGui::SliderFloat("Linear##attn", &ui.attn_linear, 0.f, 0.5f);
+            ImGui::SliderFloat("Quadratic##attn", &ui.attn_quad, 0.f, 0.1f);
         }
     }
 }
