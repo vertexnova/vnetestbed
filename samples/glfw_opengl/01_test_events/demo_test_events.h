@@ -30,20 +30,27 @@ class ImGuiLayer;
 }
 #endif
 
-namespace vne::samples::test_events {
+namespace vne::samples {
 
-enum class LastKeyAction { eNone = 0, ePressed = 1, eReleased = 2, eRepeat = 3 };
+enum class LastKeyAction {
+    eNone = 0,      //!< No action
+    ePressed = 1,   //!< Key pressed
+    eReleased = 2,  //!< Key released
+    eRepeat = 3     //!< Key repeated
+};
 
-enum class LastTouchAction { eNone = 0, ePress = 1, eMove = 2, eRelease = 3 };
+enum class LastTouchAction {
+    eNone = 0,    //!< No action
+    ePress = 1,   //!< Touch pressed
+    eMove = 2,    //!< Touch moved
+    eRelease = 3  //!< Touch released
+};
 
 // ---------------------------------------------------------------------------
 // EventsLayer — captures every event and exposes stats for the UI
 // ---------------------------------------------------------------------------
 class EventsLayer : public vne::testbed::ILayer {
    public:
-    static constexpr std::size_t kMaxLog = 20;
-    static constexpr int kInvalidKeyCode = -1;
-
     EventsLayer();
 
     void onAttach(vne::testbed::AppContext& app_context) override;
@@ -68,7 +75,7 @@ class EventsLayer : public vne::testbed::ILayer {
     void setLastTouch(uint32_t id, double x, double y, LastTouchAction action);
 
     std::deque<std::string> log_;
-    int last_key_code_{kInvalidKeyCode};
+    int last_key_code_{-1};
     LastKeyAction last_key_action_{LastKeyAction::eNone};
     uint32_t last_touch_id_{0};
     double last_touch_x_{0.0};
@@ -102,7 +109,6 @@ class EventsSettingsLayer : public vne::testbed::ILayer {
     void renderPanel();
 
     static constexpr size_t kCharDisplayBufSize = 256;
-    static constexpr size_t kCharDisplayLastN = 10;
     char char_display_buf_[kCharDisplayBufSize] = {};
 
     vne::testbed::ImGuiLayer* imgui_layer_{nullptr};
@@ -112,4 +118,4 @@ class EventsSettingsLayer : public vne::testbed::ILayer {
 
 void registerTestEventsDemo(vne::testbed::Application& app);
 
-}  // namespace vne::samples::test_events
+}  // namespace vne::samples
