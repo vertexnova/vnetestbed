@@ -51,9 +51,16 @@ constexpr int kMouseButtonLeft = 0;
 constexpr int kMouseButtonRight = 1;
 constexpr int kMouseButtonMiddle = 2;
 
+constexpr std::size_t kMaxLog = 20;  //!< Maximum number of log lines
+constexpr int kInvalidKeyCode = -1;  //!< Invalid key code
+
+#ifdef VNE_TESTBED_IMGUI
+constexpr size_t kCharDisplayLastN = 10;
+#endif
+
 }  // namespace
 
-namespace vne::samples::test_events {
+namespace vne::samples {
 
 // ---------------------------------------------------------------------------
 // EventsLayer
@@ -69,7 +76,9 @@ void EventsLayer::onDetach() {
 }
 
 void EventsLayer::onUpdate(float dt) {
-    // Rolling events-per-second counter
+    // Events arrive in onEvent() into events_since_last_update_; each frame we fold that into
+    // events_this_second_. When second_acc_ reaches 1s, copy the count to events_per_second_
+    // (for the UI) and start a new second.
     events_this_second_ += events_since_last_update_;
     events_since_last_update_ = 0;
     second_acc_ += dt;
@@ -86,72 +95,71 @@ void EventsLayer::onEvent(const vne::events::Event& event) {
     events_since_last_update_++;
 
     std::string line;
-    using ET = vne::events::EventType;
     switch (event.type()) {
-        case ET::eKeyPressed: {
+        case vne::events::EventType::eKeyPressed: {
             const auto& e = static_cast<const vne::events::KeyEvent&>(event);
             setLastKey(static_cast<int>(e.keyCode()), LastKeyAction::ePressed);
             line = "KeyPressed    key=" + std::to_string(static_cast<int>(e.keyCode()));
             break;
         }
-        case ET::eKeyRepeat: {
+        case vne::events::EventType::eKeyRepeat: {
             const auto& e = static_cast<const vne::events::KeyRepeatEvent&>(event);
             setLastKey(static_cast<int>(e.keyCode()), LastKeyAction::eRepeat);
             line = "KeyRepeat     key=" + std::to_string(static_cast<int>(e.keyCode()))
                    + "  count=" + std::to_string(e.repeatCount());
             break;
         }
-        case ET::eKeyReleased: {
+        case vne::events::EventType::eKeyReleased: {
             const auto& e = static_cast<const vne::events::KeyEvent&>(event);
             setLastKey(static_cast<int>(e.keyCode()), LastKeyAction::eReleased);
             line = "KeyReleased   key=" + std::to_string(static_cast<int>(e.keyCode()));
             break;
         }
-        case ET::eMouseButtonPressed: {
+        case vne::events::EventType::eMouseButtonPressed: {
             const auto& e = static_cast<const vne::events::MouseButtonEvent&>(event);
             line = "MousePressed  btn=" + std::to_string(static_cast<int>(e.button()));
             break;
         }
-        case ET::eMouseButtonReleased: {
+        case vne::events::EventType::eMouseButtonReleased: {
             const auto& e = static_cast<const vne::events::MouseButtonEvent&>(event);
             line = "MouseReleased btn=" + std::to_string(static_cast<int>(e.button()));
             break;
         }
-        case ET::eMouseMoved: {
+        case vne::events::EventType::eMouseMoved: {
             const auto& e = static_cast<const vne::events::MouseMovedEvent&>(event);
             line = "MouseMoved    x=" + std::to_string(static_cast<int>(e.x()))
                    + "  y=" + std::to_string(static_cast<int>(e.y()));
             break;
         }
-        case ET::eMouseScrolled: {
+        case vne::events::EventType::eMouseScrolled: {
             const auto& e = static_cast<const vne::events::MouseScrolledEvent&>(event);
             line = "MouseScrolled dx=" + std::to_string(static_cast<int>(e.xOffset()))
                    + "  dy=" + std::to_string(static_cast<int>(e.yOffset()));
             break;
         }
-        case ET::eWindowResize: {
+        case vne::events::EventType::eWindowResize: {
             const auto& e = static_cast<const vne::events::WindowResizeEvent&>(event);
             line = "WindowResize  w=" + std::to_string(e.width()) + "  h=" + std::to_string(e.height());
             break;
         }
-        case ET::eWindowClose:
+        case vne::events::EventType::eWindowClose:
             line = "WindowClose";
             break;
-        case ET::eTouchPress: {
+        case vne::events::EventType::eTouchPress: {
             const auto& e = static_cast<const vne::events::TouchPressEvent&>(event);
             setLastTouch(e.touchId(), e.x(), e.y(), LastTouchAction::ePress);
             line = "TouchPress   id=" + std::to_string(e.touchId()) + "  x=" + std::to_string(static_cast<int>(e.x()))
                    + "  y=" + std::to_string(static_cast<int>(e.y()));
             break;
         }
-        case ET::eTouchRelease: {
+        case vne::events::EventType::eTouchRelease: {
             const auto& e = static_cast<const vne::events::TouchReleaseEvent&>(event);
             setLastTouch(e.touchId(), e.x(), e.y(), LastTouchAction::eRelease);
             line = "TouchRelease id=" + std::to_string(e.touchId()) + "  x=" + std::to_string(static_cast<int>(e.x()))
                    + "  y=" + std::to_string(static_cast<int>(e.y()));
             break;
         }
-        case ET::eTouchMove: {
+        case vne::events::EventType::eTouchMove: {
             const auto& e = static_cast<const vne::events::TouchMoveEvent&>(event);
             setLastTouch(e.touchId(), e.x(), e.y(), LastTouchAction::eMove);
             line = "TouchMove    id=" + std::to_string(e.touchId()) + "  x=" + std::to_string(static_cast<int>(e.x()))
@@ -215,21 +223,20 @@ void EventsSettingsLayer::onDetach() {
 }
 
 const char* EventsSettingsLayer::keyCodeToLabel(int key_code) {
-    using K = vne::events::KeyCode;
-    switch (static_cast<K>(key_code)) {
-        case K::eW:
+    switch (static_cast<vne::events::KeyCode>(key_code)) {
+        case vne::events::KeyCode::eW:
             return "W";
-        case K::eA:
+        case vne::events::KeyCode::eA:
             return "A";
-        case K::eS:
+        case vne::events::KeyCode::eS:
             return "S";
-        case K::eD:
+        case vne::events::KeyCode::eD:
             return "D";
-        case K::eSpace:
+        case vne::events::KeyCode::eSpace:
             return "Space";
-        case K::eEscape:
+        case vne::events::KeyCode::eEscape:
             return "Escape";
-        case K::eLeftShift:
+        case vne::events::KeyCode::eLeftShift:
             return "Shift";
         default:
             return nullptr;
@@ -252,7 +259,7 @@ void EventsSettingsLayer::keyPollRow(const char* label, int key) {
 
 void EventsSettingsLayer::renderPanel() {
     // ---- Event log: plain list, newest first ----
-    const std::string events_header = "Events (last " + std::to_string(EventsLayer::kMaxLog) + ")";
+    const std::string events_header = "Events (last " + std::to_string(kMaxLog) + ")";
     if (ImGui::CollapsingHeader(events_header.c_str(), ImGuiTreeNodeFlags_DefaultOpen)) {
         if (events_layer_) {
             ImGui::Text("Total: %llu  /sec: %u",
@@ -312,7 +319,7 @@ void EventsSettingsLayer::renderPanel() {
                                      : (ka == LastKeyAction::eRepeat)   ? "repeat"
                                                                         : "";
             const char* key_label = keyCodeToLabel(kc);
-            if (action_str[0] != '\0' && kc != EventsLayer::kInvalidKeyCode) {
+            if (action_str[0] != '\0' && kc != kInvalidKeyCode) {
                 if (key_label) {
                     ImGui::Text("Key: %s %s", key_label, action_str);
                 } else {
@@ -374,7 +381,7 @@ void registerTestEventsDemo(vne::testbed::Application& app) {
     app.getLayerStack().pushLayer(std::unique_ptr<BaseSceneLayer>(scene), app.getAppContext());
 
 #ifdef VNE_TESTBED_INTERACTION
-    // Layer 2: orbit-arcball interaction (per-viewport cameras when using 2 or 4 viewports)
+    // Layer 2: orbit-arcball interaction (per-viewport cameras when using multiple viewports)
     auto* interaction = new BaseInteractionLayer("TestEventsInteractionLayer");
     interaction->setSceneLayer(scene);
     app.getLayerStack().pushLayer(std::unique_ptr<BaseInteractionLayer>(interaction), app.getAppContext());
@@ -401,4 +408,4 @@ void registerTestEventsDemo(vne::testbed::Application& app) {
 
 VNETESTBED_REGISTER_DEMO("test_events", registerTestEventsDemo)
 
-}  // namespace vne::samples::test_events
+}  // namespace vne::samples
