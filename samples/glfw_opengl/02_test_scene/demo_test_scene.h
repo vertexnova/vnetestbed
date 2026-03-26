@@ -48,67 +48,67 @@ namespace vne::samples {
 
 struct PointLightEntry {
     std::shared_ptr<vne::scene::PointLight> light;
-    float orbit_radius{3.0f};
-    float orbit_speed{1.0f};
-    float orbit_angle{0.0f};
-    vne::math::Color color{1.0f, 0.8f, 0.4f};
-    float intensity{2.0f};
-    float range{8.0f};
-    bool enabled{true};
+    float orbit_radius{3.0f};                  //!< Horizontal orbit radius in world units (XZ plane).
+    float orbit_speed{1.0f};                   //!< Radians per second; sign = direction.
+    float orbit_angle{0.0f};                   //!< Initial phase on the orbit.
+    vne::math::Color color{1.0f, 0.8f, 0.4f};  //!< RGB tint for debug crosshair and light.
+    float intensity{2.0f};                     //!< Point light intensity multiplier.
+    float range{8.0f};                         //!< Max influence distance for falloff.
+    bool enabled{true};                        //!< On/off without removing from the scene.
 };
 
 // Camera / cubes / lights state edited via ImGui (private on SceneTestLayer; access via uiSettings()).
 struct SceneUiSettings {
-    bool use_perspective{true};
-    float fov{60.0f};
-    float near_plane{0.1f};
-    float far_plane{1000.0f};
-    float ortho_half{6.0f};
-    float ortho_near{-100.0f};
-    float ortho_far{100.0f};
-    vne::math::Vec3f cam_position{4.f, 3.f, 6.f};
-    vne::math::Vec3f cam_target{0.f, 0.f, 0.f};
-    vne::math::Vec3f cam_up{0.f, 1.f, 0.f};
-    bool show_view_matrix{false};
-    bool show_projection_matrix{false};
-    bool show_camera_visuals{true};
-    bool show_frustum{true};
-    bool show_cam_axes{true};
-    bool show_near_far_planes{true};
-    int last_vp_w{1280};
-    int last_vp_h{720};
+    bool use_perspective{true};                    //!< If false, orthographic cameras are used instead.
+    float fov{60.0f};                              //!< Vertical field of view (degrees) for perspective.
+    float near_plane{0.1f};                        //!< Perspective near clip distance.
+    float far_plane{1000.0f};                      //!< Perspective far clip distance.
+    float ortho_half{6.0f};                        //!< Ortho half-extent on Y; X width follows aspect.
+    float ortho_near{-100.0f};                     //!< Ortho near plane (can be negative in this sample).
+    float ortho_far{100.0f};                       //!< Ortho far plane.
+    vne::math::Vec3f cam_position{4.f, 3.f, 6.f};  //!< Default eye position (world).
+    vne::math::Vec3f cam_target{0.f, 0.f, 0.f};    //!< Look-at point (world).
+    vne::math::Vec3f cam_up{0.f, 1.f, 0.f};        //!< World up for view basis.
+    bool show_view_matrix{false};                  //!< ImGui: print 4x4 view M in settings.
+    bool show_projection_matrix{false};            //!< ImGui: print 4x4 projection M in settings.
+    bool show_camera_visuals{true};                //!< Debug draw: frustum / axes / near-plane helpers.
+    bool show_frustum{true};                       //!< Wireframe frustum when show_camera_visuals.
+    bool show_cam_axes{true};                      //!< Forward/right/up at camera position.
+    bool show_near_far_planes{true};               //!< Extra diagonals on near/far rects.
+    int last_vp_w{1280};                           //!< Last known framebuffer width (px); drives aspect.
+    int last_vp_h{720};                            //!< Last known framebuffer height (px).
 
-    int cube_count{3};
-    float cube_rotation_speed{0.5f};
+    int cube_count{3};                //!< Number of cubes drawn (0–4); positions are still defined for all four.
+    float cube_rotation_speed{0.5f};  //!< Radians per second; shared by all cubes.
     vne::math::Vec3f cube_position[4]{
         {0.f, 0.5f, 0.f},
         {2.5f, 0.5f, 0.f},
         {-2.5f, 0.5f, 0.f},
         {0.f, 0.5f, 2.5f},
-    };
+    };  //!< Default cube centers (world); y = 0.5 on the grid.
 
-    bool ambient_light_enabled{true};
-    vne::math::Color ambient_light_color{0.08f, 0.08f, 0.1f};
-    float ambient_light_intensity{1.0f};
+    bool ambient_light_enabled{true};                          //!< Master switch for ambient term.
+    vne::math::Color ambient_light_color{0.08f, 0.08f, 0.1f};  //!< Dim ambient RGB.
+    float ambient_light_intensity{1.0f};                       //!< Scales ambient contribution.
 
-    bool dir_light_enabled{true};
-    vne::math::Vec3f dir_light_dir{-0.5f, -1.0f, -0.3f};
-    vne::math::Color dir_light_color{1.0f, 0.97f, 0.9f};
+    bool dir_light_enabled{true};                         //!< Master switch for directional (sun) light.
+    vne::math::Vec3f dir_light_dir{-0.5f, -1.0f, -0.3f};  //!< Directional light (toward scene); need not be unit.
+    vne::math::Color dir_light_color{1.0f, 0.97f, 0.9f};  //!< Warm sunlight RGB.
     float dir_light_intensity{1.0f};
 
-    bool spot_light_enabled{false};
-    vne::math::Vec3f spot_light_pos{0.f, 4.f, 4.f};
-    vne::math::Vec3f spot_light_dir{0.f, -0.7f, -0.7f};
-    vne::math::Color spot_light_color{1.f, 0.9f, 0.7f};
-    float spot_light_intensity{2.f};
-    float spot_light_range{10.f};
-    float spot_light_inner_deg{15.f};
-    float spot_light_outer_deg{30.f};
+    bool spot_light_enabled{false};                      //!< Master switch for scene spot light.
+    vne::math::Vec3f spot_light_pos{0.f, 4.f, 4.f};      //!< Spot origin (world).
+    vne::math::Vec3f spot_light_dir{0.f, -0.7f, -0.7f};  //!< Spot aim direction; normalized in sync.
+    vne::math::Color spot_light_color{1.f, 0.9f, 0.7f};  //!< Spot RGB (warm).
+    float spot_light_intensity{2.f};                     //!< Spot intensity multiplier.
+    float spot_light_range{10.f};                        //!< Spot influence distance.
+    float spot_light_inner_deg{15.f};                    //!< Inner cone half-angle (degrees).
+    float spot_light_outer_deg{30.f};                    //!< Outer cone half-angle (degrees).
 
-    bool use_attn_formula{false};
-    float attn_const{1.f};
-    float attn_linear{0.09f};
-    float attn_quad{0.032f};
+    bool use_attn_formula{false};  //!< If true, use k0+k1*d+k2*d^2 for point/spot falloff.
+    float attn_const{1.f};         //!< Attenuation constant term (when formula enabled).
+    float attn_linear{0.09f};      //!< Linear coefficient k1 in (k0 + k1*d + k2*d^2).
+    float attn_quad{0.032f};       //!< Quadratic coefficient k2.
 
     std::vector<PointLightEntry> point_lights;
 };

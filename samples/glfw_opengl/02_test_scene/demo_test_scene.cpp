@@ -438,9 +438,11 @@ void SceneTestLayer::syncPointLight(std::size_t i) {
 [[nodiscard]] std::shared_ptr<vne::scene::PerspectiveCamera> SceneTestLayer::cameraPersp() const {
     return cameras_persp_.empty() ? nullptr : cameras_persp_[0];
 }
+
 [[nodiscard]] const std::vector<std::shared_ptr<vne::scene::PerspectiveCamera>>& SceneTestLayer::getCameras() const {
     return cameras_persp_;
 }
+
 [[nodiscard]] std::vector<std::shared_ptr<vne::scene::ICamera>> SceneTestLayer::getActiveCameras() const {
     std::vector<std::shared_ptr<vne::scene::ICamera>> out;
     if (ui_.use_perspective) {
