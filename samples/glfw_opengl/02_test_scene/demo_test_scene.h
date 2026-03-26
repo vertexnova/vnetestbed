@@ -23,6 +23,7 @@
 #include "vertexnova/scene/light/point_light.h"
 #include "vertexnova/scene/light/spot_light.h"
 #include "vertexnova/scene/scene_state.h"
+#include <vertexnova/math/color.h>
 #include <vertexnova/math/core/core.h>
 
 #include <memory>
@@ -50,7 +51,7 @@ struct PointLightEntry {
     float orbit_radius{3.0f};
     float orbit_speed{1.0f};
     float orbit_angle{0.0f};
-    float color[3]{1.0f, 0.8f, 0.4f};
+    vne::math::Color color{1.0f, 0.8f, 0.4f};
     float intensity{2.0f};
     float range{8.0f};
     bool enabled{true};
@@ -65,9 +66,9 @@ struct SceneUiSettings {
     float ortho_half{6.0f};
     float ortho_near{-100.0f};
     float ortho_far{100.0f};
-    float cam_position[3]{4.f, 3.f, 6.f};
-    float cam_target[3]{0.f, 0.f, 0.f};
-    float cam_up[3]{0.f, 1.f, 0.f};
+    vne::math::Vec3f cam_position{4.f, 3.f, 6.f};
+    vne::math::Vec3f cam_target{0.f, 0.f, 0.f};
+    vne::math::Vec3f cam_up{0.f, 1.f, 0.f};
     bool show_view_matrix{false};
     bool show_projection_matrix{false};
     bool show_camera_visuals{true};
@@ -79,7 +80,7 @@ struct SceneUiSettings {
 
     int cube_count{3};
     float cube_rotation_speed{0.5f};
-    float cube_position[4][3] = {
+    vne::math::Vec3f cube_position[4]{
         {0.f, 0.5f, 0.f},
         {2.5f, 0.5f, 0.f},
         {-2.5f, 0.5f, 0.f},
@@ -87,18 +88,18 @@ struct SceneUiSettings {
     };
 
     bool ambient_light_enabled{true};
-    float ambient_light_color[3]{0.08f, 0.08f, 0.1f};
+    vne::math::Color ambient_light_color{0.08f, 0.08f, 0.1f};
     float ambient_light_intensity{1.0f};
 
     bool dir_light_enabled{true};
-    float dir_light_dir[3]{-0.5f, -1.0f, -0.3f};
-    float dir_light_color[3]{1.0f, 0.97f, 0.9f};
+    vne::math::Vec3f dir_light_dir{-0.5f, -1.0f, -0.3f};
+    vne::math::Color dir_light_color{1.0f, 0.97f, 0.9f};
     float dir_light_intensity{1.0f};
 
     bool spot_light_enabled{false};
-    float spot_light_pos[3]{0.f, 4.f, 4.f};
-    float spot_light_dir[3]{0.f, -0.7f, -0.7f};
-    float spot_light_color[3]{1.f, 0.9f, 0.7f};
+    vne::math::Vec3f spot_light_pos{0.f, 4.f, 4.f};
+    vne::math::Vec3f spot_light_dir{0.f, -0.7f, -0.7f};
+    vne::math::Color spot_light_color{1.f, 0.9f, 0.7f};
     float spot_light_intensity{2.f};
     float spot_light_range{10.f};
     float spot_light_inner_deg{15.f};

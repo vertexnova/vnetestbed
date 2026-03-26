@@ -145,14 +145,19 @@ void SceneTestLayer::onUpdate(float dt) {
         entry.light->setPosition({r * std::cos(entry.orbit_angle), 1.5f, r * std::sin(entry.orbit_angle)});
     }
 
-    for (auto& cam : cameras_persp_) {
-        if (cam) {
-            cam->updateMatrices();
+    // Only the active projection family is sampled in onRender; the other set is
+    // refreshed by syncCameraPositionTargetUp() / rebuildCamera() when UI changes.
+    if (ui_.use_perspective) {
+        for (auto& cam : cameras_persp_) {
+            if (cam) {
+                cam->updateMatrices();
+            }
         }
-    }
-    for (auto& cam : cameras_ortho_) {
-        if (cam) {
-            cam->updateMatrices();
+    } else {
+        for (auto& cam : cameras_ortho_) {
+            if (cam) {
+                cam->updateMatrices();
+            }
         }
     }
 }
@@ -194,7 +199,7 @@ void SceneTestLayer::onRender(const vne::testbed::RenderContext& render_context)
                 continue;
             }
             const vne::math::Vec3f p = e.light->getPosition();
-            const vne::math::Vec3f lc(e.color[0], e.color[1], e.color[2]);
+            const vne::math::Vec3f lc = e.color.rgb();
             for (const auto& ax : kAxis) {
                 debug_draw_->line(p - ax * kCrossSize, p + ax * kCrossSize, lc);
             }
@@ -205,7 +210,7 @@ void SceneTestLayer::onRender(const vne::testbed::RenderContext& render_context)
         if (ui_.spot_light_enabled) {
             const vne::math::Vec3f p = spot_light_->getPosition();
             const vne::math::Vec3f d = spot_light_->getDirection();
-            const vne::math::Vec3f lc(ui_.spot_light_color[0], ui_.spot_light_color[1], ui_.spot_light_color[2]);
+            const vne::math::Vec3f lc = ui_.spot_light_color.rgb();
             for (const auto& ax : kAxis) {
                 debug_draw_->line(p - ax * kCrossSize, p + ax * kCrossSize, lc);
             }
@@ -255,9 +260,9 @@ void SceneTestLayer::rebuildCamera(int w, int h) {
 }
 
 void SceneTestLayer::syncCameraPositionTargetUp() {
-    const vne::math::Vec3f pos{ui_.cam_position[0], ui_.cam_position[1], ui_.cam_position[2]};
-    const vne::math::Vec3f tgt{ui_.cam_target[0], ui_.cam_target[1], ui_.cam_target[2]};
-    const vne::math::Vec3f up{ui_.cam_up[0], ui_.cam_up[1], ui_.cam_up[2]};
+    const vne::math::Vec3f pos = ui_.cam_position;
+    const vne::math::Vec3f tgt = ui_.cam_target;
+    const vne::math::Vec3f up = ui_.cam_up;
     for (auto& cam : cameras_persp_) {
         if (cam) {
             cam->setPosition(pos);
@@ -281,7 +286,7 @@ void SceneTestLayer::syncCameraPositionTargetUp() {
         return vne::math::Mat4f::identity();
     }
     const float angle = cube_angle_ + static_cast<float>(i) * 1.0472f;
-    const vne::math::Vec3f trans(ui_.cube_position[i][0], ui_.cube_position[i][1], ui_.cube_position[i][2]);
+    const vne::math::Vec3f trans = ui_.cube_position[static_cast<std::size_t>(i)];
     return vne::math::Mat4f::translate(trans) * vne::math::Mat4f::rotateY(angle);
 }
 
@@ -338,14 +343,14 @@ vne::testbed::PhongLightParams SceneTestLayer::buildPhongLightParams() {
 
 void SceneTestLayer::syncAmbientLight() {
     ambient_light_->setEnabled(ui_.ambient_light_enabled);
-    ambient_light_->setColor({ui_.ambient_light_color[0], ui_.ambient_light_color[1], ui_.ambient_light_color[2]});
+    ambient_light_->setColor(ui_.ambient_light_color.rgb());
     ambient_light_->setIntensity(ui_.ambient_light_intensity);
 }
 
 void SceneTestLayer::syncDirLight() {
     dir_light_->setEnabled(ui_.dir_light_enabled);
-    dir_light_->setDirection({ui_.dir_light_dir[0], ui_.dir_light_dir[1], ui_.dir_light_dir[2]});
-    dir_light_->setColor({ui_.dir_light_color[0], ui_.dir_light_color[1], ui_.dir_light_color[2]});
+    dir_light_->setDirection(ui_.dir_light_dir);
+    dir_light_->setColor(ui_.dir_light_color.rgb());
     dir_light_->setIntensity(ui_.dir_light_intensity);
 }
 
@@ -358,11 +363,11 @@ void SceneTestLayer::syncSpotLight() {
     }
 
     spot_light_->setEnabled(ui_.spot_light_enabled);
-    spot_light_->setPosition({ui_.spot_light_pos[0], ui_.spot_light_pos[1], ui_.spot_light_pos[2]});
-    vne::math::Vec3f dir(ui_.spot_light_dir[0], ui_.spot_light_dir[1], ui_.spot_light_dir[2]);
+    spot_light_->setPosition(ui_.spot_light_pos);
+    vne::math::Vec3f dir = ui_.spot_light_dir;
     dir = (dir.length() < 1e-6f) ? vne::math::Vec3f(0.f, -1.f, 0.f) : dir.normalized();
     spot_light_->setDirection(dir);
-    spot_light_->setColor({ui_.spot_light_color[0], ui_.spot_light_color[1], ui_.spot_light_color[2]});
+    spot_light_->setColor(ui_.spot_light_color.rgb());
     spot_light_->setIntensity(ui_.spot_light_intensity);
     spot_light_->setRange(ui_.spot_light_range);
     spot_light_->setInnerOuterAnglesDeg(ui_.spot_light_inner_deg, ui_.spot_light_outer_deg);
@@ -373,14 +378,17 @@ void SceneTestLayer::addPointLight() {
         return;
     }
     PointLightEntry e;
-    static const float kColors[4][3] = {{1, 0.4f, 0.2f}, {0.2f, 0.6f, 1}, {0.4f, 1, 0.4f}, {1, 0.2f, 1}};
+    static const vne::math::Color kColors[4] = {
+        vne::math::Color(1.f, 0.4f, 0.2f),
+        vne::math::Color(0.2f, 0.6f, 1.f),
+        vne::math::Color(0.4f, 1.f, 0.4f),
+        vne::math::Color(1.f, 0.2f, 1.f),
+    };
     const std::size_t idx = ui_.point_lights.size();
-    e.color[0] = kColors[idx][0];
-    e.color[1] = kColors[idx][1];
-    e.color[2] = kColors[idx][2];
+    e.color = kColors[idx];
     e.orbit_angle = static_cast<float>(idx) * 1.5708f;
     e.light = std::make_shared<vne::scene::PointLight>(vne::math::Vec3f{e.orbit_radius, 1.5f, 0.f},
-                                                       vne::math::Vec3f{e.color[0], e.color[1], e.color[2]},
+                                                       e.color.rgb(),
                                                        e.intensity,
                                                        e.range,
                                                        "PointLight" + std::to_string(idx));
@@ -421,7 +429,7 @@ void SceneTestLayer::syncPointLight(std::size_t i) {
         return;
     }
     auto& e = ui_.point_lights[i];
-    e.light->setColor({e.color[0], e.color[1], e.color[2]});
+    e.light->setColor(e.color.rgb());
     e.light->setIntensity(e.intensity);
     e.light->setRange(e.range);
     e.light->setEnabled(e.enabled);
@@ -462,9 +470,9 @@ void SceneTestLayer::buildCamera(int w, int h) {
                                                                      ui_.near_plane,
                                                                      ui_.far_plane,
                                                                      "SceneCamera" + std::to_string(i));
-        persp->setPosition({ui_.cam_position[0], ui_.cam_position[1], ui_.cam_position[2]});
-        persp->setTarget({ui_.cam_target[0], ui_.cam_target[1], ui_.cam_target[2]});
-        persp->setUp({ui_.cam_up[0], ui_.cam_up[1], ui_.cam_up[2]});
+        persp->setPosition(ui_.cam_position);
+        persp->setTarget(ui_.cam_target);
+        persp->setUp(ui_.cam_up);
         persp->setGraphicsApi(vne::math::GraphicsApi::eOpenGL);
         persp->updateMatrices();
         cameras_persp_[static_cast<size_t>(i)] = std::move(persp);
@@ -477,9 +485,9 @@ void SceneTestLayer::buildCamera(int w, int h) {
                                                                       ui_.ortho_near,
                                                                       ui_.ortho_far,
                                                                       "OrthoCamera" + std::to_string(i));
-        ortho->setPosition({ui_.cam_position[0], ui_.cam_position[1], ui_.cam_position[2]});
-        ortho->setTarget({ui_.cam_target[0], ui_.cam_target[1], ui_.cam_target[2]});
-        ortho->setUp({ui_.cam_up[0], ui_.cam_up[1], ui_.cam_up[2]});
+        ortho->setPosition(ui_.cam_position);
+        ortho->setTarget(ui_.cam_target);
+        ortho->setUp(ui_.cam_up);
         ortho->setGraphicsApi(vne::math::GraphicsApi::eOpenGL);
         ortho->updateMatrices();
         cameras_ortho_[static_cast<size_t>(i)] = std::move(ortho);
@@ -498,31 +506,28 @@ void SceneTestLayer::buildGeometry() {
 }
 
 void SceneTestLayer::buildLights() {
-    ambient_light_ = std::make_shared<vne::scene::AmbientLight>(
-        vne::math::Vec3f{ui_.ambient_light_color[0], ui_.ambient_light_color[1], ui_.ambient_light_color[2]},
-        ui_.ambient_light_intensity,
-        "Ambient");
+    ambient_light_ = std::make_shared<vne::scene::AmbientLight>(ui_.ambient_light_color.rgb(),
+                                                                ui_.ambient_light_intensity,
+                                                                "Ambient");
     ambient_light_->setEnabled(ui_.ambient_light_enabled);
     scene_state_.addLight(ambient_light_);
 
-    dir_light_ = std::make_shared<vne::scene::DirectionalLight>(
-        vne::math::Vec3f{ui_.dir_light_dir[0], ui_.dir_light_dir[1], ui_.dir_light_dir[2]},
-        vne::math::Vec3f{ui_.dir_light_color[0], ui_.dir_light_color[1], ui_.dir_light_color[2]},
-        ui_.dir_light_intensity,
-        "SunLight");
+    dir_light_ = std::make_shared<vne::scene::DirectionalLight>(ui_.dir_light_dir,
+                                                                ui_.dir_light_color.rgb(),
+                                                                ui_.dir_light_intensity,
+                                                                "SunLight");
     scene_state_.addLight(dir_light_);
 
-    vne::math::Vec3f spot_dir(ui_.spot_light_dir[0], ui_.spot_light_dir[1], ui_.spot_light_dir[2]);
+    vne::math::Vec3f spot_dir = ui_.spot_light_dir;
     spot_dir = (spot_dir.length() < 1e-6f) ? vne::math::Vec3f(0.f, -1.f, 0.f) : spot_dir.normalized();
-    spot_light_ = std::make_shared<vne::scene::SpotLight>(
-        vne::math::Vec3f{ui_.spot_light_pos[0], ui_.spot_light_pos[1], ui_.spot_light_pos[2]},
-        spot_dir,
-        vne::math::Vec3f{ui_.spot_light_color[0], ui_.spot_light_color[1], ui_.spot_light_color[2]},
-        ui_.spot_light_intensity,
-        ui_.spot_light_range,
-        ui_.spot_light_inner_deg,
-        ui_.spot_light_outer_deg,
-        "Spot");
+    spot_light_ = std::make_shared<vne::scene::SpotLight>(ui_.spot_light_pos,
+                                                          spot_dir,
+                                                          ui_.spot_light_color.rgb(),
+                                                          ui_.spot_light_intensity,
+                                                          ui_.spot_light_range,
+                                                          ui_.spot_light_inner_deg,
+                                                          ui_.spot_light_outer_deg,
+                                                          "Spot");
     spot_light_->setEnabled(ui_.spot_light_enabled);
     scene_state_.addLight(spot_light_);
 }
@@ -803,15 +808,9 @@ void SceneSettingsLayer::renderPanel() {
             const vne::math::Vec3f pos = cam->getPosition();
             const vne::math::Vec3f tgt = cam->getTarget();
             const vne::math::Vec3f up = cam->getUp();
-            ui.cam_position[0] = pos.x();
-            ui.cam_position[1] = pos.y();
-            ui.cam_position[2] = pos.z();
-            ui.cam_target[0] = tgt.x();
-            ui.cam_target[1] = tgt.y();
-            ui.cam_target[2] = tgt.z();
-            ui.cam_up[0] = up.x();
-            ui.cam_up[1] = up.y();
-            ui.cam_up[2] = up.z();
+            ui.cam_position = pos;
+            ui.cam_target = tgt;
+            ui.cam_up = up;
         }
         bool pos_changed = false;
         bool proj_changed = false;
@@ -821,9 +820,9 @@ void SceneSettingsLayer::renderPanel() {
             ui.use_perspective = (type_index == 0);
             proj_changed = true;
         }
-        pos_changed |= ImGui::SliderFloat3("Position", ui.cam_position, -20.f, 20.f);
-        pos_changed |= ImGui::SliderFloat3("Target", ui.cam_target, -20.f, 20.f);
-        pos_changed |= ImGui::SliderFloat3("Up", ui.cam_up, -1.f, 1.f);
+        pos_changed |= ImGui::SliderFloat3("Position", ui.cam_position.getPtr(), -20.f, 20.f);
+        pos_changed |= ImGui::SliderFloat3("Target", ui.cam_target.getPtr(), -20.f, 20.f);
+        pos_changed |= ImGui::SliderFloat3("Up", ui.cam_up.getPtr(), -1.f, 1.f);
         if (ui.use_perspective) {
             proj_changed |= ImGui::SliderFloat("FOV", &ui.fov, 20.f, 120.f);
             proj_changed |= ImGui::SliderFloat("Near", &ui.near_plane, 0.01f, 10.f);
@@ -905,7 +904,7 @@ void SceneSettingsLayer::renderPanel() {
                 if (!active) {
                     ImGui::TextDisabled("(not drawn)");
                 } else {
-                    ImGui::SliderFloat3("Position", ui.cube_position[i], -120.f, 120.f);
+                    ImGui::SliderFloat3("Position", ui.cube_position[i].getPtr(), -120.f, 120.f);
                 }
                 vne::math::Mat4f model = sl.getCubeModelMatrix(i);
                 ImGui::Text("Model matrix (column-major):");
@@ -925,7 +924,7 @@ void SceneSettingsLayer::renderPanel() {
     if (ImGui::CollapsingHeader("Ambient", ImGuiTreeNodeFlags_DefaultOpen)) {
         bool sync = false;
         sync |= ImGui::Checkbox("Enabled##amb", &ui.ambient_light_enabled);
-        sync |= ImGui::ColorEdit3("Color##amb", ui.ambient_light_color);
+        sync |= ImGui::ColorEdit3("Color##amb", ui.ambient_light_color.getPtr());
         sync |= ImGui::SliderFloat("Intensity##amb", &ui.ambient_light_intensity, 0.f, 2.f);
         if (sync) {
             sl.syncAmbientLight();
@@ -936,8 +935,8 @@ void SceneSettingsLayer::renderPanel() {
     if (ImGui::CollapsingHeader("Directional Light", ImGuiTreeNodeFlags_DefaultOpen)) {
         bool sync = false;
         sync |= ImGui::Checkbox("Enabled##dir", &ui.dir_light_enabled);
-        sync |= ImGui::SliderFloat3("Direction", ui.dir_light_dir, -1.f, 1.f);
-        sync |= ImGui::ColorEdit3("Color##dir", ui.dir_light_color);
+        sync |= ImGui::SliderFloat3("Direction", ui.dir_light_dir.getPtr(), -1.f, 1.f);
+        sync |= ImGui::ColorEdit3("Color##dir", ui.dir_light_color.getPtr());
         sync |= ImGui::SliderFloat("Intensity##dir", &ui.dir_light_intensity, 0.f, 5.f);
         if (sync) {
             sl.syncDirLight();
@@ -964,7 +963,7 @@ void SceneSettingsLayer::renderPanel() {
             if (ImGui::TreeNode(point_light_label.c_str())) {
                 bool s = false;
                 s |= ImGui::Checkbox("Enabled##pt", &e.enabled);
-                s |= ImGui::ColorEdit3("Color##pt", e.color);
+                s |= ImGui::ColorEdit3("Color##pt", e.color.getPtr());
                 s |= ImGui::SliderFloat("Intensity##pt", &e.intensity, 0.f, 10.f);
                 s |= ImGui::SliderFloat("Range##pt", &e.range, 0.5f, 20.f);
                 ImGui::SliderFloat("Orbit radius##pt", &e.orbit_radius, 0.5f, 10.f);
@@ -982,9 +981,9 @@ void SceneSettingsLayer::renderPanel() {
     if (ImGui::CollapsingHeader("Spot Light", ImGuiTreeNodeFlags_DefaultOpen)) {
         bool sync = false;
         sync |= ImGui::Checkbox("Enabled##spot", &ui.spot_light_enabled);
-        sync |= ImGui::SliderFloat3("Position##spot", ui.spot_light_pos, -10.f, 10.f);
-        sync |= ImGui::SliderFloat3("Direction##spot", ui.spot_light_dir, -1.f, 1.f);
-        sync |= ImGui::ColorEdit3("Color##spot", ui.spot_light_color);
+        sync |= ImGui::SliderFloat3("Position##spot", ui.spot_light_pos.getPtr(), -10.f, 10.f);
+        sync |= ImGui::SliderFloat3("Direction##spot", ui.spot_light_dir.getPtr(), -1.f, 1.f);
+        sync |= ImGui::ColorEdit3("Color##spot", ui.spot_light_color.getPtr());
         sync |= ImGui::SliderFloat("Intensity##spot", &ui.spot_light_intensity, 0.f, 10.f);
         sync |= ImGui::SliderFloat("Range##spot", &ui.spot_light_range, 0.5f, 20.f);
         sync |= ImGui::SliderFloat("Inner angle (deg)##spot", &ui.spot_light_inner_deg, 1.f, 89.f);

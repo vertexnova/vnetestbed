@@ -59,14 +59,19 @@ void BaseSceneLayer::onDetach() {
 }
 
 void BaseSceneLayer::onUpdate(float /*dt*/) {
-    for (auto& cam : camera_persp_) {
-        if (cam) {
-            cam->updateMatrices();
+    // Match active projection only; syncCameraPositionTargetUp / setUsePerspective / rebuildCameras
+    // update both families when pose or mode changes.
+    if (ui_settings_.use_perspective) {
+        for (auto& cam : camera_persp_) {
+            if (cam) {
+                cam->updateMatrices();
+            }
         }
-    }
-    for (auto& cam : cameras_ortho_) {
-        if (cam) {
-            cam->updateMatrices();
+    } else {
+        for (auto& cam : cameras_ortho_) {
+            if (cam) {
+                cam->updateMatrices();
+            }
         }
     }
 }
