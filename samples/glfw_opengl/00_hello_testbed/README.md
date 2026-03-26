@@ -16,16 +16,19 @@ The baseline demo that every subsequent GLFW/OpenGL sample is built on. Proves t
 ### Single viewport (grid + axes, controls visible)
 
 ![Single viewport](00_hello_testbed_single_viewport.png)
+*Figure 1: Single viewport rendering (grid + axes) with the controls/settings panel visible.*
 
 ### Multi viewport (3 panes)
 
 ![Multi viewport docking](00_hello_testbed_multi_viewports.png)
+*Figure 2: Docked multi-viewport layout (3 panes). Each viewport can be manipulated independently.*
 
 ### Video (4 viewports, interactions)
 
 ![Interaction video (4 viewports)](00_hello_testbed_interaction.gif)
 
 This GIF shows how to interact with the demo when **multiple viewports** are docked:
+Note: The GIF is frame-skipped and also sped up so it can include the full recording timeline within a smaller file. 
 - rotate / pan / zoom in different viewports (each viewport has its own camera),
 - **VSync** unchecked to make FPS visible,
 - dragging/docking the viewport panel to a different place.

@@ -84,3 +84,6 @@ logs/
 
 # CMakeLists.txt.user
 CMakeLists.txt.user
+
+# Large files
+*.mov
