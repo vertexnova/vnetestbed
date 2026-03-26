@@ -33,16 +33,16 @@ class ImGuiLayer;
 namespace vne::samples {
 
 enum class LastKeyAction {
-    eNone = 0,  //!< No action
-    ePressed = 1,  //!< Key pressed
+    eNone = 0,      //!< No action
+    ePressed = 1,   //!< Key pressed
     eReleased = 2,  //!< Key released
-    eRepeat = 3  //!< Key repeated
+    eRepeat = 3     //!< Key repeated
 };
 
 enum class LastTouchAction {
-    eNone = 0,  //!< No action
-    ePress = 1,  //!< Touch pressed
-    eMove = 2,  //!< Touch moved
+    eNone = 0,    //!< No action
+    ePress = 1,   //!< Touch pressed
+    eMove = 2,    //!< Touch moved
     eRelease = 3  //!< Touch released
 };
 
