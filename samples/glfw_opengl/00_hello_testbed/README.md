@@ -6,7 +6,7 @@ The baseline demo that every subsequent GLFW/OpenGL sample is built on. Proves t
 
 1. **FBO viewport**: Scene is rendered to a framebuffer that fills the ImGui "Viewport" window correctly.
 2. **Viewport resize**: Resizing the viewport keeps the image filling the panel (no stretching).
-3. **VSync**: Toggle in the application responds immediately.
+3. **Vsync**: Toggle in the application responds immediately.
 4. **Grid and axes**: Spatial reference and confirmation that the camera and scene work.
 5. **Orbit-arcball** (when `vne::interaction` is enabled): LMB drag rotates, RMB drag pans, scroll zooms.
 6. **ImGui Settings**: Demo-specific section **Viewport** with controls reference and axis legend.
@@ -28,17 +28,19 @@ The baseline demo that every subsequent GLFW/OpenGL sample is built on. Proves t
 ![Interaction video (4 viewports)](00_hello_testbed_interaction.gif)
 
 This GIF shows how to interact with the demo when **multiple viewports** are docked:
-Note: The GIF is frame-skipped and also sped up so it can include the full recording timeline within a smaller file. 
+
+Note: The GIF is frame-skipped and also sped up so it can include the full recording timeline within a smaller file.
+
 - rotate / pan / zoom in different viewports (each viewport has its own camera),
-- **VSync** unchecked to make FPS visible,
+- **Vsync** unchecked to make FPS visible,
 - dragging/docking the viewport panel to a different place.
 
 ## Try it (quick checklist)
 
 1. Run `00_hello_testbed`.
 2. Under **Settings → Viewport**:
-   - uncheck **VSync**,
-   - enable **multi-viewport layout** (2 or 4 panes).
+   - uncheck **Vsync**,
+   - set **Viewport Layout** to **2**, **3**, or **4** viewports for a multi-pane layout (the combo also offers **1** for a single viewport).
 3. Use mouse:
    - **LMB** drag: rotate (orbit-arcball),
    - **RMB** drag: pan,
@@ -107,7 +109,7 @@ Exit with **ESC** or by closing the window.
 
 - **BaseSceneLayer**: Renders grid, axes, and a perspective camera; shared with other samples via `samples/glfw_opengl/common/base_scene_layer.h`.
 - **BaseInteractionLayer**: Orbit-arcball manipulator (optional); LMB orbit, RMB pan, scroll zoom.
-- **ImGui viewport**: The scene is drawn into an ImGui window; multi-viewport layouts (2 or 4 panes) are supported when ImGui docking is enabled.
+- **ImGui viewport**: The scene is drawn into an ImGui window; **Viewport Layout** can be set to 1–4 viewports when ImGui docking is enabled.
 - **Libraries**: vne::testbed, vne::scene, vne::interaction (optional).
 
 ## Code Structure
