@@ -43,7 +43,7 @@ class ImGuiLayer;
 class BaseInteractionLayer;  // from samples/glfw_opengl/common/base_scene_layer.h (global scope)
 #endif
 
-namespace vne::samples::test_scene {
+namespace vne::samples {
 
 struct PointLightEntry {
     std::shared_ptr<vne::scene::PointLight> light;
@@ -219,4 +219,4 @@ class SceneSettingsLayer : public vne::testbed::ILayer {
 
 void registerTestSceneDemo(vne::testbed::Application& app);
 
-}  // namespace vne::samples::test_scene
+}  // namespace vne::samples
