@@ -460,8 +460,9 @@ void SceneTestLayer::buildCamera(int w, int h) {
         ortho->updateMatrices();
         cameras_ortho_[static_cast<size_t>(i)] = std::move(ortho);
     }
-    scene_state_.setActiveCamera(ui_.use_perspective ? std::static_pointer_cast<vne::scene::ICamera>(cameras_persp_[0])
-                                                     : std::static_pointer_cast<vne::scene::ICamera>(cameras_ortho_[0]));
+    scene_state_.setActiveCamera(ui_.use_perspective
+                                     ? std::static_pointer_cast<vne::scene::ICamera>(cameras_persp_[0])
+                                     : std::static_pointer_cast<vne::scene::ICamera>(cameras_ortho_[0]));
 }
 
 void SceneTestLayer::buildGeometry() {

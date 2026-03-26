@@ -34,7 +34,7 @@ class ICamera;
 namespace vne::testbed {
 class Application;
 class MeshRenderer;
-}
+}  // namespace vne::testbed
 
 #ifdef VNE_TESTBED_IMGUI
 namespace vne::testbed {
