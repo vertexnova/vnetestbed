@@ -35,7 +35,9 @@ namespace {
 
 CREATE_VNE_LOGGER_CATEGORY("vnetestbed.samples.test_scene")
 
-// File-scope constants (anonymous namespace, kPascalCase per CODING_GUIDELINES)
+constexpr float kCrossSize = 0.2f;
+const vne::math::Vec3f kAxis[3] = {vne::math::Vec3f::xAxis(), vne::math::Vec3f::yAxis(), vne::math::Vec3f::zAxis()};
+
 constexpr int kRenderSortKey = 999;  //!< Settings panel layer — just before ImGuiLayer (1000)
 constexpr int kDefaultWidth = 1280;
 constexpr int kDefaultHeight = 720;
@@ -195,10 +197,6 @@ void SceneTestLayer::onRender(const vne::testbed::RenderContext& render_context)
         drawAxes();
 
         // Draw point-light positions as small crosses
-        constexpr float kCrossSize = 0.2f;
-        const vne::math::Vec3f kAxis[3] = {vne::math::Vec3f::xAxis(),
-                                           vne::math::Vec3f::yAxis(),
-                                           vne::math::Vec3f::zAxis()};
         for (const auto& e : ui_.point_lights) {
             if (!e.enabled) {
                 continue;
@@ -243,7 +241,7 @@ void SceneTestLayer::onRender(const vne::testbed::RenderContext& render_context)
         }
     }
 
-    vne::scene::ICamera* cam = activeCamera(vp_idx);
+    vne::scene::ICamera* cam = activeCameraPtr(vp_idx);
     if (!cam) {
         return;
     }
@@ -295,17 +293,6 @@ void SceneTestLayer::syncCameraPositionTargetUp() {
     return vne::math::Mat4f::translate(trans) * vne::math::Mat4f::rotateY(angle);
 }
 
-vne::scene::ICamera* SceneTestLayer::activeCamera(int vp_idx) const {
-    const size_t i = static_cast<size_t>(vp_idx);
-    if (ui_.use_perspective && i < cameras_persp_.size() && cameras_persp_[i]) {
-        return cameras_persp_[i].get();
-    }
-    if (!ui_.use_perspective && i < cameras_ortho_.size() && cameras_ortho_[i]) {
-        return cameras_ortho_[i].get();
-    }
-    return nullptr;
-}
-
 vne::testbed::PhongLightParams SceneTestLayer::buildPhongLightParams() {
     vne::testbed::PhongLightParams out{};
     out.ambient_color = ambient_light_->getColor();
@@ -333,8 +320,8 @@ vne::testbed::PhongLightParams SceneTestLayer::buildPhongLightParams() {
     out.spot_light.color = spot_light_->getColor();
     out.spot_light.intensity = spot_light_->getIntensity();
     out.spot_light.range = spot_light_->getRange();
-    const float inner_rad = ui_.spot_light_inner_deg * 3.14159265f / 180.f;
-    const float outer_rad = ui_.spot_light_outer_deg * 3.14159265f / 180.f;
+    const float inner_rad = vne::math::degToRad(ui_.spot_light_inner_deg);
+    const float outer_rad = vne::math::degToRad(ui_.spot_light_outer_deg);
     out.spot_light.inner_angle_rad = inner_rad;
     out.spot_light.outer_angle_rad = outer_rad;
 
@@ -440,12 +427,15 @@ void SceneTestLayer::syncPointLight(std::size_t i) {
     e.light->setEnabled(e.enabled);
 }
 
-[[nodiscard]] std::shared_ptr<vne::scene::PerspectiveCamera> SceneTestLayer::cameraPersp() const {
-    return cameras_persp_.empty() ? nullptr : cameras_persp_[0];
-}
-
-[[nodiscard]] const std::vector<std::shared_ptr<vne::scene::PerspectiveCamera>>& SceneTestLayer::getCameras() const {
-    return cameras_persp_;
+vne::scene::ICamera* SceneTestLayer::activeCameraPtr(int vp_idx) const {
+    const auto i = static_cast<size_t>(vp_idx);
+    if (ui_.use_perspective && i < cameras_persp_.size() && cameras_persp_[i]) {
+        return cameras_persp_[i].get();
+    }
+    if (!ui_.use_perspective && i < cameras_ortho_.size() && cameras_ortho_[i]) {
+        return cameras_ortho_[i].get();
+    }
+    return nullptr;
 }
 
 [[nodiscard]] std::vector<std::shared_ptr<vne::scene::ICamera>> SceneTestLayer::getActiveCameras() const {
@@ -582,7 +572,7 @@ vne::math::Vec3f SceneTestLayer::getActiveCameraPosition(int vp_idx) const {
 }
 
 void SceneTestLayer::drawCameraVisuals(int vp_idx) const {
-    vne::scene::ICamera* cam = activeCamera(vp_idx);
+    vne::scene::ICamera* cam = activeCameraPtr(vp_idx);
     if (!cam || !debug_draw_) {
         return;
     }
@@ -811,7 +801,7 @@ void SceneSettingsLayer::renderPanel() {
 
     // ---- Camera ----
     if (ImGui::CollapsingHeader("Camera", ImGuiTreeNodeFlags_DefaultOpen)) {
-        if (vne::scene::ICamera* cam = sl.activeCamera(0)) {
+        if (vne::scene::ICamera* cam = sl.activeCameraPtr(0)) {
             const vne::math::Vec3f pos = cam->getPosition();
             const vne::math::Vec3f tgt = cam->getTarget();
             const vne::math::Vec3f up = cam->getUp();
@@ -861,7 +851,7 @@ void SceneSettingsLayer::renderPanel() {
         ImGui::Checkbox("Show view matrix", &ui.show_view_matrix);
         ImGui::Checkbox("Show projection matrix", &ui.show_projection_matrix);
         if (ui.show_view_matrix) {
-            if (vne::scene::ICamera* cam2 = sl.activeCamera(0)) {
+            if (vne::scene::ICamera* cam2 = sl.activeCameraPtr(0)) {
                 vne::math::Mat4f view = cam2->getViewMatrix();
                 ImGui::Text("View matrix (column-major):");
                 for (size_t row = 0; row < 4u; ++row) {
@@ -874,7 +864,7 @@ void SceneSettingsLayer::renderPanel() {
             }
         }
         if (ui.show_projection_matrix) {
-            if (vne::scene::ICamera* cam2 = sl.activeCamera(0)) {
+            if (vne::scene::ICamera* cam2 = sl.activeCameraPtr(0)) {
                 vne::math::Mat4f proj = cam2->getProjectionMatrix();
                 ImGui::Text("Projection matrix (column-major):");
                 for (size_t row = 0; row < 4u; ++row) {

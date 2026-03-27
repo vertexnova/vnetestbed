@@ -135,10 +135,6 @@ class SceneTestLayer : public vne::testbed::ILayer {
     [[nodiscard]] const SceneUiSettings& uiSettings() const { return ui_; }
 
     // 5. Public methods (camera, cubes, lights, reset)
-    void rebuildCamera(int w, int h);
-    void syncCameraPositionTargetUp();
-    [[nodiscard]] vne::math::Mat4f getCubeModelMatrix(int i) const;
-    [[nodiscard]] vne::scene::ICamera* activeCamera(int vp_idx) const;
     void syncAmbientLight();
     void syncDirLight();
     void syncSpotLight();
@@ -146,8 +142,12 @@ class SceneTestLayer : public vne::testbed::ILayer {
     void removeLastPointLight();
     void resetToDefault();
     void syncPointLight(std::size_t i);
-    [[nodiscard]] std::shared_ptr<vne::scene::PerspectiveCamera> cameraPersp() const;
-    [[nodiscard]] const std::vector<std::shared_ptr<vne::scene::PerspectiveCamera>>& getCameras() const;
+
+    void rebuildCamera(int w, int h);
+    void syncCameraPositionTargetUp();
+
+    [[nodiscard]] vne::math::Mat4f getCubeModelMatrix(int i) const;
+    [[nodiscard]] vne::scene::ICamera* activeCameraPtr(int vp_idx) const;
     [[nodiscard]] std::vector<std::shared_ptr<vne::scene::ICamera>> getActiveCameras() const;
 
    private:
