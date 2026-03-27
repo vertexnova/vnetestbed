@@ -59,8 +59,10 @@ void BaseSceneLayer::onDetach() {
 }
 
 void BaseSceneLayer::onUpdate(float /*dt*/) {
-    // Match active projection only; syncCameraPositionTargetUp / setUsePerspective / rebuildCameras
-    // update both families when pose or mode changes.
+    // Update only the active projection family each frame.
+    // syncCameraPositionTargetUp() copies the active camera pose into ui_settings_;
+    // the inactive family is refreshed on projection switch / rebuild via
+    // setUsePerspective() / rebuildCameras().
     if (ui_settings_.use_perspective) {
         for (auto& cam : camera_persp_) {
             if (cam) {

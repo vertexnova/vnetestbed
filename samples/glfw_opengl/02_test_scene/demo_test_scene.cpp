@@ -55,7 +55,7 @@ const vne::math::Color kColors[4] = {
     vne::math::Color(1.f, 0.2f, 1.f),
 };
 
-constexpr float kPointLightHeight = 1.5;
+constexpr float kPointLightHeight = 1.5f;
 
 // ---------------------------------------------------------------------------
 // Cube geometry — 24 vertices (unique normals per face), 36 indices
@@ -225,10 +225,10 @@ void SceneTestLayer::onRender(const vne::testbed::RenderContext& render_context)
         if (ui_.show_camera_visuals) {
             drawCameraVisuals(vp_idx);
         }
-        if (ui_.spot_light_enabled) {
+        if (spot_light_ && spot_light_->isEnabled()) {
             const vne::math::Vec3f p = spot_light_->getPosition();
             const vne::math::Vec3f d = spot_light_->getDirection();
-            const vne::math::Vec3f lc = ui_.spot_light_color.rgb();
+            const vne::math::Vec3f lc = spot_light_->getColor();
             for (const auto& ax : kAxis) {
                 debug_draw_->line(p - ax * kCrossSize, p + ax * kCrossSize, lc);
             }
@@ -242,18 +242,25 @@ void SceneTestLayer::onRender(const vne::testbed::RenderContext& render_context)
         debug_draw_->flush();
     }
 
-    // Enforce outer > inner + eps so (innerCos - outerCos) in shader is never 0 (avoids NaNs)
+    // Enforce outer > inner + eps so (innerCos - outerCos) in shader is never 0 (avoids NaNs).
+    // If clamped here, sync SpotLight so object state matches UI state.
+    bool spot_angles_clamped = false;
     {
         float inner_deg = ui_.spot_light_inner_deg;
         float outer_deg = ui_.spot_light_outer_deg;
         if (outer_deg <= inner_deg + kSpotAngleEpsDeg) {
             outer_deg = inner_deg + kSpotAngleEpsDeg;
             ui_.spot_light_outer_deg = outer_deg;
+            spot_angles_clamped = true;
         }
         if (inner_deg > outer_deg - kSpotAngleEpsDeg) {
             inner_deg = outer_deg - kSpotAngleEpsDeg;
             ui_.spot_light_inner_deg = inner_deg;
+            spot_angles_clamped = true;
         }
+    }
+    if (spot_angles_clamped) {
+        syncSpotLight();
     }
 
     vne::scene::ICamera* cam = activeCameraPtr(vp_idx);
@@ -308,7 +315,7 @@ void SceneTestLayer::syncCameraPositionTargetUp() {
     return vne::math::Mat4f::translate(trans) * vne::math::Mat4f::rotateY(angle);
 }
 
-vne::testbed::PhongLightParams SceneTestLayer::buildPhongLightParams() {
+vne::testbed::PhongLightParams SceneTestLayer::buildPhongLightParams() const {
     vne::testbed::PhongLightParams out{};
     out.ambient_color = ambient_light_->getColor();
     out.ambient_intensity = ambient_light_->isEnabled() ? ambient_light_->getIntensity() : 0.0f;

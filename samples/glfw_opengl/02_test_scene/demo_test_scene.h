@@ -160,7 +160,7 @@ class SceneTestLayer : public vne::testbed::ILayer {
     void drawGrid() const;
     void drawAxes() const;
 
-    [[nodiscard]] vne::testbed::PhongLightParams buildPhongLightParams();
+    [[nodiscard]] vne::testbed::PhongLightParams buildPhongLightParams() const;
 
     // Private members
     SceneUiSettings ui_{};
