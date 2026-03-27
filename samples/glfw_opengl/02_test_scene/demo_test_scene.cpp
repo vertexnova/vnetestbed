@@ -36,9 +36,14 @@ namespace {
 CREATE_VNE_LOGGER_CATEGORY("vnetestbed.samples.test_scene")
 
 constexpr int kRenderSortKey = 999;  //!< Settings panel layer — just before ImGuiLayer (1000)
+constexpr int kMaxViewports = 4;
 constexpr int kDefaultWidth = 1280;
 constexpr int kDefaultHeight = 720;
 constexpr float kDefaultAspectRatio = 16.0f / 9.0f;
+constexpr int kGridLines = 20;
+constexpr float kGridSpacing = 1.0f;
+constexpr float kGridHalf = kGridLines * kGridSpacing * 0.5f;
+constexpr float kSpotAngleEpsDeg = 0.5f;
 
 constexpr float kCrossSize = 0.2f;
 const vne::math::Vec3f kAxis[3] = {vne::math::Vec3f::xAxis(), vne::math::Vec3f::yAxis(), vne::math::Vec3f::zAxis()};

@@ -118,23 +118,20 @@ struct SceneUiSettings {
 // ---------------------------------------------------------------------------
 class SceneTestLayer : public vne::testbed::ILayer {
    public:
-    // 1. Types and constants
-    static constexpr int kMaxViewports = 4;
-
-    // 2. Constructors and destructor
+    // 1. Constructors and destructor
     SceneTestLayer();
 
-    // 3. Public methods (ILayer overrides)
+    // 2. Public methods (ILayer overrides)
     void onAttach(vne::testbed::AppContext& app_context) override;
     void onDetach() override;
     void onUpdate(float dt) override;
     void onRender(const vne::testbed::RenderContext& render_context) override;
 
-    // 4. UI / settings bundle (mutable for ImGui bindings)
+    // 3. UI / settings bundle (mutable for ImGui bindings)
     [[nodiscard]] SceneUiSettings& uiSettings() { return ui_; }
     [[nodiscard]] const SceneUiSettings& uiSettings() const { return ui_; }
 
-    // 5. Public methods (camera, cubes, lights, reset)
+    // 4. Public methods (camera, cubes, lights, reset)
     void syncAmbientLight();
     void syncDirLight();
     void syncSpotLight();
@@ -151,12 +148,6 @@ class SceneTestLayer : public vne::testbed::ILayer {
     [[nodiscard]] std::vector<std::shared_ptr<vne::scene::ICamera>> getActiveCameras() const;
 
    private:
-    // Private constants
-    static constexpr int kGridLines = 20;
-    static constexpr float kGridSpacing = 1.0f;
-    static constexpr float kGridHalf = kGridLines * kGridSpacing * 0.5f;
-    static constexpr float kSpotAngleEpsDeg = 0.5f;
-
     // Private methods
     void buildCamera(int w, int h);
     void buildGeometry();
