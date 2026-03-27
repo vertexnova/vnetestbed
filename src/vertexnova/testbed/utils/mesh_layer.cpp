@@ -218,7 +218,7 @@ void MeshLayer::onDetach() {
 }
 
 void MeshLayer::onRender(const RenderContext& ctx) {
-    if (!ready_ || !device_ || !mesh_renderer_ || !camera_provider_) {
+    if (!ready_ || !device_ || !mesh_renderer_ || !camera_provider_ || !vbo_.isValid() || !ibo_.isValid()) {
         return;
     }
     const int vp_idx = (ctx.active_viewport_index >= 0) ? ctx.active_viewport_index : 0;

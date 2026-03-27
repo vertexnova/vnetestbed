@@ -59,14 +59,21 @@ void BaseSceneLayer::onDetach() {
 }
 
 void BaseSceneLayer::onUpdate(float /*dt*/) {
-    for (auto& cam : camera_persp_) {
-        if (cam) {
-            cam->updateMatrices();
+    // Update only the active projection family each frame.
+    // syncCameraPositionTargetUp() copies the active camera pose into ui_settings_;
+    // the inactive family is refreshed on projection switch / rebuild via
+    // setUsePerspective() / rebuildCameras().
+    if (ui_settings_.use_perspective) {
+        for (auto& cam : camera_persp_) {
+            if (cam) {
+                cam->updateMatrices();
+            }
         }
-    }
-    for (auto& cam : cameras_ortho_) {
-        if (cam) {
-            cam->updateMatrices();
+    } else {
+        for (auto& cam : cameras_ortho_) {
+            if (cam) {
+                cam->updateMatrices();
+            }
         }
     }
 }
