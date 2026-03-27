@@ -164,6 +164,11 @@ void SceneTestLayer::onUpdate(float dt) {
 
 void SceneTestLayer::onRender(const vne::testbed::RenderContext& render_context) {
     if (!device_ || !mesh_renderer_ || !vbo_.isValid() || !ibo_.isValid()) {
+        static bool s_logged_missing_buffers = false;
+        if (!s_logged_missing_buffers && (!vbo_.isValid() || !ibo_.isValid())) {
+            VNE_LOG_ERROR << "SceneTestLayer::onRender: vertex/index buffers are not valid; skipping draw.";
+            s_logged_missing_buffers = true;
+        }
         return;
     }
 
