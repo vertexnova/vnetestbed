@@ -35,13 +35,22 @@ namespace {
 
 CREATE_VNE_LOGGER_CATEGORY("vnetestbed.samples.test_scene")
 
-constexpr float kCrossSize = 0.2f;
-const vne::math::Vec3f kAxis[3] = {vne::math::Vec3f::xAxis(), vne::math::Vec3f::yAxis(), vne::math::Vec3f::zAxis()};
-
 constexpr int kRenderSortKey = 999;  //!< Settings panel layer — just before ImGuiLayer (1000)
 constexpr int kDefaultWidth = 1280;
 constexpr int kDefaultHeight = 720;
 constexpr float kDefaultAspectRatio = 16.0f / 9.0f;
+
+constexpr float kCrossSize = 0.2f;
+const vne::math::Vec3f kAxis[3] = {vne::math::Vec3f::xAxis(), vne::math::Vec3f::yAxis(), vne::math::Vec3f::zAxis()};
+
+const vne::math::Color kColors[4] = {
+    vne::math::Color(1.f, 0.4f, 0.2f),
+    vne::math::Color(0.2f, 0.6f, 1.f),
+    vne::math::Color(0.4f, 1.f, 0.4f),
+    vne::math::Color(1.f, 0.2f, 1.f),
+};
+
+constexpr float kPointLightHeight = 1.5;
 
 // ---------------------------------------------------------------------------
 // Cube geometry — 24 vertices (unique normals per face), 36 indices
@@ -144,7 +153,8 @@ void SceneTestLayer::onUpdate(float dt) {
     for (auto& entry : ui_.point_lights) {
         entry.orbit_angle += entry.orbit_speed * dt;
         const float r = entry.orbit_radius;
-        entry.light->setPosition({r * std::cos(entry.orbit_angle), 1.5f, r * std::sin(entry.orbit_angle)});
+        entry.light->setPosition(
+            {r * vne::math::cos(entry.orbit_angle), kPointLightHeight, r * vne::math::sin(entry.orbit_angle)});
     }
 
     // Only the active projection family is sampled in onRender; the other set is
@@ -296,7 +306,7 @@ void SceneTestLayer::syncCameraPositionTargetUp() {
 vne::testbed::PhongLightParams SceneTestLayer::buildPhongLightParams() {
     vne::testbed::PhongLightParams out{};
     out.ambient_color = ambient_light_->getColor();
-    out.ambient_intensity = ambient_light_->isEnabled() ? ambient_light_->getIntensity() : 0.f;
+    out.ambient_intensity = ambient_light_->isEnabled() ? ambient_light_->getIntensity() : 0.0f;
 
     out.dir_light_enabled = dir_light_->isEnabled();
     out.dir_light_dir = dir_light_->getDirection();
@@ -357,7 +367,7 @@ void SceneTestLayer::syncSpotLight() {
     spot_light_->setEnabled(ui_.spot_light_enabled);
     spot_light_->setPosition(ui_.spot_light_pos);
     vne::math::Vec3f dir = ui_.spot_light_dir;
-    dir = (dir.length() < 1e-6f) ? vne::math::Vec3f(0.f, -1.f, 0.f) : dir.normalized();
+    dir = (dir.length() < vne::math::kFloatEpsilon) ? vne::math::Vec3f(0.f, -1.f, 0.f) : dir.normalized();
     spot_light_->setDirection(dir);
     spot_light_->setColor(ui_.spot_light_color.rgb());
     spot_light_->setIntensity(ui_.spot_light_intensity);
@@ -370,16 +380,10 @@ void SceneTestLayer::addPointLight() {
         return;
     }
     PointLightEntry e;
-    static const vne::math::Color kColors[4] = {
-        vne::math::Color(1.f, 0.4f, 0.2f),
-        vne::math::Color(0.2f, 0.6f, 1.f),
-        vne::math::Color(0.4f, 1.f, 0.4f),
-        vne::math::Color(1.f, 0.2f, 1.f),
-    };
     const std::size_t idx = ui_.point_lights.size();
     e.color = kColors[idx];
-    e.orbit_angle = static_cast<float>(idx) * 1.5708f;
-    e.light = std::make_shared<vne::scene::PointLight>(vne::math::Vec3f{e.orbit_radius, 1.5f, 0.f},
+    e.orbit_angle = static_cast<float>(idx) * vne::math::kHalfPi;
+    e.light = std::make_shared<vne::scene::PointLight>(vne::math::Vec3f{e.orbit_radius, kPointLightHeight, 0.0f},
                                                        e.color.rgb(),
                                                        e.intensity,
                                                        e.range,
@@ -516,7 +520,8 @@ void SceneTestLayer::buildLights() {
     scene_state_.addLight(dir_light_);
 
     vne::math::Vec3f spot_dir = ui_.spot_light_dir;
-    spot_dir = (spot_dir.length() < 1e-6f) ? vne::math::Vec3f(0.f, -1.f, 0.f) : spot_dir.normalized();
+    spot_dir =
+        (spot_dir.length() < vne::math::kFloatEpsilon) ? vne::math::Vec3f(0.0f, -1.0f, 0.0f) : spot_dir.normalized();
     spot_light_ = std::make_shared<vne::scene::SpotLight>(ui_.spot_light_pos,
                                                           spot_dir,
                                                           ui_.spot_light_color.rgb(),
@@ -542,7 +547,7 @@ void SceneTestLayer::updateCameraAspect(int w, int h) {
         const float hw = ui_.ortho_half * aspect;
         for (auto& cam : cameras_ortho_) {
             if (cam) {
-                cam->resize(hw * 2.f, ui_.ortho_half * 2.f);
+                cam->resize(hw * 2.0f, ui_.ortho_half * 2.0f);
                 cam->updateProjectionMatrix();
             }
         }
@@ -581,12 +586,12 @@ void SceneTestLayer::drawCameraVisuals(int vp_idx) const {
     const vne::math::Vec3f up = cam->getUp();
 
     const vne::math::Vec3f fwd_vec = tgt - pos;
-    if (fwd_vec.lengthSquared() < 1e-12f) {
+    if (fwd_vec.lengthSquared() < vne::math::kFloatEpsilon * vne::math::kFloatEpsilon) {
         return;
     }
     const vne::math::Vec3f fwd = fwd_vec.normalized();
     vne::math::Vec3f right = fwd.cross(up).normalized();
-    if (right.lengthSquared() < 1e-12f) {
+    if (right.lengthSquared() < vne::math::kFloatEpsilon * vne::math::kFloatEpsilon) {
         return;
     }
     const vne::math::Vec3f up_ortho = right.cross(fwd);
@@ -601,7 +606,7 @@ void SceneTestLayer::drawCameraVisuals(int vp_idx) const {
     debug_draw_->line(tgt - V::xAxis() * s, tgt + V::xAxis() * s, tgt_color);
     debug_draw_->line(tgt - V::yAxis() * s, tgt + V::yAxis() * s, tgt_color);
     debug_draw_->line(tgt - V::zAxis() * s, tgt + V::zAxis() * s, tgt_color);
-    debug_draw_->line(pos, tgt, {1.f, 0.5f, 0.2f});
+    debug_draw_->line(pos, tgt, {1.0f, 0.5f, 0.2f});
 
     if (ui_.show_cam_axes) {
         constexpr float ax_len = 1.0f;
@@ -618,11 +623,7 @@ void SceneTestLayer::drawFrustum(vne::math::Vec3f pos,
                                  vne::math::Vec3f fwd,
                                  vne::math::Vec3f right,
                                  vne::math::Vec3f up) const {
-    // Draw frustum using the camera clip distances, matching the
-    // reference (matrixModelView_mac) technique: compute vertices in
-    // camera-local space (apex at origin, planes along -Z) then
-    // transform to world space via pos/fwd/right/up basis vectors.
-    //
+    // Draw frustum using the camera clip distances
     // Clamp near to a small positive value and ensure far is beyond near
     // so the frustum visualization stays well-defined even for
     // misconfigured clip planes.
