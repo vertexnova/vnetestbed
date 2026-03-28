@@ -58,6 +58,9 @@ constexpr int kRenderSortKey = 999;
 constexpr float kDefaultViewportW = 1280.0f;
 constexpr float kDefaultViewportH = 720.0f;
 
+const vne::math::Vec3f kDefaultCameraPosition{4.0f, 3.0f, 6.0f};
+const vne::math::Vec3f kDefaultTargetPosition{0.0f, 0.0f, 0.0f};
+
 ControllerVariant makeController(ControllerKind kind, vne::interaction::NavigateMode nav_mode) {
     switch (kind) {
         case ControllerKind::eInspectOrbit: {
@@ -341,8 +344,8 @@ void InteractionTestLayer::resetCamera() {
     if (!camera_) {
         return;
     }
-    camera_->setPosition({4.0f, 3.0f, 6.0f});
-    camera_->setTarget({0.0f, 0.0f, 0.0f});
+    camera_->setPosition(kDefaultCameraPosition);
+    camera_->setTarget(kDefaultTargetPosition);
     camera_->updateMatrices();
     dispatchReset();
 }
