@@ -51,7 +51,7 @@
 #include <utility>
 #include <vector>
 
-namespace vne::samples::test_interaction {
+namespace vne::samples {
 
 namespace {
 
@@ -1155,6 +1155,6 @@ void registerTestInteractionDemo(vne::testbed::Application& app) {
 
 VNETESTBED_REGISTER_DEMO("test_interaction", registerTestInteractionDemo)
 
-}  // namespace vne::samples::test_interaction
+}  // namespace vne::samples
 
 #endif  // VNE_TESTBED_INTERACTION

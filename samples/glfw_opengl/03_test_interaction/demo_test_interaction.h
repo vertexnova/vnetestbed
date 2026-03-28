@@ -50,7 +50,7 @@ class MeshLayer;
 
 class BaseSceneLayer;
 
-namespace vne::samples::test_interaction {
+namespace vne::samples {
 
 /** Controller type for the interaction demo; maps to one of the four high-level controllers. */
 enum class ControllerKind : int {
@@ -214,6 +214,6 @@ class InteractionSettingsLayer : public vne::testbed::ILayer {
 
 void registerTestInteractionDemo(vne::testbed::Application& app);
 
-}  // namespace vne::samples::test_interaction
+}  // namespace vne::samples
 
 #endif  // VNE_TESTBED_INTERACTION
