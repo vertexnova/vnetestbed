@@ -25,7 +25,6 @@
 
 #include "vertexnova/interaction/orbital_camera_behavior.h"
 #include "vertexnova/interaction/free_look_behavior.h"
-#include "vertexnova/interaction/ortho_pan_zoom_behavior.h"
 #include "vertexnova/interaction/follow_behavior.h"
 
 #ifdef VNE_TESTBED_IMGUI
@@ -319,7 +318,7 @@ void InteractionTestLayer::setZoomMethod(vne::interaction::ZoomMethod method) {
                                                     vne::interaction::Navigation3DController>) {
                     c.freeLookBehavior().setZoomMethod(method);
                 } else if constexpr (std::is_same_v<std::decay_t<decltype(c)>, vne::interaction::Ortho2DController>) {
-                    c.orthoPanZoomBehavior().setZoomMethod(method);
+                    c.ortho2DBehavior().setZoomMethod(method);
                 } else if constexpr (std::is_same_v<std::decay_t<decltype(c)>, vne::interaction::FollowController>) {
                     c.followBehavior().setZoomMethod(method);
                 }
@@ -901,7 +900,7 @@ void InteractionSettingsLayer::renderManipulatorSettings() {
                 ImGui::TreePop();
             }
         } else if (auto* ortho = il.getOrthoController()) {
-            auto& opz = ortho->orthoPanZoomBehavior();
+            auto& opz = ortho->ortho2DBehavior();
             if (ImGui::TreeNodeEx("Ortho Settings", ImGuiTreeNodeFlags_DefaultOpen)) {
                 bool rot_en = ortho->isRotationEnabled();
                 if (ImGui::Checkbox("Rotation enabled##ortho", &rot_en)) {
