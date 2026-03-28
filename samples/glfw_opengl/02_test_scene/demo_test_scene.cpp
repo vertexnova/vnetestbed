@@ -1023,7 +1023,7 @@ void registerTestSceneDemo(vne::testbed::Application& app) {
     app.getLayerStack().pushLayer(std::unique_ptr<SceneTestLayer>(scene), app.getAppContext());
 
 #ifdef VNE_TESTBED_INTERACTION
-    // Layer 2: orbit-arcball (per-viewport cameras; use active set so ortho/persp switch works)
+    // Layer 2: orbit/trackball interaction (per-viewport cameras; use active set so ortho/persp switch works)
     auto* interaction = new BaseInteractionLayer("TestSceneInteractionLayer");
     interaction->setCameras(scene->getActiveCameras());
     app.getLayerStack().pushLayer(std::unique_ptr<BaseInteractionLayer>(interaction), app.getAppContext());

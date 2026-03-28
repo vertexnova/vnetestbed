@@ -15,7 +15,7 @@
 
 #include "vertexnova/testbed/layer.h"
 
-#include "vertexnova/interaction/inspect_controller.h"
+#include "vertexnova/interaction/inspect_3d_controller.h"
 #include "vertexnova/interaction/navigation_3d_controller.h"
 #include "vertexnova/interaction/ortho_2d_controller.h"
 #include "vertexnova/interaction/follow_controller.h"
@@ -53,13 +53,13 @@ namespace vne::samples {
 /** Controller type for the interaction demo; maps to one of the four high-level controllers. */
 enum class ControllerKind : int {
     eInspectOrbit = 0,
-    eInspectArcball,
+    eInspectTrackball,
     eNavigation,  // Fps / Fly / Game chosen via setNavigationMode
     eOrtho,
     eFollow,
 };
 
-using ControllerVariant = std::variant<vne::interaction::InspectController,
+using ControllerVariant = std::variant<vne::interaction::Inspect3DController,
                                        vne::interaction::Navigation3DController,
                                        vne::interaction::Ortho2DController,
                                        vne::interaction::FollowController>;
@@ -116,7 +116,7 @@ class InteractionTestLayer : public vne::testbed::ILayer {
     [[nodiscard]] vne::math::Vec3f cameraPosition() const;
     [[nodiscard]] vne::math::Vec3f cameraTarget() const;
 
-    [[nodiscard]] vne::interaction::InspectController* getInspectController(int index = 0) noexcept;
+    [[nodiscard]] vne::interaction::Inspect3DController* getInspectController(int index = 0) noexcept;
     [[nodiscard]] vne::interaction::Navigation3DController* getNavController(int index = 0) noexcept;
     [[nodiscard]] vne::interaction::Ortho2DController* getOrthoController(int index = 0) noexcept;
     [[nodiscard]] vne::interaction::FollowController* getFollowController(int index = 0) noexcept;
@@ -131,7 +131,7 @@ class InteractionTestLayer : public vne::testbed::ILayer {
     BaseSceneLayer* scene_layer_{nullptr};
     std::shared_ptr<vne::scene::ICamera> camera_;
     std::array<ControllerVariant, kMaxViewports> controllers_;
-    ControllerKind current_kind_{ControllerKind::eInspectArcball};
+    ControllerKind current_kind_{ControllerKind::eInspectTrackball};
 #ifdef VNE_TESTBED_IMGUI
     vne::testbed::MeshLayer* mesh_layer_{nullptr};
 #endif
