@@ -19,7 +19,6 @@
 
 #include "vertexnova/events/event.h"
 #include "vertexnova/events/input/input.h"
-#include "vertexnova/events/key_event.h"
 #include "vertexnova/events/mouse_event.h"
 #include "vertexnova/events/types.h"
 #include "vertexnova/events/window_event.h"
@@ -43,7 +42,6 @@
 #include "../common/base_scene_layer.h"
 #include "../common/path_utils.h"
 
-#include <cmath>
 #include <filesystem>
 #include <memory>
 #include <string>
@@ -54,6 +52,11 @@
 namespace vne::samples {
 
 namespace {
+
+constexpr double kFixedDt = 0.016;
+constexpr int kRenderSortKey = 999;
+constexpr float kDefaultViewportW = 1280.0f;
+constexpr float kDefaultViewportH = 720.0f;
 
 ControllerVariant makeController(ControllerKind kind, vne::interaction::NavigateMode nav_mode) {
     switch (kind) {
@@ -134,6 +137,10 @@ bool InteractionTestLayer::isManipulatorCompatibleWithCamera(bool use_perspectiv
 void InteractionTestLayer::setImGuiLayer(vne::testbed::ImGuiLayer* layer) {
     imgui_layer_ = layer;
 }
+
+void InteractionTestLayer::setMeshLayer(vne::testbed::MeshLayer* layer) noexcept {
+    mesh_layer_ = layer;
+}
 #endif
 
 void InteractionTestLayer::dispatchViewportSize(float w, float h) {
@@ -198,8 +205,8 @@ void InteractionTestLayer::dispatchReset() {
 }
 
 void InteractionTestLayer::onAttach(vne::testbed::AppContext& app_context) {
-    const float vpw = app_context.window ? static_cast<float>(app_context.window->getWidth()) : 1280.0f;
-    const float vph = app_context.window ? static_cast<float>(app_context.window->getHeight()) : 720.0f;
+    const auto vpw = app_context.window ? static_cast<float>(app_context.window->getWidth()) : kDefaultViewportW;
+    const auto vph = app_context.window ? static_cast<float>(app_context.window->getHeight()) : kDefaultViewportH;
     dispatchViewportSize(vpw, vph);
 }
 
@@ -237,8 +244,8 @@ void InteractionTestLayer::onEvent(const vne::events::Event& event) {
         dispatchViewportSize(static_cast<float>(e.width()), static_cast<float>(e.height()));
         return;
     }
-    float check_x = static_cast<float>(last_x_);
-    float check_y = static_cast<float>(last_y_);
+    auto check_x = static_cast<float>(last_x_);
+    auto check_y = static_cast<float>(last_y_);
     if (event.type() == ET::eMouseMoved) {
         const auto& e = static_cast<const vne::events::MouseMovedEvent&>(event);
         check_x = static_cast<float>(e.x());
@@ -257,7 +264,6 @@ void InteractionTestLayer::onEvent(const vne::events::Event& event) {
                     const auto& e = static_cast<const vne::events::MouseMovedEvent&>(event);
                     last_x_ = e.x();
                     last_y_ = e.y();
-                    first_mouse_ = false;
                 }
                 return;
             }
@@ -280,14 +286,13 @@ void InteractionTestLayer::onEvent(const vne::events::Event& event) {
         const auto& e = static_cast<const vne::events::MouseMovedEvent&>(event);
         last_x_ = e.x();
         last_y_ = e.y();
-        first_mouse_ = false;
     }
 }
 
 void InteractionTestLayer::setControllerKind(ControllerKind kind) {
     current_kind_ = kind;
-    const float vpw = 1280.0f;
-    const float vph = 720.0f;
+    const auto vpw = kDefaultViewportW;
+    const auto vph = kDefaultViewportH;
     for (size_t i = 0; i < static_cast<size_t>(kMaxViewports); ++i) {
         controllers_[i] = makeController(kind, navigation_mode_);
         std::visit(
@@ -336,8 +341,8 @@ void InteractionTestLayer::resetCamera() {
     if (!camera_) {
         return;
     }
-    camera_->setPosition({4.f, 3.f, 6.f});
-    camera_->setTarget({0.f, 0.f, 0.f});
+    camera_->setPosition({4.0f, 3.0f, 6.0f});
+    camera_->setTarget({0.0f, 0.0f, 0.0f});
     camera_->updateMatrices();
     dispatchReset();
 }
@@ -468,7 +473,7 @@ vne::interaction::FollowController* InteractionTestLayer::getFollowController(in
 
 InteractionSettingsLayer::InteractionSettingsLayer()
     : vne::testbed::ILayer("InteractionSettingsLayer") {
-    setRenderSortKey(999);
+    setRenderSortKey(kRenderSortKey);
 }
 
 void InteractionSettingsLayer::setImGuiLayer(vne::testbed::ImGuiLayer* layer) {
@@ -577,6 +582,7 @@ void InteractionSettingsLayer::renderPanel() {
         return;
     }
     auto& il = *interaction_layer_;
+    auto& ui = uiSettings();
 
     if (scene_layer_ && ImGui::CollapsingHeader("Scene", ImGuiTreeNodeFlags_DefaultOpen)) {
         ImGui::Checkbox("Show grid", &scene_layer_->uiSettings().show_grid);
@@ -595,8 +601,8 @@ void InteractionSettingsLayer::renderPanel() {
             using ZM = vne::interaction::ZoomMethod;
             const char* znames[] = {"DollyToCoi", "SceneScale", "ChangeFov"};
             const ZM zvals[] = {ZM::eDollyToCoi, ZM::eSceneScale, ZM::eChangeFov};
-            if (ImGui::Combo("Method##zoom", &zoom_idx_, znames, 3)) {
-                il.setZoomMethod(zvals[zoom_idx_]);
+            if (ImGui::Combo("Method##zoom", &ui.zoom_idx, znames, 3)) {
+                il.setZoomMethod(zvals[ui.zoom_idx]);
             }
             ImGui::Spacing();
             ImGui::TextDisabled("DollyToCoi: move along ray to pivot");
@@ -658,6 +664,7 @@ void InteractionSettingsLayer::renderCameraSettings() {
     }
     auto& sl = *scene_layer_;
     auto& il = *interaction_layer_;
+    auto& ui = uiSettings();
 
     if (ImGui::CollapsingHeader("Camera", ImGuiTreeNodeFlags_DefaultOpen)) {
         int persp_idx = sl.uiSettings().use_perspective ? 0 : 1;
@@ -707,9 +714,9 @@ void InteractionSettingsLayer::renderCameraSettings() {
             il.setCamerasFromScene();
         }
 
-        ImGui::Checkbox("Show view matrix", &show_view_matrix_);
-        ImGui::Checkbox("Show projection matrix", &show_projection_matrix_);
-        if (show_view_matrix_ && sl.getActiveCameraPtr(0)) {
+        ImGui::Checkbox("Show view matrix", &ui.show_view_matrix);
+        ImGui::Checkbox("Show projection matrix", &ui.show_projection_matrix);
+        if (ui.show_view_matrix && sl.getActiveCameraPtr(0)) {
             const vne::math::Mat4f view = sl.getActiveCameraPtr(0)->getViewMatrix();
             ImGui::Text("View matrix (column-major):");
             for (size_t row = 0; row < 4u; ++row) {
@@ -720,7 +727,7 @@ void InteractionSettingsLayer::renderCameraSettings() {
                             static_cast<double>(view[3][row]));
             }
         }
-        if (show_projection_matrix_ && sl.getActiveCameraPtr(0)) {
+        if (ui.show_projection_matrix && sl.getActiveCameraPtr(0)) {
             const vne::math::Mat4f proj = sl.getActiveCameraPtr(0)->getProjectionMatrix();
             ImGui::Text("Projection matrix (column-major):");
             for (size_t row = 0; row < 4u; ++row) {
@@ -739,6 +746,7 @@ void InteractionSettingsLayer::renderManipulatorSettings() {
         return;
     }
     auto& il = *interaction_layer_;
+    auto& ui = uiSettings();
     const ControllerKind cur = il.getControllerKind();
 
     if (ImGui::CollapsingHeader("Controller", ImGuiTreeNodeFlags_DefaultOpen)) {
@@ -782,15 +790,15 @@ void InteractionSettingsLayer::renderManipulatorSettings() {
             if (auto* nav = il.getNavController()) {
                 const int mode_from_controller = static_cast<int>(nav->getMode());
                 if (mode_from_controller >= 0 && mode_from_controller <= 2) {
-                    nav_mode_idx_ = mode_from_controller;
+                    ui.nav_mode_idx = mode_from_controller;
                 }
             }
             const char* modes[] = {"Fps", "Fly", "Game"};
             const vne::interaction::NavigateMode modes_val[] = {vne::interaction::NavigateMode::eFps,
                                                                 vne::interaction::NavigateMode::eFly,
                                                                 vne::interaction::NavigateMode::eGame};
-            if (ImGui::Combo("Navigation mode##nav_sub", &nav_mode_idx_, modes, 3)) {
-                il.setNavigationMode(modes_val[nav_mode_idx_]);
+            if (ImGui::Combo("Navigation mode##nav_sub", &ui.nav_mode_idx, modes, 3)) {
+                il.setNavigationMode(modes_val[ui.nav_mode_idx]);
             }
         }
 
@@ -825,14 +833,14 @@ void InteractionSettingsLayer::renderManipulatorSettings() {
                 if (ImGui::Combo("Rotation pivot##insp", &pivot_idx, pivot_names, 3)) {
                     orb.setPivotMode(static_cast<OPM>(pivot_idx));
                 }
-                if (ImGui::Checkbox("Rotation enabled##insp", &rotation_enabled_insp_)) {
-                    insp->setRotationEnabled(rotation_enabled_insp_);
+                if (ImGui::Checkbox("Rotation enabled##insp", &ui.rotation_enabled_insp)) {
+                    insp->setRotationEnabled(ui.rotation_enabled_insp);
                 }
-                if (ImGui::Checkbox("Pan enabled##insp", &pan_enabled_insp_)) {
-                    insp->setPanEnabled(pan_enabled_insp_);
+                if (ImGui::Checkbox("Pan enabled##insp", &ui.pan_enabled_insp)) {
+                    insp->setPanEnabled(ui.pan_enabled_insp);
                 }
-                if (ImGui::Checkbox("Zoom enabled##insp", &zoom_enabled_insp_)) {
-                    insp->setZoomEnabled(zoom_enabled_insp_);
+                if (ImGui::Checkbox("Zoom enabled##insp", &ui.zoom_enabled_insp)) {
+                    insp->setZoomEnabled(ui.zoom_enabled_insp);
                 }
                 float rs = orb.getRotationSpeed();
                 if (ImGui::SliderFloat("Rotation speed##insp", &rs, 0.1f, 5.f)) {
@@ -862,21 +870,21 @@ void InteractionSettingsLayer::renderManipulatorSettings() {
             }
         } else if (auto* nav = il.getNavController()) {
             if (ImGui::TreeNodeEx("Navigation Settings", ImGuiTreeNodeFlags_DefaultOpen)) {
-                move_speed_ = nav->getMoveSpeed();
-                if (ImGui::SliderFloat("Move speed##nav", &move_speed_, 0.5f, 20.f)) {
-                    nav->setMoveSpeed(move_speed_);
+                ui.move_speed = nav->getMoveSpeed();
+                if (ImGui::SliderFloat("Move speed##nav", &ui.move_speed, 0.5f, 20.f)) {
+                    nav->setMoveSpeed(ui.move_speed);
                 }
-                mouse_sensitivity_ = nav->getMouseSensitivity();
-                if (ImGui::SliderFloat("Mouse sensitivity##nav", &mouse_sensitivity_, 0.05f, 0.5f)) {
-                    nav->setMouseSensitivity(mouse_sensitivity_);
+                ui.mouse_sensitivity = nav->getMouseSensitivity();
+                if (ImGui::SliderFloat("Mouse sensitivity##nav", &ui.mouse_sensitivity, 0.05f, 0.5f)) {
+                    nav->setMouseSensitivity(ui.mouse_sensitivity);
                 }
-                sprint_mult_ = nav->getSprintMultiplier();
-                if (ImGui::SliderFloat("Sprint multiplier##nav", &sprint_mult_, 1.f, 5.f)) {
-                    nav->setSprintMultiplier(sprint_mult_);
+                ui.sprint_mult = nav->getSprintMultiplier();
+                if (ImGui::SliderFloat("Sprint multiplier##nav", &ui.sprint_mult, 1.f, 5.f)) {
+                    nav->setSprintMultiplier(ui.sprint_mult);
                 }
-                slow_mult_ = nav->getSlowMultiplier();
-                if (ImGui::SliderFloat("Slow multiplier##nav", &slow_mult_, 0.1f, 1.f)) {
-                    nav->setSlowMultiplier(slow_mult_);
+                ui.slow_mult = nav->getSlowMultiplier();
+                if (ImGui::SliderFloat("Slow multiplier##nav", &ui.slow_mult, 0.1f, 1.f)) {
+                    nav->setSlowMultiplier(ui.slow_mult);
                 }
                 ImGui::TreePop();
             }
