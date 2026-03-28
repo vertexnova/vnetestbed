@@ -14,7 +14,6 @@
 #ifdef VNE_TESTBED_INTERACTION
 
 #include "vertexnova/testbed/layer.h"
-#include "vertexnova/testbed/render_context.h"
 
 #include "vertexnova/interaction/inspect_controller.h"
 #include "vertexnova/interaction/navigation_3d_controller.h"
@@ -23,7 +22,6 @@
 #include "vertexnova/interaction/interaction_types.h"
 
 #include "vertexnova/scene/camera/camera.h"
-#include "vertexnova/scene/camera/perspective_camera.h"
 
 #include <vertexnova/math/core/core.h>
 
@@ -50,7 +48,7 @@ class MeshLayer;
 
 class BaseSceneLayer;
 
-namespace vne::samples::test_interaction {
+namespace vne::samples {
 
 /** Controller type for the interaction demo; maps to one of the four high-level controllers. */
 enum class ControllerKind : int {
@@ -71,8 +69,8 @@ using ControllerVariant = std::variant<vne::interaction::InspectController,
 // ---------------------------------------------------------------------------
 class InteractionTestLayer : public vne::testbed::ILayer {
    public:
+    /** Needed in the header for `std::array<ControllerVariant, kMaxViewports>`. */
     static constexpr int kMaxViewports = 4;
-    static constexpr double kFixedDt = 0.016;
 
     InteractionTestLayer();
 
@@ -111,7 +109,7 @@ class InteractionTestLayer : public vne::testbed::ILayer {
     void setZoomEnabled(bool enabled);
 
 #ifdef VNE_TESTBED_IMGUI
-    void setMeshLayer(vne::testbed::MeshLayer* layer) noexcept { mesh_layer_ = layer; }
+    void setMeshLayer(vne::testbed::MeshLayer* layer) noexcept;
 #endif
     void setNavigationMode(vne::interaction::NavigateMode mode);
 
@@ -140,7 +138,6 @@ class InteractionTestLayer : public vne::testbed::ILayer {
     vne::interaction::NavigateMode navigation_mode_{vne::interaction::NavigateMode::eFps};
     double last_x_{0.0};
     double last_y_{0.0};
-    bool first_mouse_{true};
 #ifdef VNE_TESTBED_IMGUI
     vne::testbed::ImGuiLayer* imgui_layer_{nullptr};
 #endif
@@ -150,6 +147,21 @@ class InteractionTestLayer : public vne::testbed::ILayer {
 // InteractionSettingsLayer — ImGui panel: controller kind, zoom, view, speeds + mesh browser
 // ---------------------------------------------------------------------------
 #ifdef VNE_TESTBED_IMGUI
+// ImGui-tuned state (stable addresses for ImGui widgets).
+struct InteractionUiSettings {
+    bool show_view_matrix{false};
+    bool show_projection_matrix{false};
+    int zoom_idx{0};
+    int nav_mode_idx{0};
+    float move_speed{3.0f};
+    float mouse_sensitivity{0.15f};
+    float sprint_mult{4.0f};
+    float slow_mult{0.2f};
+    bool rotation_enabled_insp{true};
+    bool pan_enabled_insp{true};
+    bool zoom_enabled_insp{true};
+};
+
 class InteractionSettingsLayer : public vne::testbed::ILayer {
    public:
     InteractionSettingsLayer();
@@ -177,6 +189,9 @@ class InteractionSettingsLayer : public vne::testbed::ILayer {
     void onAttach(vne::testbed::AppContext& app_context) override;
     void onDetach() override;
 
+    [[nodiscard]] InteractionUiSettings& uiSettings() noexcept { return ui_; }
+    [[nodiscard]] const InteractionUiSettings& uiSettings() const noexcept { return ui_; }
+
    private:
     void renderPanel();
     void renderCameraSettings();
@@ -196,24 +211,12 @@ class InteractionSettingsLayer : public vne::testbed::ILayer {
     std::vector<std::filesystem::path> mesh_files_;
     int selected_mesh_idx_{-1};
 
-    bool show_view_matrix_{false};
-    bool show_projection_matrix_{false};
-
-    int zoom_idx_{0};
-    int nav_mode_idx_{0};
-    float move_speed_{3.0f};
-    float mouse_sensitivity_{0.15f};
-    float sprint_mult_{4.0f};
-    float slow_mult_{0.2f};
-
-    bool rotation_enabled_insp_{true};
-    bool pan_enabled_insp_{true};
-    bool zoom_enabled_insp_{true};
+    InteractionUiSettings ui_{};
 };
 #endif
 
 void registerTestInteractionDemo(vne::testbed::Application& app);
 
-}  // namespace vne::samples::test_interaction
+}  // namespace vne::samples
 
 #endif  // VNE_TESTBED_INTERACTION
