@@ -24,6 +24,7 @@
 #include "vertexnova/events/window_event.h"
 
 #include "vertexnova/interaction/orbital_camera_behavior.h"
+#include "vertexnova/interaction/ortho_2d_behavior.h"
 #include "vertexnova/interaction/free_look_behavior.h"
 #include "vertexnova/interaction/follow_behavior.h"
 
