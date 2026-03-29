@@ -230,14 +230,6 @@ void InteractionTestLayer::onUpdate(float dt) {
     }
 #endif
     dispatchUpdate(static_cast<double>(dt));
-#ifdef VNE_TESTBED_IMGUI
-    // Apply scene scale from eSceneScale zoom method to the mesh transform each frame
-    if (mesh_layer_) {
-        if (auto* insp = getInspectController(0)) {
-            mesh_layer_->setUniformScale(insp->orbitalCameraBehavior().getZoomScale());
-        }
-    }
-#endif
 }
 
 void InteractionTestLayer::onEvent(const vne::events::Event& event) {
