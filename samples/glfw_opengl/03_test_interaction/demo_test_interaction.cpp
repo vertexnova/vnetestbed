@@ -23,9 +23,9 @@
 #include "vertexnova/events/types.h"
 #include "vertexnova/events/window_event.h"
 
-#include "vertexnova/interaction/orbit_arcball_behavior.h"
+#include "vertexnova/interaction/orbital_camera_behavior.h"
+#include "vertexnova/interaction/ortho_2d_behavior.h"
 #include "vertexnova/interaction/free_look_behavior.h"
-#include "vertexnova/interaction/ortho_pan_zoom_behavior.h"
 #include "vertexnova/interaction/follow_behavior.h"
 
 #ifdef VNE_TESTBED_IMGUI
@@ -64,13 +64,13 @@ const vne::math::Vec3f kDefaultTargetPosition{0.0f, 0.0f, 0.0f};
 ControllerVariant makeController(ControllerKind kind, vne::interaction::NavigateMode nav_mode) {
     switch (kind) {
         case ControllerKind::eInspectOrbit: {
-            vne::interaction::InspectController c;
+            vne::interaction::Inspect3DController c;
             c.setRotationMode(vne::interaction::OrbitRotationMode::eOrbit);
             return c;
         }
-        case ControllerKind::eInspectArcball: {
-            vne::interaction::InspectController c;
-            c.setRotationMode(vne::interaction::OrbitRotationMode::eArcball);
+        case ControllerKind::eInspectTrackball: {
+            vne::interaction::Inspect3DController c;
+            c.setRotationMode(vne::interaction::OrbitRotationMode::eTrackball);
             return c;
         }
         case ControllerKind::eNavigation: {
@@ -78,14 +78,14 @@ ControllerVariant makeController(ControllerKind kind, vne::interaction::Navigate
             c.setMode(nav_mode);
             return c;
         }
-        case ControllerKind::eOrtho: {
+        case ControllerKind::eOrtho2D: {
             return vne::interaction::Ortho2DController{};
         }
         case ControllerKind::eFollow: {
             return vne::interaction::FollowController{};
         }
     }
-    return vne::interaction::InspectController{};
+    return vne::interaction::Inspect3DController{};
 }
 
 }  // namespace
@@ -97,7 +97,7 @@ ControllerVariant makeController(ControllerKind kind, vne::interaction::Navigate
 InteractionTestLayer::InteractionTestLayer()
     : vne::testbed::ILayer("InteractionTestLayer") {
     for (size_t i = 0; i < static_cast<size_t>(kMaxViewports); ++i) {
-        controllers_[i] = makeController(ControllerKind::eInspectArcball, navigation_mode_);
+        controllers_[i] = makeController(ControllerKind::eInspectTrackball, navigation_mode_);
     }
 }
 
@@ -130,7 +130,7 @@ void InteractionTestLayer::setCamerasFromScene() {
 }
 
 bool InteractionTestLayer::isManipulatorCompatibleWithCamera(bool use_perspective) const {
-    if (current_kind_ == ControllerKind::eOrtho) {
+    if (current_kind_ == ControllerKind::eOrtho2D) {
         return !use_perspective;
     }
     return true;
@@ -230,14 +230,6 @@ void InteractionTestLayer::onUpdate(float dt) {
     }
 #endif
     dispatchUpdate(static_cast<double>(dt));
-#ifdef VNE_TESTBED_IMGUI
-    // Apply scene scale from eSceneScale zoom method to the mesh transform each frame
-    if (mesh_layer_) {
-        if (auto* insp = getInspectController(0)) {
-            mesh_layer_->setUniformScale(insp->orbitArcballBehavior().getZoomScale());
-        }
-    }
-#endif
 }
 
 void InteractionTestLayer::onEvent(const vne::events::Event& event) {
@@ -313,13 +305,13 @@ void InteractionTestLayer::setZoomMethod(vne::interaction::ZoomMethod method) {
     for (auto& v : controllers_) {
         std::visit(
             [method](auto& c) {
-                if constexpr (std::is_same_v<std::decay_t<decltype(c)>, vne::interaction::InspectController>) {
-                    c.orbitArcballBehavior().setZoomMethod(method);
+                if constexpr (std::is_same_v<std::decay_t<decltype(c)>, vne::interaction::Inspect3DController>) {
+                    c.orbitalCameraBehavior().setZoomMethod(method);
                 } else if constexpr (std::is_same_v<std::decay_t<decltype(c)>,
                                                     vne::interaction::Navigation3DController>) {
                     c.freeLookBehavior().setZoomMethod(method);
                 } else if constexpr (std::is_same_v<std::decay_t<decltype(c)>, vne::interaction::Ortho2DController>) {
-                    c.orthoPanZoomBehavior().setZoomMethod(method);
+                    c.ortho2DBehavior().setZoomMethod(method);
                 } else if constexpr (std::is_same_v<std::decay_t<decltype(c)>, vne::interaction::FollowController>) {
                     c.followBehavior().setZoomMethod(method);
                 }
@@ -332,8 +324,8 @@ void InteractionTestLayer::setViewDirection(vne::interaction::ViewDirection dir)
     for (auto& v : controllers_) {
         std::visit(
             [dir](auto& c) {
-                if constexpr (std::is_same_v<std::decay_t<decltype(c)>, vne::interaction::InspectController>) {
-                    c.orbitArcballBehavior().setViewDirection(dir);
+                if constexpr (std::is_same_v<std::decay_t<decltype(c)>, vne::interaction::Inspect3DController>) {
+                    c.orbitalCameraBehavior().setViewDirection(dir);
                 }
             },
             v);
@@ -382,8 +374,8 @@ void InteractionTestLayer::setRotationPivotMode(vne::interaction::OrbitPivotMode
     for (auto& v : controllers_) {
         std::visit(
             [mode](auto& c) {
-                if constexpr (std::is_same_v<std::decay_t<decltype(c)>, vne::interaction::InspectController>) {
-                    c.orbitArcballBehavior().setPivotMode(mode);
+                if constexpr (std::is_same_v<std::decay_t<decltype(c)>, vne::interaction::Inspect3DController>) {
+                    c.orbitalCameraBehavior().setPivotMode(mode);
                 }
             },
             v);
@@ -395,7 +387,7 @@ void InteractionTestLayer::setRotationEnabled(bool enabled) {
     if (insp) {
         insp->setRotationEnabled(enabled);
     }
-    auto* ortho = getOrthoController(0);
+    auto* ortho = getOrtho2DController(0);
     if (ortho) {
         ortho->setRotationEnabled(enabled);
     }
@@ -406,7 +398,7 @@ void InteractionTestLayer::setPanEnabled(bool enabled) {
     if (insp) {
         insp->setPanEnabled(enabled);
     }
-    auto* ortho = getOrthoController(0);
+    auto* ortho = getOrtho2DController(0);
     if (ortho) {
         ortho->setPanEnabled(enabled);
     }
@@ -417,7 +409,7 @@ void InteractionTestLayer::setZoomEnabled(bool enabled) {
     if (insp) {
         insp->setZoomEnabled(enabled);
     }
-    auto* ortho = getOrthoController(0);
+    auto* ortho = getOrtho2DController(0);
     if (ortho) {
         ortho->setZoomEnabled(enabled);
     }
@@ -440,12 +432,12 @@ vne::math::Vec3f InteractionTestLayer::cameraTarget() const {
     return camera_ ? camera_->getTarget() : vne::math::Vec3f{};
 }
 
-vne::interaction::InspectController* InteractionTestLayer::getInspectController(int index) noexcept {
+vne::interaction::Inspect3DController* InteractionTestLayer::getInspectController(int index) noexcept {
     if (index < 0 || index >= kMaxViewports
-        || (current_kind_ != ControllerKind::eInspectOrbit && current_kind_ != ControllerKind::eInspectArcball)) {
+        || (current_kind_ != ControllerKind::eInspectOrbit && current_kind_ != ControllerKind::eInspectTrackball)) {
         return nullptr;
     }
-    return std::get_if<vne::interaction::InspectController>(&controllers_[static_cast<size_t>(index)]);
+    return std::get_if<vne::interaction::Inspect3DController>(&controllers_[static_cast<size_t>(index)]);
 }
 
 vne::interaction::Navigation3DController* InteractionTestLayer::getNavController(int index) noexcept {
@@ -455,8 +447,8 @@ vne::interaction::Navigation3DController* InteractionTestLayer::getNavController
     return std::get_if<vne::interaction::Navigation3DController>(&controllers_[static_cast<size_t>(index)]);
 }
 
-vne::interaction::Ortho2DController* InteractionTestLayer::getOrthoController(int index) noexcept {
-    if (index < 0 || index >= kMaxViewports || current_kind_ != ControllerKind::eOrtho) {
+vne::interaction::Ortho2DController* InteractionTestLayer::getOrtho2DController(int index) noexcept {
+    if (index < 0 || index >= kMaxViewports || current_kind_ != ControllerKind::eOrtho2D) {
         return nullptr;
     }
     return std::get_if<vne::interaction::Ortho2DController>(&controllers_[static_cast<size_t>(index)]);
@@ -597,24 +589,24 @@ void InteractionSettingsLayer::renderPanel() {
 
     const ControllerKind cur = il.getControllerKind();
     const bool show_zoom =
-        (cur == ControllerKind::eInspectOrbit || cur == ControllerKind::eInspectArcball
-         || cur == ControllerKind::eNavigation || cur == ControllerKind::eOrtho || cur == ControllerKind::eFollow);
+        (cur == ControllerKind::eInspectOrbit || cur == ControllerKind::eInspectTrackball
+         || cur == ControllerKind::eNavigation || cur == ControllerKind::eOrtho2D || cur == ControllerKind::eFollow);
     if (show_zoom) {
         if (ImGui::CollapsingHeader("Zoom Method", ImGuiTreeNodeFlags_DefaultOpen)) {
             using ZM = vne::interaction::ZoomMethod;
-            const char* znames[] = {"DollyToCoi", "SceneScale", "ChangeFov"};
-            const ZM zvals[] = {ZM::eDollyToCoi, ZM::eSceneScale, ZM::eChangeFov};
+            const char* znames[] = {"SceneScale", "ChangeFov", "DollyToCoi"};
+            const ZM zvals[] = {ZM::eSceneScale, ZM::eChangeFov, ZM::eDollyToCoi};
             if (ImGui::Combo("Method##zoom", &ui.zoom_idx, znames, 3)) {
                 il.setZoomMethod(zvals[ui.zoom_idx]);
             }
             ImGui::Spacing();
-            ImGui::TextDisabled("DollyToCoi: move along ray to pivot");
-            ImGui::TextDisabled("SceneScale: virtual scene scale");
-            ImGui::TextDisabled("ChangeFov:  widen/narrow FOV angle");
+            ImGui::TextDisabled("SceneScale: XY scene scale in view (virtual zoom)");
+            ImGui::TextDisabled("ChangeFov: widen/narrow FOV (perspective) or ortho extents");
+            ImGui::TextDisabled("DollyToCoi: move along view ray toward pivot");
         }
     }
 
-    if (cur == ControllerKind::eInspectOrbit || cur == ControllerKind::eInspectArcball) {
+    if (cur == ControllerKind::eInspectOrbit || cur == ControllerKind::eInspectTrackball) {
         if (ImGui::CollapsingHeader("View Direction", ImGuiTreeNodeFlags_DefaultOpen)) {
             using VD = vne::interaction::ViewDirection;
             struct {
@@ -680,13 +672,13 @@ void InteractionSettingsLayer::renderCameraSettings() {
                 sl.syncCameraPositionTargetUp();
                 sl.setUsePerspective(use_persp);
                 if (!use_persp && !il.isManipulatorCompatibleWithCamera(false)) {
-                    il.setControllerKind(ControllerKind::eInspectArcball);
+                    il.setControllerKind(ControllerKind::eInspectTrackball);
                 }
                 il.setCamerasFromScene();
             }
         }
         if (ImGui::BeginPopupModal("ManipulatorIncompatible", nullptr, ImGuiWindowFlags_AlwaysAutoResize)) {
-            ImGui::Text("Ortho controller requires Orthographic camera.");
+            ImGui::Text("Ortho 2D controller requires Orthographic camera.");
             ImGui::Text("Switch to Perspective first, or change controller to Inspect.");
             if (ImGui::Button("OK")) {
                 ImGui::CloseCurrentPopup();
@@ -753,11 +745,11 @@ void InteractionSettingsLayer::renderManipulatorSettings() {
     const ControllerKind cur = il.getControllerKind();
 
     if (ImGui::CollapsingHeader("Controller", ImGuiTreeNodeFlags_DefaultOpen)) {
-        const char* types[] = {"Inspect (Orbit)", "Inspect (Arcball)", "Navigation", "Ortho", "Follow"};
+        const char* types[] = {"Inspect (Orbit)", "Inspect (Trackball)", "Navigation", "Ortho 2D", "Follow"};
         const ControllerKind values[] = {ControllerKind::eInspectOrbit,
-                                         ControllerKind::eInspectArcball,
+                                         ControllerKind::eInspectTrackball,
                                          ControllerKind::eNavigation,
-                                         ControllerKind::eOrtho,
+                                         ControllerKind::eOrtho2D,
                                          ControllerKind::eFollow};
         int idx = 0;
         for (int i = 0; i < 5; ++i) {
@@ -766,22 +758,22 @@ void InteractionSettingsLayer::renderManipulatorSettings() {
                 break;
             }
         }
-        const bool ortho_only = (cur == ControllerKind::eOrtho);
+        const bool ortho_only = (cur == ControllerKind::eOrtho2D);
         const bool need_ortho = ortho_only && scene_layer_->uiSettings().use_perspective;
         if (need_ortho) {
-            ImGui::TextColored(ImVec4(1.f, 0.4f, 0.4f, 1.f), "Ortho requires Orthographic camera");
+            ImGui::TextColored(ImVec4(1.f, 0.4f, 0.4f, 1.f), "Ortho 2D requires Orthographic camera");
         }
         if (ImGui::Combo("Type##ctrl", &idx, types, 5)) {
             const ControllerKind new_kind = values[idx];
-            if (new_kind == ControllerKind::eOrtho && scene_layer_->uiSettings().use_perspective) {
-                ImGui::OpenPopup("OrthoNeedsOrtho");
+            if (new_kind == ControllerKind::eOrtho2D && scene_layer_->uiSettings().use_perspective) {
+                ImGui::OpenPopup("Ortho2DNeedsOrthographicCamera");
             } else {
                 il.setControllerKind(new_kind);
                 il.setCamerasFromScene();
             }
         }
-        if (ImGui::BeginPopupModal("OrthoNeedsOrtho", nullptr, ImGuiWindowFlags_AlwaysAutoResize)) {
-            ImGui::Text("Ortho works only with Orthographic camera.");
+        if (ImGui::BeginPopupModal("Ortho2DNeedsOrthographicCamera", nullptr, ImGuiWindowFlags_AlwaysAutoResize)) {
+            ImGui::Text("Ortho 2D works only with Orthographic camera.");
             ImGui::Text("Switch camera to Orthographic first.");
             if (ImGui::Button("OK")) {
                 ImGui::CloseCurrentPopup();
@@ -810,13 +802,13 @@ void InteractionSettingsLayer::renderManipulatorSettings() {
             case ControllerKind::eInspectOrbit:
                 ImGui::TextDisabled("LMB rotate  RMB pan  Scroll zoom");
                 break;
-            case ControllerKind::eInspectArcball:
-                ImGui::TextDisabled("LMB rotate  RMB pan  Scroll zoom (arcball)");
+            case ControllerKind::eInspectTrackball:
+                ImGui::TextDisabled("LMB rotate  RMB pan  Scroll zoom (trackball)");
                 break;
             case ControllerKind::eNavigation:
                 ImGui::TextDisabled("RMB + WASD/QE move  Mouse look (Fps/Fly/Game)");
                 break;
-            case ControllerKind::eOrtho:
+            case ControllerKind::eOrtho2D:
                 ImGui::TextDisabled("LMB/RMB pan  Scroll zoom (no rotate)");
                 break;
             case ControllerKind::eFollow:
@@ -826,8 +818,17 @@ void InteractionSettingsLayer::renderManipulatorSettings() {
 
         // Per-controller settings
         if (auto* insp = il.getInspectController()) {
-            auto& orb = insp->orbitArcballBehavior();
+            auto& orb = insp->orbitalCameraBehavior();
             if (ImGui::TreeNodeEx("Inspect Settings", ImGuiTreeNodeFlags_DefaultOpen)) {
+                if (cur == ControllerKind::eInspectTrackball) {
+                    using TPM = vne::interaction::TrackballBehavior::ProjectionMode;
+                    int proj_idx = (orb.getTrackballProjectionMode() == TPM::eHyperbolic) ? 0 : 1;
+                    const char* proj_names[] = {"Hyperbolic", "Rim"};
+                    if (ImGui::Combo("Trackball projection##insp", &proj_idx, proj_names, 2)) {
+                        orb.setTrackballProjectionMode(proj_idx == 0 ? TPM::eHyperbolic : TPM::eRim);
+                    }
+                    ImGui::TextDisabled("Hyperbolic: cap + continuation; Rim: hemisphere + equatorial rim");
+                }
                 using OPM = vne::interaction::OrbitPivotMode;
                 int pivot_idx = static_cast<int>(orb.getPivotMode());
                 const char* pivot_names[] = {"COI (pan moves pivot)",
@@ -891,9 +892,9 @@ void InteractionSettingsLayer::renderManipulatorSettings() {
                 }
                 ImGui::TreePop();
             }
-        } else if (auto* ortho = il.getOrthoController()) {
-            auto& opz = ortho->orthoPanZoomBehavior();
-            if (ImGui::TreeNodeEx("Ortho Settings", ImGuiTreeNodeFlags_DefaultOpen)) {
+        } else if (auto* ortho = il.getOrtho2DController()) {
+            auto& opz = ortho->ortho2DBehavior();
+            if (ImGui::TreeNodeEx("Ortho 2D Settings", ImGuiTreeNodeFlags_DefaultOpen)) {
                 bool rot_en = ortho->isRotationEnabled();
                 if (ImGui::Checkbox("Rotation enabled##ortho", &rot_en)) {
                     ortho->setRotationEnabled(rot_en);

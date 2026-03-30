@@ -381,7 +381,7 @@ void registerTestEventsDemo(vne::testbed::Application& app) {
     app.getLayerStack().pushLayer(std::unique_ptr<BaseSceneLayer>(scene), app.getAppContext());
 
 #ifdef VNE_TESTBED_INTERACTION
-    // Layer 2: orbit-arcball interaction (per-viewport cameras when using multiple viewports)
+    // Layer 2: orbit/trackball interaction (per-viewport cameras when using multiple viewports)
     auto* interaction = new BaseInteractionLayer("TestEventsInteractionLayer");
     interaction->setSceneLayer(scene);
     app.getLayerStack().pushLayer(std::unique_ptr<BaseInteractionLayer>(interaction), app.getAppContext());

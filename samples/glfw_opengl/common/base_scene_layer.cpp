@@ -98,14 +98,27 @@ void BaseSceneLayer::onRender(const vne::testbed::RenderContext& render_context)
             }
         } else {
             if (auto* o = dynamic_cast<vne::scene::OrthographicCamera*>(camera)) {
-                const float hw = ui_settings_.ortho_half * aspect;
-                o->setBounds(-hw,
-                             hw,
-                             -ui_settings_.ortho_half,
-                             ui_settings_.ortho_half,
-                             ui_settings_.ortho_near,
-                             ui_settings_.ortho_far);
-                o->updateProjectionMatrix();
+                const int vp_w = render_context.frame_info.width;
+                const int vp_h = render_context.frame_info.height;
+                const bool need_ortho_proj_sync = vp_w != ortho_proj_sync_vp_w_ || vp_h != ortho_proj_sync_vp_h_
+                                                  || ui_settings_.ortho_half != ortho_proj_sync_half_
+                                                  || ui_settings_.ortho_near != ortho_proj_sync_near_
+                                                  || ui_settings_.ortho_far != ortho_proj_sync_far_;
+                if (need_ortho_proj_sync) {
+                    const float hw = ui_settings_.ortho_half * aspect;
+                    o->setBounds(-hw,
+                                 hw,
+                                 -ui_settings_.ortho_half,
+                                 ui_settings_.ortho_half,
+                                 ui_settings_.ortho_near,
+                                 ui_settings_.ortho_far);
+                    o->updateProjectionMatrix();
+                    ortho_proj_sync_vp_w_ = vp_w;
+                    ortho_proj_sync_vp_h_ = vp_h;
+                    ortho_proj_sync_half_ = ui_settings_.ortho_half;
+                    ortho_proj_sync_near_ = ui_settings_.ortho_near;
+                    ortho_proj_sync_far_ = ui_settings_.ortho_far;
+                }
             }
         }
     }
@@ -240,6 +253,9 @@ void BaseSceneLayer::buildCameras(int w, int h) {
         ortho->updateMatrices();
         cameras_ortho_[static_cast<size_t>(i)] = std::move(ortho);
     }
+
+    // Next `onRender` must re-apply ortho bounds if UI sliders / viewport no longer match the camera.
+    ortho_proj_sync_vp_w_ = -1;
 }
 
 void BaseSceneLayer::drawGrid() const {
@@ -268,7 +284,7 @@ BaseInteractionLayer::BaseInteractionLayer(const char* name)
     : vne::testbed::ILayer(name) {
     controllers_.reserve(static_cast<size_t>(kMaxViewports));
     for (int i = 0; i < kMaxViewports; ++i) {
-        vne::interaction::InspectController c;
+        vne::interaction::Inspect3DController c;
         c.setRotationMode(vne::interaction::OrbitRotationMode::eOrbit);
         controllers_.push_back(std::move(c));
     }
@@ -400,11 +416,11 @@ void BaseInteractionLayer::onEvent(const vne::events::Event& event) {
     }
 }
 
-vne::interaction::InspectController* BaseInteractionLayer::getInspectController() {
+vne::interaction::Inspect3DController* BaseInteractionLayer::getInspectController() {
     return controllers_.empty() ? nullptr : &controllers_[0];
 }
 
-vne::interaction::InspectController* BaseInteractionLayer::getInspectController(int index) {
+vne::interaction::Inspect3DController* BaseInteractionLayer::getInspectController(int index) {
     if (index >= 0 && index < static_cast<int>(controllers_.size())) {
         return &controllers_[static_cast<size_t>(index)];
     }

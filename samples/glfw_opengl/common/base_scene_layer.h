@@ -25,7 +25,7 @@
 #ifdef VNE_TESTBED_INTERACTION
 #include "vertexnova/events/event.h"
 #include "vertexnova/events/event_listener.h"
-#include "vertexnova/interaction/inspect_controller.h"
+#include "vertexnova/interaction/inspect_3d_controller.h"
 #endif
 
 #ifdef VNE_TESTBED_IMGUI
@@ -99,10 +99,18 @@ class BaseSceneLayer : public vne::testbed::ILayer {
     std::vector<std::shared_ptr<vne::scene::OrthographicCamera>> cameras_ortho_;
     vne::scene::SceneState scene_state_;
     vne::testbed::IDebugDraw* debug_draw_{nullptr};
+
+    /// Last orthographic projection pushed from `ui_settings_` in `onRender`. When unchanged, we skip
+    /// `setBounds` so interaction-driven frustum changes (ortho zoom) are not reset every frame.
+    int ortho_proj_sync_vp_w_{-1};
+    int ortho_proj_sync_vp_h_{-1};
+    float ortho_proj_sync_half_{0.0f};
+    float ortho_proj_sync_near_{0.0f};
+    float ortho_proj_sync_far_{0.0f};
 };
 
 // ---------------------------------------------------------------------------
-// BaseInteractionLayer — orbit-arcball driven by EventManager
+// BaseInteractionLayer — orbit / trackball inspect driven by EventManager
 // Pair with BaseSceneLayer: call setCamera(scene->getActiveCamera()) before attach.
 // Only compiled when VNE_TESTBED_INTERACTION is defined.
 // ---------------------------------------------------------------------------
@@ -129,11 +137,11 @@ class BaseInteractionLayer : public vne::testbed::ILayer, public vne::events::Ev
     void onUpdate(float dt) override;
     void onEvent(const vne::events::Event& event) override;
 
-    [[nodiscard]] vne::interaction::InspectController* getInspectController();
-    [[nodiscard]] vne::interaction::InspectController* getInspectController(int index);
+    [[nodiscard]] vne::interaction::Inspect3DController* getInspectController();
+    [[nodiscard]] vne::interaction::Inspect3DController* getInspectController(int index);
 
    private:
-    std::vector<vne::interaction::InspectController> controllers_;
+    std::vector<vne::interaction::Inspect3DController> controllers_;
     bool interaction_enabled_{true};
     double last_x_{0.0};
     double last_y_{0.0};
