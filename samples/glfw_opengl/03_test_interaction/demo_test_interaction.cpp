@@ -594,15 +594,15 @@ void InteractionSettingsLayer::renderPanel() {
     if (show_zoom) {
         if (ImGui::CollapsingHeader("Zoom Method", ImGuiTreeNodeFlags_DefaultOpen)) {
             using ZM = vne::interaction::ZoomMethod;
-            const char* znames[] = {"DollyToCoi", "SceneScale", "ChangeFov"};
-            const ZM zvals[] = {ZM::eDollyToCoi, ZM::eSceneScale, ZM::eChangeFov};
+            const char* znames[] = {"SceneScale", "ChangeFov", "DollyToCoi"};
+            const ZM zvals[] = {ZM::eSceneScale, ZM::eChangeFov, ZM::eDollyToCoi};
             if (ImGui::Combo("Method##zoom", &ui.zoom_idx, znames, 3)) {
                 il.setZoomMethod(zvals[ui.zoom_idx]);
             }
             ImGui::Spacing();
-            ImGui::TextDisabled("DollyToCoi: move along ray to pivot");
-            ImGui::TextDisabled("SceneScale: virtual scene scale");
-            ImGui::TextDisabled("ChangeFov:  widen/narrow FOV angle");
+            ImGui::TextDisabled("SceneScale: XY scene scale in view (virtual zoom)");
+            ImGui::TextDisabled("ChangeFov: widen/narrow FOV (perspective) or ortho extents");
+            ImGui::TextDisabled("DollyToCoi: move along view ray toward pivot");
         }
     }
 
