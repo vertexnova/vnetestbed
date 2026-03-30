@@ -50,12 +50,12 @@ class BaseSceneLayer;
 
 namespace vne::samples {
 
-/** Controller type for the interaction demo; maps to one of the four high-level controllers. */
+/** Controller type for the interaction demo; maps to one of the high-level controllers. */
 enum class ControllerKind : int {
     eInspectOrbit = 0,
     eInspectTrackball,
     eNavigation,  // Fps / Fly / Game chosen via setNavigationMode
-    eOrtho,
+    eOrtho2D,
     eFollow,
 };
 
@@ -89,7 +89,7 @@ class InteractionTestLayer : public vne::testbed::ILayer {
     void setControllerKind(ControllerKind kind);
     [[nodiscard]] ControllerKind getControllerKind() const noexcept { return current_kind_; }
 
-    /** @brief Check if current controller supports the given camera type. Ortho requires orthographic. */
+    /** @brief Check if current controller supports the given camera type. Ortho 2D requires orthographic. */
     [[nodiscard]] bool isManipulatorCompatibleWithCamera(bool use_perspective) const;
 
     /** @brief Set cameras from scene (call after scene camera type or params change). */
@@ -118,7 +118,7 @@ class InteractionTestLayer : public vne::testbed::ILayer {
 
     [[nodiscard]] vne::interaction::Inspect3DController* getInspectController(int index = 0) noexcept;
     [[nodiscard]] vne::interaction::Navigation3DController* getNavController(int index = 0) noexcept;
-    [[nodiscard]] vne::interaction::Ortho2DController* getOrthoController(int index = 0) noexcept;
+    [[nodiscard]] vne::interaction::Ortho2DController* getOrtho2DController(int index = 0) noexcept;
     [[nodiscard]] vne::interaction::FollowController* getFollowController(int index = 0) noexcept;
 
    private:
