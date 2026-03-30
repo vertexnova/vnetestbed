@@ -99,6 +99,14 @@ class BaseSceneLayer : public vne::testbed::ILayer {
     std::vector<std::shared_ptr<vne::scene::OrthographicCamera>> cameras_ortho_;
     vne::scene::SceneState scene_state_;
     vne::testbed::IDebugDraw* debug_draw_{nullptr};
+
+    /// Last orthographic projection pushed from `ui_settings_` in `onRender`. When unchanged, we skip
+    /// `setBounds` so interaction-driven frustum changes (ortho zoom) are not reset every frame.
+    int ortho_proj_sync_vp_w_{-1};
+    int ortho_proj_sync_vp_h_{-1};
+    float ortho_proj_sync_half_{0.0f};
+    float ortho_proj_sync_near_{0.0f};
+    float ortho_proj_sync_far_{0.0f};
 };
 
 // ---------------------------------------------------------------------------
