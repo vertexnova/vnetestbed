@@ -763,25 +763,27 @@ void InteractionSettingsLayer::renderManipulatorSettings() {
     }
 
     if (ImGui::CollapsingHeader("Controller", ImGuiTreeNodeFlags_DefaultOpen)) {
-        const char* types[] = {"Inspect (Orbit)", "Inspect (Trackball)", "Navigation", "Ortho 2D", "Follow"};
+        const char* types[] = {"Inspect 3D", "Navigation", "Ortho 2D", "Follow"};
         const ControllerKind values[] = {ControllerKind::eInspectOrbit,
-                                         ControllerKind::eInspectTrackball,
                                          ControllerKind::eNavigation,
                                          ControllerKind::eOrtho2D,
                                          ControllerKind::eFollow};
         int idx = 0;
-        for (int i = 0; i < 5; ++i) {
+        for (int i = 0; i < 4; ++i) {
             if (values[i] == cur) {
                 idx = i;
                 break;
             }
+        }
+        if (cur == ControllerKind::eInspectTrackball) {
+            idx = 0;  // Legacy state maps to Inspect 3D entry.
         }
         const bool ortho_only = (cur == ControllerKind::eOrtho2D);
         const bool need_ortho = ortho_only && scene_layer_->uiSettings().use_perspective;
         if (need_ortho) {
             ImGui::TextColored(ImVec4(1.f, 0.4f, 0.4f, 1.f), "Ortho 2D requires Orthographic camera");
         }
-        if (ImGui::Combo("Type##ctrl", &idx, types, 5)) {
+        if (ImGui::Combo("Type##ctrl", &idx, types, 4)) {
             const ControllerKind new_kind = values[idx];
             if (new_kind == ControllerKind::eOrtho2D && scene_layer_->uiSettings().use_perspective) {
                 ImGui::OpenPopup("Ortho2DNeedsOrthographicCamera");
@@ -831,7 +833,7 @@ void InteractionSettingsLayer::renderManipulatorSettings() {
                 ImGui::TextDisabled("LMB rotate  RMB pan  Scroll zoom");
                 break;
             case ControllerKind::eInspectTrackball:
-                ImGui::TextDisabled("LMB rotate  RMB pan  Scroll zoom (trackball)");
+                ImGui::TextDisabled("Inspect 3D: Orbit / Trackball selectable below");
                 break;
             case ControllerKind::eNavigation:
                 ImGui::TextDisabled(
@@ -849,7 +851,7 @@ void InteractionSettingsLayer::renderManipulatorSettings() {
         if (auto* insp = il.getInspectController()) {
             auto& orb = insp->orbitalCameraBehavior();
             if (ImGui::TreeNodeEx("Inspect Settings", ImGuiTreeNodeFlags_DefaultOpen)) {
-                if (cur == ControllerKind::eInspectTrackball) {
+                if (insp->getRotationMode() == vne::interaction::OrbitRotationMode::eTrackball) {
                     using TPM = vne::interaction::TrackballBehavior::ProjectionMode;
                     int proj_idx = (orb.getTrackballProjectionMode() == TPM::eHyperbolic) ? 0 : 1;
                     const char* proj_names[] = {"Hyperbolic", "Rim"};
