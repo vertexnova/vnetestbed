@@ -158,8 +158,11 @@ struct InteractionUiSettings {
     float sprint_mult{4.0f};
     float slow_mult{0.2f};
     bool rotation_enabled_insp{true};
+    int rotation_mode_insp_idx{0};  // 0=Orbit 1=Trackball (Inspect3D)
     bool pan_enabled_insp{true};
     bool zoom_enabled_insp{true};
+    bool rotation_enabled_nav{false};
+    int rotation_mode_nav_idx{0};  // 0=Orbit 1=Trackball (Navigation3D + orbit)
 };
 
 class InteractionSettingsLayer : public vne::testbed::ILayer {

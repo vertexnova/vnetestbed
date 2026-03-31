@@ -310,6 +310,7 @@ void InteractionTestLayer::setZoomMethod(vne::interaction::ZoomMethod method) {
                 } else if constexpr (std::is_same_v<std::decay_t<decltype(c)>,
                                                     vne::interaction::Navigation3DController>) {
                     c.freeLookBehavior().setZoomMethod(method);
+                    c.orbitalCameraBehavior()->setZoomMethod(method);
                 } else if constexpr (std::is_same_v<std::decay_t<decltype(c)>, vne::interaction::Ortho2DController>) {
                     c.ortho2DBehavior().setZoomMethod(method);
                 } else if constexpr (std::is_same_v<std::decay_t<decltype(c)>, vne::interaction::FollowController>) {
@@ -744,6 +745,23 @@ void InteractionSettingsLayer::renderManipulatorSettings() {
     auto& ui = uiSettings();
     const ControllerKind cur = il.getControllerKind();
 
+    static ControllerKind prev_ctrl_kind = ControllerKind::eInspectOrbit;
+    static bool first_manip_frame = true;
+    if (first_manip_frame || cur != prev_ctrl_kind) {
+        if (auto* nav = il.getNavController()) {
+            ui.rotation_enabled_nav = nav->isRotationEnabled();
+            ui.rotation_mode_nav_idx =
+                (nav->getOrbitRotationMode() == vne::interaction::OrbitRotationMode::eOrbit) ? 0 : 1;
+        }
+        if (auto* insp = il.getInspectController()) {
+            ui.rotation_enabled_insp = insp->isRotationEnabled();
+            ui.rotation_mode_insp_idx =
+                (insp->getRotationMode() == vne::interaction::OrbitRotationMode::eOrbit) ? 0 : 1;
+        }
+        prev_ctrl_kind = cur;
+        first_manip_frame = false;
+    }
+
     if (ImGui::CollapsingHeader("Controller", ImGuiTreeNodeFlags_DefaultOpen)) {
         const char* types[] = {"Inspect (Orbit)", "Inspect (Trackball)", "Navigation", "Ortho 2D", "Follow"};
         const ControllerKind values[] = {ControllerKind::eInspectOrbit,
@@ -794,6 +812,17 @@ void InteractionSettingsLayer::renderManipulatorSettings() {
             if (ImGui::Combo("Navigation mode##nav_sub", &ui.nav_mode_idx, modes, 2)) {
                 il.setNavigationMode(modes_val[ui.nav_mode_idx]);
             }
+            if (auto* nav = il.getNavController()) {
+                if (ImGui::Checkbox("Rotation enabled##nav_rot", &ui.rotation_enabled_nav)) {
+                    nav->setRotationEnabled(ui.rotation_enabled_nav);
+                }
+                const char* rm_nav[] = {"Orbit (Euler)", "Trackball (Arcball)"};
+                if (ImGui::Combo("Rotation mode##nav_rot", &ui.rotation_mode_nav_idx, rm_nav, 2)) {
+                    nav->setOrbitRotationMode(ui.rotation_mode_nav_idx == 0
+                                                  ? vne::interaction::OrbitRotationMode::eOrbit
+                                                  : vne::interaction::OrbitRotationMode::eTrackball);
+                }
+            }
         }
 
         ImGui::Spacing();
@@ -805,7 +834,8 @@ void InteractionSettingsLayer::renderManipulatorSettings() {
                 ImGui::TextDisabled("LMB rotate  RMB pan  Scroll zoom (trackball)");
                 break;
             case ControllerKind::eNavigation:
-                ImGui::TextDisabled("RMB + WASD/QE move  Mouse look (Fps/Fly)");
+                ImGui::TextDisabled(
+                    "RMB look, WASD/QE move; optional LMB orbit + MMB pan when Rotation enabled");
                 break;
             case ControllerKind::eOrtho2D:
                 ImGui::TextDisabled("LMB/RMB pan  Scroll zoom (no rotate)");
@@ -838,6 +868,12 @@ void InteractionSettingsLayer::renderManipulatorSettings() {
                 }
                 if (ImGui::Checkbox("Rotation enabled##insp", &ui.rotation_enabled_insp)) {
                     insp->setRotationEnabled(ui.rotation_enabled_insp);
+                }
+                const char* rm_insp[] = {"Orbit (Euler)", "Trackball (Arcball)"};
+                if (ImGui::Combo("Rotation mode##insp_rm", &ui.rotation_mode_insp_idx, rm_insp, 2)) {
+                    insp->setRotationMode(ui.rotation_mode_insp_idx == 0
+                                              ? vne::interaction::OrbitRotationMode::eOrbit
+                                              : vne::interaction::OrbitRotationMode::eTrackball);
                 }
                 if (ImGui::Checkbox("Pan enabled##insp", &ui.pan_enabled_insp)) {
                     insp->setPanEnabled(ui.pan_enabled_insp);
@@ -881,6 +917,11 @@ void InteractionSettingsLayer::renderManipulatorSettings() {
                 if (ImGui::SliderFloat("Mouse sensitivity##nav", &ui.mouse_sensitivity, 0.05f, 0.5f)) {
                     nav->setMouseSensitivity(ui.mouse_sensitivity);
                 }
+                float fly_scale = nav->freeLookBehavior().getFlyLookScale();
+                if (ImGui::SliderFloat("Fly look scale##nav", &fly_scale, 0.2f, 1.5f, "%.2f")) {
+                    nav->freeLookBehavior().setFlyLookScale(fly_scale);
+                }
+                ImGui::TextDisabled("Lower Fly look scale reduces RMB mouselook speed in Fly mode only.");
                 ui.sprint_mult = nav->getSprintMultiplier();
                 if (ImGui::SliderFloat("Sprint multiplier##nav", &ui.sprint_mult, 1.f, 5.f)) {
                     nav->setSprintMultiplier(ui.sprint_mult);
@@ -888,6 +929,31 @@ void InteractionSettingsLayer::renderManipulatorSettings() {
                 ui.slow_mult = nav->getSlowMultiplier();
                 if (ImGui::SliderFloat("Slow multiplier##nav", &ui.slow_mult, 0.1f, 1.f)) {
                     nav->setSlowMultiplier(ui.slow_mult);
+                }
+                if (auto* orb = nav->orbitalCameraBehavior()) {
+                    if (ImGui::TreeNodeEx("Orbit / trackball (when rotation enabled)", ImGuiTreeNodeFlags_DefaultOpen)) {
+                        float rs = orb->getRotationSpeed();
+                        if (ImGui::SliderFloat("Rotation speed##nav_orb", &rs, 0.1f, 5.f)) {
+                            orb->setRotationSpeed(rs);
+                        }
+                        float ps = orb->getPanSpeed();
+                        if (ImGui::SliderFloat("Pan speed##nav_orb", &ps, 0.1f, 10.f)) {
+                            orb->setPanSpeed(ps);
+                        }
+                        float zs = orb->getZoomSpeed();
+                        if (ImGui::SliderFloat("Zoom speed##nav_orb", &zs, 1.01f, 1.5f, "%.3f")) {
+                            orb->setZoomSpeed(zs);
+                        }
+                        float rd = orb->getRotationDamping();
+                        if (ImGui::SliderFloat("Rotation damping##nav_orb", &rd, 0.f, 20.f)) {
+                            orb->setRotationDamping(rd);
+                        }
+                        float pd = orb->getPanDamping();
+                        if (ImGui::SliderFloat("Pan damping##nav_orb", &pd, 0.f, 20.f)) {
+                            orb->setPanDamping(pd);
+                        }
+                        ImGui::TreePop();
+                    }
                 }
                 ImGui::TreePop();
             }
