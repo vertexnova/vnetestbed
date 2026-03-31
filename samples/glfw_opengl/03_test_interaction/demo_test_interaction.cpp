@@ -784,15 +784,14 @@ void InteractionSettingsLayer::renderManipulatorSettings() {
         if (cur == ControllerKind::eNavigation) {
             if (auto* nav = il.getNavController()) {
                 const int mode_from_controller = static_cast<int>(nav->getMode());
-                if (mode_from_controller >= 0 && mode_from_controller <= 2) {
+                if (mode_from_controller >= 0 && mode_from_controller <= 1) {
                     ui.nav_mode_idx = mode_from_controller;
                 }
             }
-            const char* modes[] = {"Fps", "Fly", "Game"};
+            const char* modes[] = {"Fps", "Fly"};
             const vne::interaction::NavigateMode modes_val[] = {vne::interaction::NavigateMode::eFps,
-                                                                vne::interaction::NavigateMode::eFly,
-                                                                vne::interaction::NavigateMode::eGame};
-            if (ImGui::Combo("Navigation mode##nav_sub", &ui.nav_mode_idx, modes, 3)) {
+                                                                vne::interaction::NavigateMode::eFly};
+            if (ImGui::Combo("Navigation mode##nav_sub", &ui.nav_mode_idx, modes, 2)) {
                 il.setNavigationMode(modes_val[ui.nav_mode_idx]);
             }
         }
@@ -806,7 +805,7 @@ void InteractionSettingsLayer::renderManipulatorSettings() {
                 ImGui::TextDisabled("LMB rotate  RMB pan  Scroll zoom (trackball)");
                 break;
             case ControllerKind::eNavigation:
-                ImGui::TextDisabled("RMB + WASD/QE move  Mouse look (Fps/Fly/Game)");
+                ImGui::TextDisabled("RMB + WASD/QE move  Mouse look (Fps/Fly)");
                 break;
             case ControllerKind::eOrtho2D:
                 ImGui::TextDisabled("LMB/RMB pan  Scroll zoom (no rotate)");
