@@ -748,8 +748,8 @@ void InteractionSettingsLayer::renderManipulatorSettings() {
     const ControllerKind cur = il.getControllerKind();
 
     const bool window_appearing = ImGui::IsWindowAppearing();
-    const bool controller_changed = !last_manip_synced_controller_kind_.has_value()
-                                    || *last_manip_synced_controller_kind_ != cur;
+    const bool controller_changed =
+        !last_manip_synced_controller_kind_.has_value() || *last_manip_synced_controller_kind_ != cur;
     if (window_appearing || controller_changed) {
         if (auto* insp = il.getInspectController()) {
             ui.rotation_enabled_insp = insp->isRotationEnabled();
@@ -940,8 +940,7 @@ void InteractionSettingsLayer::renderManipulatorSettings() {
                     if (fwd_vec.lengthSquared() < kEpsSq) {
                         ImGui::TextColored(ImVec4(1.f, 0.4f, 0.4f, 1.f),
                                            "Forward: degenerate (eye ≈ target); W/S axis undefined.");
-                        ImGui::TextColored(ImVec4(1.f, 0.4f, 0.4f, 1.f),
-                                           "Right:   (not computed)");
+                        ImGui::TextColored(ImVec4(1.f, 0.4f, 0.4f, 1.f), "Right:   (not computed)");
                     } else {
                         const vne::math::Vec3f fwd = fwd_vec.normalized();
                         // Build right from world-up candidates; never normalize a near-zero cross.
