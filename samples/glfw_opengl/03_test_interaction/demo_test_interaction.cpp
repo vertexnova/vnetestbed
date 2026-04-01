@@ -747,11 +747,6 @@ void InteractionSettingsLayer::renderManipulatorSettings() {
     static ControllerKind prev_ctrl_kind = ControllerKind::eInspectOrbit;
     static bool first_manip_frame = true;
     if (first_manip_frame || cur != prev_ctrl_kind) {
-        if (auto* nav = il.getNavController()) {
-            ui.rotation_enabled_nav = nav->isRotationEnabled();
-            ui.rotation_mode_nav_idx =
-                (nav->getOrbitRotationMode() == vne::interaction::OrbitRotationMode::eOrbit) ? 0 : 1;
-        }
         if (auto* insp = il.getInspectController()) {
             ui.rotation_enabled_insp = insp->isRotationEnabled();
             ui.rotation_mode_insp_idx =
@@ -813,17 +808,6 @@ void InteractionSettingsLayer::renderManipulatorSettings() {
             if (ImGui::Combo("Navigation mode##nav_sub", &ui.nav_mode_idx, modes, 2)) {
                 il.setNavigationMode(modes_val[ui.nav_mode_idx]);
             }
-            if (auto* nav = il.getNavController()) {
-                if (ImGui::Checkbox("Rotation enabled##nav_rot", &ui.rotation_enabled_nav)) {
-                    nav->setRotationEnabled(ui.rotation_enabled_nav);
-                }
-                const char* rm_nav[] = {"Orbit (Euler)", "Trackball (Arcball)"};
-                if (ImGui::Combo("Rotation mode##nav_rot", &ui.rotation_mode_nav_idx, rm_nav, 2)) {
-                    nav->setOrbitRotationMode(ui.rotation_mode_nav_idx == 0
-                                                  ? vne::interaction::OrbitRotationMode::eOrbit
-                                                  : vne::interaction::OrbitRotationMode::eTrackball);
-                }
-            }
         }
 
         ImGui::Spacing();
@@ -835,8 +819,7 @@ void InteractionSettingsLayer::renderManipulatorSettings() {
                 ImGui::TextDisabled("Inspect 3D: Orbit / Trackball selectable below");
                 break;
             case ControllerKind::eNavigation:
-                ImGui::TextDisabled(
-                    "RMB look, WASD/QE move; optional LMB orbit + MMB pan when Rotation enabled");
+                ImGui::TextDisabled("RMB look, WASD/QE move, scroll zoom (FPS / Fly via Navigation mode)");
                 break;
             case ControllerKind::eOrtho2D:
                 ImGui::TextDisabled("LMB/RMB pan  Scroll zoom (no rotate)");
@@ -918,11 +901,6 @@ void InteractionSettingsLayer::renderManipulatorSettings() {
                 if (ImGui::SliderFloat("Mouse sensitivity##nav", &ui.mouse_sensitivity, 0.05f, 0.5f)) {
                     nav->setMouseSensitivity(ui.mouse_sensitivity);
                 }
-                float fly_scale = nav->freeLookBehavior().getFlyLookScale();
-                if (ImGui::SliderFloat("Fly look scale##nav", &fly_scale, 0.2f, 1.5f, "%.2f")) {
-                    nav->freeLookBehavior().setFlyLookScale(fly_scale);
-                }
-                ImGui::TextDisabled("Lower Fly look scale reduces RMB mouselook speed in Fly mode only.");
                 ui.sprint_mult = nav->getSprintMultiplier();
                 if (ImGui::SliderFloat("Sprint multiplier##nav", &ui.sprint_mult, 1.f, 5.f)) {
                     nav->setSprintMultiplier(ui.sprint_mult);
@@ -931,40 +909,12 @@ void InteractionSettingsLayer::renderManipulatorSettings() {
                 if (ImGui::SliderFloat("Slow multiplier##nav", &ui.slow_mult, 0.1f, 1.f)) {
                     nav->setSlowMultiplier(ui.slow_mult);
                 }
-                if (ImGui::TreeNodeEx("Orbit + wheel (when rotation enabled)", ImGuiTreeNodeFlags_DefaultOpen)) {
-                    float rs = nav->getOrbitRotationSpeed();
-                    if (ImGui::SliderFloat("Orbit rotation speed##nav", &rs, 0.05f, 1.0f, "%.2f")) {
-                        nav->setOrbitRotationSpeed(rs);
-                    }
-                    float ps = nav->getOrbitPanSpeed();
-                    if (ImGui::SliderFloat("Orbit pan speed##nav", &ps, 0.1f, 5.f)) {
-                        nav->setOrbitPanSpeed(ps);
-                    }
-                    float zs = nav->getOrbitZoomSpeed();
-                    if (ImGui::SliderFloat("Orbit scroll zoom##nav", &zs, 1.01f, 1.5f, "%.3f")) {
-                        nav->setOrbitZoomSpeed(zs);
-                    }
-                    float rd = nav->getOrbitRotationDamping();
-                    if (ImGui::SliderFloat("Orbit rotation damping##nav", &rd, 0.f, 30.f)) {
-                        nav->setOrbitRotationDamping(rd);
-                    }
-                    float pd = nav->getOrbitPanDamping();
-                    if (ImGui::SliderFloat("Orbit pan damping##nav", &pd, 0.f, 30.f)) {
-                        nav->setOrbitPanDamping(pd);
-                    }
-                    float tb = nav->getOrbitTrackballRotationScale();
-                    if (ImGui::SliderFloat("Trackball rotation scale##nav", &tb, 0.5f, 5.f, "%.2f")) {
-                        nav->setOrbitTrackballRotationScale(tb);
-                    }
-                    ImGui::TextDisabled("LMB orbit / MMB pan / wheel dolly when Rotation enabled is on.");
-                    ImGui::TreePop();
-                }
-                if (ImGui::TreeNodeEx("Scroll zoom (Free look, rotation off)", ImGuiTreeNodeFlags_DefaultOpen)) {
+                if (ImGui::TreeNodeEx("Scroll zoom", ImGuiTreeNodeFlags_DefaultOpen)) {
                     float fl_z = nav->freeLookBehavior().getZoomSpeed();
-                    if (ImGui::SliderFloat("Free look scroll zoom##nav", &fl_z, 1.01f, 1.5f, "%.3f")) {
+                    if (ImGui::SliderFloat("Wheel zoom exponent##nav", &fl_z, 1.01f, 1.5f, "%.3f")) {
                         nav->freeLookBehavior().setZoomSpeed(fl_z);
                     }
-                    ImGui::TextDisabled("Wheel uses FreeLookBehavior when Rotation enabled is off.");
+                    ImGui::TextDisabled("Scroll wheel zoom is handled by FreeLookBehavior (fps preset).");
                     ImGui::TreePop();
                 }
                 // Debug overlay: live camera state so movement direction can be verified.
@@ -973,10 +923,22 @@ void InteractionSettingsLayer::renderManipulatorSettings() {
                     const auto tgt = il.cameraTarget();
                     const auto fwd = (tgt - pos).normalized();
                     const auto right_v = fwd.cross(vne::math::Vec3f(0.f, 1.f, 0.f)).normalized();
-                    ImGui::Text("Pos:   (%.2f, %.2f, %.2f)", pos.x(), pos.y(), pos.z());
-                    ImGui::Text("Tgt:   (%.2f, %.2f, %.2f)", tgt.x(), tgt.y(), tgt.z());
-                    ImGui::Text("Fwd:   (%.2f, %.2f, %.2f)  [W moves this way]", fwd.x(), fwd.y(), fwd.z());
-                    ImGui::Text("Right: (%.2f, %.2f, %.2f)  [D moves this way]", right_v.x(), right_v.y(), right_v.z());
+                    ImGui::Text("Pos:   (%.2f, %.2f, %.2f)",
+                                static_cast<double>(pos.x()),
+                                static_cast<double>(pos.y()),
+                                static_cast<double>(pos.z()));
+                    ImGui::Text("Tgt:   (%.2f, %.2f, %.2f)",
+                                static_cast<double>(tgt.x()),
+                                static_cast<double>(tgt.y()),
+                                static_cast<double>(tgt.z()));
+                    ImGui::Text("Fwd:   (%.2f, %.2f, %.2f)  [W moves this way]",
+                                static_cast<double>(fwd.x()),
+                                static_cast<double>(fwd.y()),
+                                static_cast<double>(fwd.z()));
+                    ImGui::Text("Right: (%.2f, %.2f, %.2f)  [D moves this way]",
+                                static_cast<double>(right_v.x()),
+                                static_cast<double>(right_v.y()),
+                                static_cast<double>(right_v.z()));
                     ImGui::TextDisabled("Press W/S/A/D and watch values change.");
                     ImGui::TreePop();
                 }

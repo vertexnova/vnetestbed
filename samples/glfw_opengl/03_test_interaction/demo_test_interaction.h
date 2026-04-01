@@ -54,7 +54,7 @@ namespace vne::samples {
 enum class ControllerKind : int {
     eInspectOrbit = 0,
     eInspectTrackball,
-    eNavigation,  // Fps / Fly / Game chosen via setNavigationMode
+    eNavigation,  // FPS / Fly via setNavigationMode (Navigation3DController + fpsPreset)
     eOrtho2D,
     eFollow,
 };
@@ -161,8 +161,6 @@ struct InteractionUiSettings {
     int rotation_mode_insp_idx{0};  // 0=Orbit 1=Trackball (Inspect3D)
     bool pan_enabled_insp{true};
     bool zoom_enabled_insp{true};
-    bool rotation_enabled_nav{false};
-    int rotation_mode_nav_idx{0};  // 0=Orbit 1=Trackball (Navigation3D + orbit)
 };
 
 class InteractionSettingsLayer : public vne::testbed::ILayer {
