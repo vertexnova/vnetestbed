@@ -757,7 +757,7 @@ void InteractionSettingsLayer::renderManipulatorSettings() {
     }
 
     if (ImGui::CollapsingHeader("Controller", ImGuiTreeNodeFlags_DefaultOpen)) {
-        const char* types[] = {"Inspect 3D", "Navigation", "Ortho 2D", "Follow"};
+        const char* types[] = {"Inspect 3D", "Navigation 3D", "Ortho 2D", "Follow"};
         const ControllerKind values[] = {ControllerKind::eInspectOrbit,
                                          ControllerKind::eNavigation,
                                          ControllerKind::eOrtho2D,
