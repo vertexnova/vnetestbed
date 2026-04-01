@@ -310,7 +310,6 @@ void InteractionTestLayer::setZoomMethod(vne::interaction::ZoomMethod method) {
                 } else if constexpr (std::is_same_v<std::decay_t<decltype(c)>,
                                                     vne::interaction::Navigation3DController>) {
                     c.freeLookBehavior().setZoomMethod(method);
-                    c.orbitalCameraBehavior()->setZoomMethod(method);
                 } else if constexpr (std::is_same_v<std::decay_t<decltype(c)>, vne::interaction::Ortho2DController>) {
                     c.ortho2DBehavior().setZoomMethod(method);
                 } else if constexpr (std::is_same_v<std::decay_t<decltype(c)>, vne::interaction::FollowController>) {
@@ -932,30 +931,54 @@ void InteractionSettingsLayer::renderManipulatorSettings() {
                 if (ImGui::SliderFloat("Slow multiplier##nav", &ui.slow_mult, 0.1f, 1.f)) {
                     nav->setSlowMultiplier(ui.slow_mult);
                 }
-                if (auto* orb = nav->orbitalCameraBehavior()) {
-                    if (ImGui::TreeNodeEx("Orbit / trackball (when rotation enabled)", ImGuiTreeNodeFlags_DefaultOpen)) {
-                        float rs = orb->getRotationSpeed();
-                        if (ImGui::SliderFloat("Rotation speed##nav_orb", &rs, 0.1f, 5.f)) {
-                            orb->setRotationSpeed(rs);
-                        }
-                        float ps = orb->getPanSpeed();
-                        if (ImGui::SliderFloat("Pan speed##nav_orb", &ps, 0.1f, 10.f)) {
-                            orb->setPanSpeed(ps);
-                        }
-                        float zs = orb->getZoomSpeed();
-                        if (ImGui::SliderFloat("Zoom speed##nav_orb", &zs, 1.01f, 1.5f, "%.3f")) {
-                            orb->setZoomSpeed(zs);
-                        }
-                        float rd = orb->getRotationDamping();
-                        if (ImGui::SliderFloat("Rotation damping##nav_orb", &rd, 0.f, 20.f)) {
-                            orb->setRotationDamping(rd);
-                        }
-                        float pd = orb->getPanDamping();
-                        if (ImGui::SliderFloat("Pan damping##nav_orb", &pd, 0.f, 20.f)) {
-                            orb->setPanDamping(pd);
-                        }
-                        ImGui::TreePop();
+                if (ImGui::TreeNodeEx("Orbit + wheel (when rotation enabled)", ImGuiTreeNodeFlags_DefaultOpen)) {
+                    float rs = nav->getOrbitRotationSpeed();
+                    if (ImGui::SliderFloat("Orbit rotation speed##nav", &rs, 0.05f, 1.0f, "%.2f")) {
+                        nav->setOrbitRotationSpeed(rs);
                     }
+                    float ps = nav->getOrbitPanSpeed();
+                    if (ImGui::SliderFloat("Orbit pan speed##nav", &ps, 0.1f, 5.f)) {
+                        nav->setOrbitPanSpeed(ps);
+                    }
+                    float zs = nav->getOrbitZoomSpeed();
+                    if (ImGui::SliderFloat("Orbit scroll zoom##nav", &zs, 1.01f, 1.5f, "%.3f")) {
+                        nav->setOrbitZoomSpeed(zs);
+                    }
+                    float rd = nav->getOrbitRotationDamping();
+                    if (ImGui::SliderFloat("Orbit rotation damping##nav", &rd, 0.f, 30.f)) {
+                        nav->setOrbitRotationDamping(rd);
+                    }
+                    float pd = nav->getOrbitPanDamping();
+                    if (ImGui::SliderFloat("Orbit pan damping##nav", &pd, 0.f, 30.f)) {
+                        nav->setOrbitPanDamping(pd);
+                    }
+                    float tb = nav->getOrbitTrackballRotationScale();
+                    if (ImGui::SliderFloat("Trackball rotation scale##nav", &tb, 0.5f, 5.f, "%.2f")) {
+                        nav->setOrbitTrackballRotationScale(tb);
+                    }
+                    ImGui::TextDisabled("LMB orbit / MMB pan / wheel dolly when Rotation enabled is on.");
+                    ImGui::TreePop();
+                }
+                if (ImGui::TreeNodeEx("Scroll zoom (Free look, rotation off)", ImGuiTreeNodeFlags_DefaultOpen)) {
+                    float fl_z = nav->freeLookBehavior().getZoomSpeed();
+                    if (ImGui::SliderFloat("Free look scroll zoom##nav", &fl_z, 1.01f, 1.5f, "%.3f")) {
+                        nav->freeLookBehavior().setZoomSpeed(fl_z);
+                    }
+                    ImGui::TextDisabled("Wheel uses FreeLookBehavior when Rotation enabled is off.");
+                    ImGui::TreePop();
+                }
+                // Debug overlay: live camera state so movement direction can be verified.
+                if (ImGui::TreeNode("Camera debug##nav")) {
+                    const auto pos = il.cameraPosition();
+                    const auto tgt = il.cameraTarget();
+                    const auto fwd = (tgt - pos).normalized();
+                    const auto right_v = fwd.cross(vne::math::Vec3f(0.f, 1.f, 0.f)).normalized();
+                    ImGui::Text("Pos:   (%.2f, %.2f, %.2f)", pos.x(), pos.y(), pos.z());
+                    ImGui::Text("Tgt:   (%.2f, %.2f, %.2f)", tgt.x(), tgt.y(), tgt.z());
+                    ImGui::Text("Fwd:   (%.2f, %.2f, %.2f)  [W moves this way]", fwd.x(), fwd.y(), fwd.z());
+                    ImGui::Text("Right: (%.2f, %.2f, %.2f)  [D moves this way]", right_v.x(), right_v.y(), right_v.z());
+                    ImGui::TextDisabled("Press W/S/A/D and watch values change.");
+                    ImGui::TreePop();
                 }
                 ImGui::TreePop();
             }
