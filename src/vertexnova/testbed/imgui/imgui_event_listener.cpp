@@ -79,7 +79,10 @@ void ImGuiEventListener::onEvent(const vne::events::Event& event) {
         }
         case ET::eMouseMoved: {
             const auto& e = static_cast<const vne::events::MouseMovedEvent&>(event);
-            io.AddMousePosEvent(static_cast<float>(e.x()), static_cast<float>(e.y()));
+            float mx = static_cast<float>(e.x());
+            float my = static_cast<float>(e.y());
+            layer_->clientMouseToImGuiScreen(mx, my);
+            io.AddMousePosEvent(mx, my);
             break;
         }
         case ET::eMouseScrolled: {
