@@ -28,6 +28,7 @@
 #include <array>
 #include <filesystem>
 #include <memory>
+#include <optional>
 #include <string>
 #include <variant>
 #include <vector>
@@ -213,6 +214,9 @@ class InteractionSettingsLayer : public vne::testbed::ILayer {
     int selected_mesh_idx_{-1};
 
     InteractionUiSettings ui_{};
+
+    /** Last controller kind used for manipulator UI sync; reset on detach / new layer. */
+    std::optional<ControllerKind> last_manip_synced_controller_kind_;
 };
 #endif
 

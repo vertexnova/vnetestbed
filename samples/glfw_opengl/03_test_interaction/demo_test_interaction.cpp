@@ -28,6 +28,8 @@
 #include "vertexnova/interaction/free_look_behavior.h"
 #include "vertexnova/interaction/follow_behavior.h"
 
+#include <vertexnova/math/core/constants.h>
+
 #ifdef VNE_TESTBED_IMGUI
 #include "vertexnova/testbed/imgui/imgui_layer.h"
 #include <imgui.h>
@@ -539,6 +541,7 @@ void InteractionSettingsLayer::onDetach() {
     }
     interaction_layer_ = nullptr;
     mesh_layer_ = nullptr;
+    last_manip_synced_controller_kind_.reset();
 }
 
 void InteractionSettingsLayer::loadMesh(const std::filesystem::path& path) {
@@ -744,16 +747,16 @@ void InteractionSettingsLayer::renderManipulatorSettings() {
     auto& ui = uiSettings();
     const ControllerKind cur = il.getControllerKind();
 
-    static ControllerKind prev_ctrl_kind = ControllerKind::eInspectOrbit;
-    static bool first_manip_frame = true;
-    if (first_manip_frame || cur != prev_ctrl_kind) {
+    const bool window_appearing = ImGui::IsWindowAppearing();
+    const bool controller_changed = !last_manip_synced_controller_kind_.has_value()
+                                    || *last_manip_synced_controller_kind_ != cur;
+    if (window_appearing || controller_changed) {
         if (auto* insp = il.getInspectController()) {
             ui.rotation_enabled_insp = insp->isRotationEnabled();
             ui.rotation_mode_insp_idx =
                 (insp->getRotationMode() == vne::interaction::OrbitRotationMode::eOrbit) ? 0 : 1;
         }
-        prev_ctrl_kind = cur;
-        first_manip_frame = false;
+        last_manip_synced_controller_kind_ = cur;
     }
 
     if (ImGui::CollapsingHeader("Controller", ImGuiTreeNodeFlags_DefaultOpen)) {
@@ -921,8 +924,9 @@ void InteractionSettingsLayer::renderManipulatorSettings() {
                 if (ImGui::TreeNode("Camera debug##nav")) {
                     const auto pos = il.cameraPosition();
                     const auto tgt = il.cameraTarget();
-                    const auto fwd = (tgt - pos).normalized();
-                    const auto right_v = fwd.cross(vne::math::Vec3f(0.f, 1.f, 0.f)).normalized();
+                    constexpr float kEps = vne::math::kFloatEpsilon;
+                    const float kEpsSq = kEps * kEps;
+
                     ImGui::Text("Pos:   (%.2f, %.2f, %.2f)",
                                 static_cast<double>(pos.x()),
                                 static_cast<double>(pos.y()),
@@ -931,14 +935,50 @@ void InteractionSettingsLayer::renderManipulatorSettings() {
                                 static_cast<double>(tgt.x()),
                                 static_cast<double>(tgt.y()),
                                 static_cast<double>(tgt.z()));
-                    ImGui::Text("Fwd:   (%.2f, %.2f, %.2f)  [W moves this way]",
-                                static_cast<double>(fwd.x()),
-                                static_cast<double>(fwd.y()),
-                                static_cast<double>(fwd.z()));
-                    ImGui::Text("Right: (%.2f, %.2f, %.2f)  [D moves this way]",
-                                static_cast<double>(right_v.x()),
-                                static_cast<double>(right_v.y()),
-                                static_cast<double>(right_v.z()));
+
+                    const vne::math::Vec3f fwd_vec = tgt - pos;
+                    if (fwd_vec.lengthSquared() < kEpsSq) {
+                        ImGui::TextColored(ImVec4(1.f, 0.4f, 0.4f, 1.f),
+                                           "Forward: degenerate (eye ≈ target); W/S axis undefined.");
+                        ImGui::TextColored(ImVec4(1.f, 0.4f, 0.4f, 1.f),
+                                           "Right:   (not computed)");
+                    } else {
+                        const vne::math::Vec3f fwd = fwd_vec.normalized();
+                        // Build right from world-up candidates; never normalize a near-zero cross.
+                        const vne::math::Vec3f up_candidates[3] = {
+                            {0.f, 1.f, 0.f},
+                            {1.f, 0.f, 0.f},
+                            {0.f, 0.f, 1.f},
+                        };
+                        vne::math::Vec3f right_raw{};
+                        int up_pick = -1;
+                        for (int i = 0; i < 3; ++i) {
+                            const vne::math::Vec3f r = fwd.cross(up_candidates[static_cast<size_t>(i)]);
+                            if (r.lengthSquared() >= kEpsSq) {
+                                right_raw = r;
+                                up_pick = i;
+                                break;
+                            }
+                        }
+                        ImGui::Text("Fwd:   (%.2f, %.2f, %.2f)  [W moves this way]",
+                                    static_cast<double>(fwd.x()),
+                                    static_cast<double>(fwd.y()),
+                                    static_cast<double>(fwd.z()));
+                        if (up_pick < 0) {
+                            ImGui::TextColored(ImVec4(1.f, 0.4f, 0.4f, 1.f),
+                                               "Right: could not build (unexpected); check math.");
+                        } else {
+                            const vne::math::Vec3f right_v = right_raw.normalized();
+                            ImGui::Text("Right: (%.2f, %.2f, %.2f)  [D moves this way]",
+                                        static_cast<double>(right_v.x()),
+                                        static_cast<double>(right_v.y()),
+                                        static_cast<double>(right_v.z()));
+                            if (up_pick != 0) {
+                                ImGui::TextDisabled(
+                                    "Right used fallback ref up (world +Y ∥ view); shown axis is for display only.");
+                            }
+                        }
+                    }
                     ImGui::TextDisabled("Press W/S/A/D and watch values change.");
                     ImGui::TreePop();
                 }
