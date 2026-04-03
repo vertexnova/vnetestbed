@@ -158,9 +158,19 @@ class ImGuiLayer : public ILayer {
     [[nodiscard]] bool isMouseOverSceneViewport(float mouse_x, float mouse_y) const;
 
     /**
+     * @brief Map GLFW client-area mouse coordinates into ImGui screen space used by viewport_rects_.
+     *
+     * With ImGuiConfigFlags_ViewportsEnable (docking multi-viewport), Dear ImGui uses OS-absolute
+     * coordinates (same as ImGui::GetCursorScreenPos). GLFW events use client-relative coordinates;
+     * this adds glfwGetWindowPos for the main window so hit tests match after moving the window
+     * between monitors. No-op when viewports are disabled or ImGui is not initialized.
+     */
+    void clientMouseToImGuiScreen(float& x, float& y) const;
+
+    /**
      * @brief Get the viewport index under the mouse (0-based).
-     * @param mouse_x Screen-space X
-     * @param mouse_y Screen-space Y
+     * @param mouse_x Client-area X (e.g. glfwGetCursorPos / MouseMovedEvent)
+     * @param mouse_y Client-area Y
      * @return 0..(N-1) for viewport index, or -1 if not over any scene viewport
      */
     [[nodiscard]] int getHoveredViewportIndex(float mouse_x, float mouse_y) const;

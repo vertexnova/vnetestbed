@@ -625,14 +625,41 @@ bool ImGuiLayer::isMouseOverSceneViewport(float mouse_x, float mouse_y) const {
     return getHoveredViewportIndex(mouse_x, mouse_y) >= 0;
 }
 
+void ImGuiLayer::clientMouseToImGuiScreen(float& x, float& y) const {
+    if (!initialized_) {
+        return;
+    }
+    const ImGuiIO& io = ImGui::GetIO();
+    if ((io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable) == 0) {
+        return;
+    }
+#if defined(VNE_TESTBED_OPENGL) || defined(VNE_TESTBED_OPENGLES)
+    if (!app_ctx_ || !app_ctx_->window) {
+        return;
+    }
+    void* native = app_ctx_->window->getNativeHandle();
+    if (!native) {
+        return;
+    }
+    int wx = 0;
+    int wy = 0;
+    glfwGetWindowPos(static_cast<GLFWwindow*>(native), &wx, &wy);
+    x += static_cast<float>(wx);
+    y += static_cast<float>(wy);
+#endif
+}
+
 int ImGuiLayer::getHoveredViewportIndex(float mouse_x, float mouse_y) const {
+    float ix = mouse_x;
+    float iy = mouse_y;
+    clientMouseToImGuiScreen(ix, iy);
     const size_t n = viewport_rects_.size() / 4u;
     for (size_t i = 0; i < n; ++i) {
         const float min_x = viewport_rects_[i * 4u + 0u];
         const float min_y = viewport_rects_[i * 4u + 1u];
         const float max_x = viewport_rects_[i * 4u + 2u];
         const float max_y = viewport_rects_[i * 4u + 3u];
-        if (mouse_x >= min_x && mouse_x <= max_x && mouse_y >= min_y && mouse_y <= max_y) {
+        if (ix >= min_x && ix <= max_x && iy >= min_y && iy <= max_y) {
             return static_cast<int>(i);
         }
     }

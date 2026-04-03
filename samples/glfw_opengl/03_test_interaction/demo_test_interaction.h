@@ -28,6 +28,7 @@
 #include <array>
 #include <filesystem>
 #include <memory>
+#include <optional>
 #include <string>
 #include <variant>
 #include <vector>
@@ -54,7 +55,7 @@ namespace vne::samples {
 enum class ControllerKind : int {
     eInspectOrbit = 0,
     eInspectTrackball,
-    eNavigation,  // Fps / Fly / Game chosen via setNavigationMode
+    eNavigation,  // FPS / Fly via setNavigationMode (Navigation3DController + fpsPreset)
     eOrtho2D,
     eFollow,
 };
@@ -158,6 +159,7 @@ struct InteractionUiSettings {
     float sprint_mult{4.0f};
     float slow_mult{0.2f};
     bool rotation_enabled_insp{true};
+    int rotation_mode_insp_idx{0};  // 0=Orbit 1=Trackball (Inspect3D)
     bool pan_enabled_insp{true};
     bool zoom_enabled_insp{true};
 };
@@ -212,6 +214,9 @@ class InteractionSettingsLayer : public vne::testbed::ILayer {
     int selected_mesh_idx_{-1};
 
     InteractionUiSettings ui_{};
+
+    /** Last controller kind used for manipulator UI sync; reset on detach / new layer. */
+    std::optional<ControllerKind> last_manip_synced_controller_kind_;
 };
 #endif
 

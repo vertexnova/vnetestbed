@@ -28,6 +28,8 @@
 #include "vertexnova/interaction/free_look_behavior.h"
 #include "vertexnova/interaction/follow_behavior.h"
 
+#include <vertexnova/math/core/constants.h>
+
 #ifdef VNE_TESTBED_IMGUI
 #include "vertexnova/testbed/imgui/imgui_layer.h"
 #include <imgui.h>
@@ -539,6 +541,7 @@ void InteractionSettingsLayer::onDetach() {
     }
     interaction_layer_ = nullptr;
     mesh_layer_ = nullptr;
+    last_manip_synced_controller_kind_.reset();
 }
 
 void InteractionSettingsLayer::loadMesh(const std::filesystem::path& path) {
@@ -744,26 +747,40 @@ void InteractionSettingsLayer::renderManipulatorSettings() {
     auto& ui = uiSettings();
     const ControllerKind cur = il.getControllerKind();
 
+    const bool window_appearing = ImGui::IsWindowAppearing();
+    const bool controller_changed =
+        !last_manip_synced_controller_kind_.has_value() || *last_manip_synced_controller_kind_ != cur;
+    if (window_appearing || controller_changed) {
+        if (auto* insp = il.getInspectController()) {
+            ui.rotation_enabled_insp = insp->isRotationEnabled();
+            ui.rotation_mode_insp_idx =
+                (insp->getRotationMode() == vne::interaction::OrbitRotationMode::eOrbit) ? 0 : 1;
+        }
+        last_manip_synced_controller_kind_ = cur;
+    }
+
     if (ImGui::CollapsingHeader("Controller", ImGuiTreeNodeFlags_DefaultOpen)) {
-        const char* types[] = {"Inspect (Orbit)", "Inspect (Trackball)", "Navigation", "Ortho 2D", "Follow"};
+        const char* types[] = {"Inspect 3D", "Navigation 3D", "Ortho 2D", "Follow"};
         const ControllerKind values[] = {ControllerKind::eInspectOrbit,
-                                         ControllerKind::eInspectTrackball,
                                          ControllerKind::eNavigation,
                                          ControllerKind::eOrtho2D,
                                          ControllerKind::eFollow};
         int idx = 0;
-        for (int i = 0; i < 5; ++i) {
+        for (int i = 0; i < 4; ++i) {
             if (values[i] == cur) {
                 idx = i;
                 break;
             }
+        }
+        if (cur == ControllerKind::eInspectTrackball) {
+            idx = 0;  // Legacy state maps to Inspect 3D entry.
         }
         const bool ortho_only = (cur == ControllerKind::eOrtho2D);
         const bool need_ortho = ortho_only && scene_layer_->uiSettings().use_perspective;
         if (need_ortho) {
             ImGui::TextColored(ImVec4(1.f, 0.4f, 0.4f, 1.f), "Ortho 2D requires Orthographic camera");
         }
-        if (ImGui::Combo("Type##ctrl", &idx, types, 5)) {
+        if (ImGui::Combo("Type##ctrl", &idx, types, 4)) {
             const ControllerKind new_kind = values[idx];
             if (new_kind == ControllerKind::eOrtho2D && scene_layer_->uiSettings().use_perspective) {
                 ImGui::OpenPopup("Ortho2DNeedsOrthographicCamera");
@@ -784,15 +801,14 @@ void InteractionSettingsLayer::renderManipulatorSettings() {
         if (cur == ControllerKind::eNavigation) {
             if (auto* nav = il.getNavController()) {
                 const int mode_from_controller = static_cast<int>(nav->getMode());
-                if (mode_from_controller >= 0 && mode_from_controller <= 2) {
+                if (mode_from_controller >= 0 && mode_from_controller <= 1) {
                     ui.nav_mode_idx = mode_from_controller;
                 }
             }
-            const char* modes[] = {"Fps", "Fly", "Game"};
+            const char* modes[] = {"Fps", "Fly"};
             const vne::interaction::NavigateMode modes_val[] = {vne::interaction::NavigateMode::eFps,
-                                                                vne::interaction::NavigateMode::eFly,
-                                                                vne::interaction::NavigateMode::eGame};
-            if (ImGui::Combo("Navigation mode##nav_sub", &ui.nav_mode_idx, modes, 3)) {
+                                                                vne::interaction::NavigateMode::eFly};
+            if (ImGui::Combo("Navigation mode##nav_sub", &ui.nav_mode_idx, modes, 2)) {
                 il.setNavigationMode(modes_val[ui.nav_mode_idx]);
             }
         }
@@ -803,10 +819,10 @@ void InteractionSettingsLayer::renderManipulatorSettings() {
                 ImGui::TextDisabled("LMB rotate  RMB pan  Scroll zoom");
                 break;
             case ControllerKind::eInspectTrackball:
-                ImGui::TextDisabled("LMB rotate  RMB pan  Scroll zoom (trackball)");
+                ImGui::TextDisabled("Inspect 3D: Orbit / Trackball selectable below");
                 break;
             case ControllerKind::eNavigation:
-                ImGui::TextDisabled("RMB + WASD/QE move  Mouse look (Fps/Fly/Game)");
+                ImGui::TextDisabled("RMB look, WASD/QE move, scroll zoom (FPS / Fly via Navigation mode)");
                 break;
             case ControllerKind::eOrtho2D:
                 ImGui::TextDisabled("LMB/RMB pan  Scroll zoom (no rotate)");
@@ -820,7 +836,7 @@ void InteractionSettingsLayer::renderManipulatorSettings() {
         if (auto* insp = il.getInspectController()) {
             auto& orb = insp->orbitalCameraBehavior();
             if (ImGui::TreeNodeEx("Inspect Settings", ImGuiTreeNodeFlags_DefaultOpen)) {
-                if (cur == ControllerKind::eInspectTrackball) {
+                if (insp->getRotationMode() == vne::interaction::OrbitRotationMode::eTrackball) {
                     using TPM = vne::interaction::TrackballBehavior::ProjectionMode;
                     int proj_idx = (orb.getTrackballProjectionMode() == TPM::eHyperbolic) ? 0 : 1;
                     const char* proj_names[] = {"Hyperbolic", "Rim"};
@@ -839,6 +855,12 @@ void InteractionSettingsLayer::renderManipulatorSettings() {
                 }
                 if (ImGui::Checkbox("Rotation enabled##insp", &ui.rotation_enabled_insp)) {
                     insp->setRotationEnabled(ui.rotation_enabled_insp);
+                }
+                const char* rm_insp[] = {"Orbit (Euler)", "Trackball (Arcball)"};
+                if (ImGui::Combo("Rotation mode##insp_rm", &ui.rotation_mode_insp_idx, rm_insp, 2)) {
+                    insp->setRotationMode(ui.rotation_mode_insp_idx == 0
+                                              ? vne::interaction::OrbitRotationMode::eOrbit
+                                              : vne::interaction::OrbitRotationMode::eTrackball);
                 }
                 if (ImGui::Checkbox("Pan enabled##insp", &ui.pan_enabled_insp)) {
                     insp->setPanEnabled(ui.pan_enabled_insp);
@@ -889,6 +911,75 @@ void InteractionSettingsLayer::renderManipulatorSettings() {
                 ui.slow_mult = nav->getSlowMultiplier();
                 if (ImGui::SliderFloat("Slow multiplier##nav", &ui.slow_mult, 0.1f, 1.f)) {
                     nav->setSlowMultiplier(ui.slow_mult);
+                }
+                if (ImGui::TreeNodeEx("Scroll zoom", ImGuiTreeNodeFlags_DefaultOpen)) {
+                    float fl_z = nav->freeLookBehavior().getZoomSpeed();
+                    if (ImGui::SliderFloat("Wheel zoom exponent##nav", &fl_z, 1.01f, 1.5f, "%.3f")) {
+                        nav->freeLookBehavior().setZoomSpeed(fl_z);
+                    }
+                    ImGui::TextDisabled("Scroll wheel zoom is handled by FreeLookBehavior (fps preset).");
+                    ImGui::TreePop();
+                }
+                // Debug overlay: live camera state so movement direction can be verified.
+                if (ImGui::TreeNode("Camera debug##nav")) {
+                    const auto pos = il.cameraPosition();
+                    const auto tgt = il.cameraTarget();
+                    constexpr float kEps = vne::math::kFloatEpsilon;
+                    const float kEpsSq = kEps * kEps;
+
+                    ImGui::Text("Pos:   (%.2f, %.2f, %.2f)",
+                                static_cast<double>(pos.x()),
+                                static_cast<double>(pos.y()),
+                                static_cast<double>(pos.z()));
+                    ImGui::Text("Tgt:   (%.2f, %.2f, %.2f)",
+                                static_cast<double>(tgt.x()),
+                                static_cast<double>(tgt.y()),
+                                static_cast<double>(tgt.z()));
+
+                    const vne::math::Vec3f fwd_vec = tgt - pos;
+                    if (fwd_vec.lengthSquared() < kEpsSq) {
+                        ImGui::TextColored(ImVec4(1.f, 0.4f, 0.4f, 1.f),
+                                           "Forward: degenerate (eye ≈ target); W/S axis undefined.");
+                        ImGui::TextColored(ImVec4(1.f, 0.4f, 0.4f, 1.f), "Right:   (not computed)");
+                    } else {
+                        const vne::math::Vec3f fwd = fwd_vec.normalized();
+                        // Build right from world-up candidates; never normalize a near-zero cross.
+                        const vne::math::Vec3f up_candidates[3] = {
+                            {0.f, 1.f, 0.f},
+                            {1.f, 0.f, 0.f},
+                            {0.f, 0.f, 1.f},
+                        };
+                        vne::math::Vec3f right_raw{};
+                        int up_pick = -1;
+                        for (int i = 0; i < 3; ++i) {
+                            const vne::math::Vec3f r = fwd.cross(up_candidates[static_cast<size_t>(i)]);
+                            if (r.lengthSquared() >= kEpsSq) {
+                                right_raw = r;
+                                up_pick = i;
+                                break;
+                            }
+                        }
+                        ImGui::Text("Fwd:   (%.2f, %.2f, %.2f)  [W moves this way]",
+                                    static_cast<double>(fwd.x()),
+                                    static_cast<double>(fwd.y()),
+                                    static_cast<double>(fwd.z()));
+                        if (up_pick < 0) {
+                            ImGui::TextColored(ImVec4(1.f, 0.4f, 0.4f, 1.f),
+                                               "Right: could not build (unexpected); check math.");
+                        } else {
+                            const vne::math::Vec3f right_v = right_raw.normalized();
+                            ImGui::Text("Right: (%.2f, %.2f, %.2f)  [D moves this way]",
+                                        static_cast<double>(right_v.x()),
+                                        static_cast<double>(right_v.y()),
+                                        static_cast<double>(right_v.z()));
+                            if (up_pick != 0) {
+                                ImGui::TextDisabled(
+                                    "Right used fallback ref up (world +Y ∥ view); shown axis is for display only.");
+                            }
+                        }
+                    }
+                    ImGui::TextDisabled("Press W/S/A/D and watch values change.");
+                    ImGui::TreePop();
                 }
                 ImGui::TreePop();
             }
