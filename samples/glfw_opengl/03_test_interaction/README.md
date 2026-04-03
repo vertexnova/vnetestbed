@@ -7,7 +7,7 @@ Screenshots are not included yet; they may be added in a later revision.
 ## What This Sample Shows
 
 1. **Base scene**: Grid, axes, perspective or orthographic camera from `BaseSceneLayer`; settings can toggle grid/axes and switch projection.
-2. **Controllers**: Runtime selection among Inspect (Euler orbit or trackball), Navigation (FPS / Fly / Game via `NavigateMode`), Ortho 2D (`Ortho2DController`), and Follow; per-controller ImGui tuning (trackball projection when in trackball inspect mode, pivot mode, speeds, navigation multipliers, ortho/follow options).
+2. **Controllers**: Runtime selection among Inspect (Euler orbit or trackball), Navigation (FPS / Fly via `FreeLookMode`), Ortho 2D (`Ortho2DController`), and Follow; per-controller ImGui tuning (trackball projection when in trackball inspect mode, pivot mode, speeds, navigation multipliers, ortho/follow options).
 3. **Zoom**: Dolly-to-COI, scene-scale, or FOV change where applicable; matrix readouts for view and projection when enabled.
 4. **Mesh browser** (with vneio): Lists mesh files under the configured directory (PLY, OBJ, STL, FBX, glTF), loads on click, drag-and-drop to the viewport, plus lighting and mesh transform panels when a mesh is loaded.
 5. **Layer stack**: `BaseSceneLayer` → `InteractionTestLayer` → optional `MeshLayer` → `InteractionSettingsLayer` (ImGui settings).

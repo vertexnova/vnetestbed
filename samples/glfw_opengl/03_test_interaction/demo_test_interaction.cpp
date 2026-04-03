@@ -14,6 +14,11 @@
 
 #include "demo_test_interaction.h"
 
+#include "vertexnova/interaction/follow_manipulator.h"
+#include "vertexnova/interaction/free_look_manipulator.h"
+#include "vertexnova/interaction/orbital_camera_manipulator.h"
+#include "vertexnova/interaction/ortho_2d_manipulator.h"
+
 #include "vertexnova/testbed/app/application.h"
 #include "vertexnova/testbed/app/demo_factory.h"
 
@@ -22,11 +27,6 @@
 #include "vertexnova/events/mouse_event.h"
 #include "vertexnova/events/types.h"
 #include "vertexnova/events/window_event.h"
-
-#include "vertexnova/interaction/orbital_camera_behavior.h"
-#include "vertexnova/interaction/ortho_2d_behavior.h"
-#include "vertexnova/interaction/free_look_behavior.h"
-#include "vertexnova/interaction/follow_behavior.h"
 
 #include <vertexnova/math/core/constants.h>
 
@@ -63,16 +63,16 @@ constexpr float kDefaultViewportH = 720.0f;
 const vne::math::Vec3f kDefaultCameraPosition{4.0f, 3.0f, 6.0f};
 const vne::math::Vec3f kDefaultTargetPosition{0.0f, 0.0f, 0.0f};
 
-ControllerVariant makeController(ControllerKind kind, vne::interaction::NavigateMode nav_mode) {
+ControllerVariant makeController(ControllerKind kind, vne::interaction::FreeLookMode nav_mode) {
     switch (kind) {
         case ControllerKind::eInspectOrbit: {
             vne::interaction::Inspect3DController c;
-            c.setRotationMode(vne::interaction::OrbitRotationMode::eOrbit);
+            c.setRotationMode(vne::interaction::OrbitalRotationMode::eOrbit);
             return c;
         }
         case ControllerKind::eInspectTrackball: {
             vne::interaction::Inspect3DController c;
-            c.setRotationMode(vne::interaction::OrbitRotationMode::eTrackball);
+            c.setRotationMode(vne::interaction::OrbitalRotationMode::eTrackball);
             return c;
         }
         case ControllerKind::eNavigation: {
@@ -308,14 +308,14 @@ void InteractionTestLayer::setZoomMethod(vne::interaction::ZoomMethod method) {
         std::visit(
             [method](auto& c) {
                 if constexpr (std::is_same_v<std::decay_t<decltype(c)>, vne::interaction::Inspect3DController>) {
-                    c.orbitalCameraBehavior().setZoomMethod(method);
+                    c.orbitalCameraManipulator().setZoomMethod(method);
                 } else if constexpr (std::is_same_v<std::decay_t<decltype(c)>,
                                                     vne::interaction::Navigation3DController>) {
-                    c.freeLookBehavior().setZoomMethod(method);
+                    c.freeLookManipulator().setZoomMethod(method);
                 } else if constexpr (std::is_same_v<std::decay_t<decltype(c)>, vne::interaction::Ortho2DController>) {
-                    c.ortho2DBehavior().setZoomMethod(method);
+                    c.ortho2DManipulator().setZoomMethod(method);
                 } else if constexpr (std::is_same_v<std::decay_t<decltype(c)>, vne::interaction::FollowController>) {
-                    c.followBehavior().setZoomMethod(method);
+                    c.followManipulator().setZoomMethod(method);
                 }
             },
             v);
@@ -327,7 +327,7 @@ void InteractionTestLayer::setViewDirection(vne::interaction::ViewDirection dir)
         std::visit(
             [dir](auto& c) {
                 if constexpr (std::is_same_v<std::decay_t<decltype(c)>, vne::interaction::Inspect3DController>) {
-                    c.orbitalCameraBehavior().setViewDirection(dir);
+                    c.orbitalCameraManipulator().setViewDirection(dir);
                 }
             },
             v);
@@ -377,7 +377,7 @@ void InteractionTestLayer::setRotationPivotMode(vne::interaction::OrbitPivotMode
         std::visit(
             [mode](auto& c) {
                 if constexpr (std::is_same_v<std::decay_t<decltype(c)>, vne::interaction::Inspect3DController>) {
-                    c.orbitalCameraBehavior().setPivotMode(mode);
+                    c.orbitalCameraManipulator().setPivotMode(mode);
                 }
             },
             v);
@@ -417,7 +417,7 @@ void InteractionTestLayer::setZoomEnabled(bool enabled) {
     }
 }
 
-void InteractionTestLayer::setNavigationMode(vne::interaction::NavigateMode mode) {
+void InteractionTestLayer::setNavigationMode(vne::interaction::FreeLookMode mode) {
     navigation_mode_ = mode;
     for (auto& v : controllers_) {
         if (auto* nav = std::get_if<vne::interaction::Navigation3DController>(&v)) {
@@ -754,7 +754,7 @@ void InteractionSettingsLayer::renderManipulatorSettings() {
         if (auto* insp = il.getInspectController()) {
             ui.rotation_enabled_insp = insp->isRotationEnabled();
             ui.rotation_mode_insp_idx =
-                (insp->getRotationMode() == vne::interaction::OrbitRotationMode::eOrbit) ? 0 : 1;
+                (insp->getRotationMode() == vne::interaction::OrbitalRotationMode::eOrbit) ? 0 : 1;
         }
         last_manip_synced_controller_kind_ = cur;
     }
@@ -806,8 +806,8 @@ void InteractionSettingsLayer::renderManipulatorSettings() {
                 }
             }
             const char* modes[] = {"Fps", "Fly"};
-            const vne::interaction::NavigateMode modes_val[] = {vne::interaction::NavigateMode::eFps,
-                                                                vne::interaction::NavigateMode::eFly};
+            const vne::interaction::FreeLookMode modes_val[] = {vne::interaction::FreeLookMode::eFps,
+                                                                vne::interaction::FreeLookMode::eFly};
             if (ImGui::Combo("Navigation mode##nav_sub", &ui.nav_mode_idx, modes, 2)) {
                 il.setNavigationMode(modes_val[ui.nav_mode_idx]);
             }
@@ -834,10 +834,10 @@ void InteractionSettingsLayer::renderManipulatorSettings() {
 
         // Per-controller settings
         if (auto* insp = il.getInspectController()) {
-            auto& orb = insp->orbitalCameraBehavior();
+            auto& orb = insp->orbitalCameraManipulator();
             if (ImGui::TreeNodeEx("Inspect Settings", ImGuiTreeNodeFlags_DefaultOpen)) {
-                if (insp->getRotationMode() == vne::interaction::OrbitRotationMode::eTrackball) {
-                    using TPM = vne::interaction::TrackballBehavior::ProjectionMode;
+                if (insp->getRotationMode() == vne::interaction::OrbitalRotationMode::eTrackball) {
+                    using TPM = vne::interaction::TrackballProjectionMode;
                     int proj_idx = (orb.getTrackballProjectionMode() == TPM::eHyperbolic) ? 0 : 1;
                     const char* proj_names[] = {"Hyperbolic", "Rim"};
                     if (ImGui::Combo("Trackball projection##insp", &proj_idx, proj_names, 2)) {
@@ -859,8 +859,8 @@ void InteractionSettingsLayer::renderManipulatorSettings() {
                 const char* rm_insp[] = {"Orbit (Euler)", "Trackball (Arcball)"};
                 if (ImGui::Combo("Rotation mode##insp_rm", &ui.rotation_mode_insp_idx, rm_insp, 2)) {
                     insp->setRotationMode(ui.rotation_mode_insp_idx == 0
-                                              ? vne::interaction::OrbitRotationMode::eOrbit
-                                              : vne::interaction::OrbitRotationMode::eTrackball);
+                                              ? vne::interaction::OrbitalRotationMode::eOrbit
+                                              : vne::interaction::OrbitalRotationMode::eTrackball);
                 }
                 if (ImGui::Checkbox("Pan enabled##insp", &ui.pan_enabled_insp)) {
                     insp->setPanEnabled(ui.pan_enabled_insp);
@@ -913,11 +913,11 @@ void InteractionSettingsLayer::renderManipulatorSettings() {
                     nav->setSlowMultiplier(ui.slow_mult);
                 }
                 if (ImGui::TreeNodeEx("Scroll zoom", ImGuiTreeNodeFlags_DefaultOpen)) {
-                    float fl_z = nav->freeLookBehavior().getZoomSpeed();
+                    float fl_z = nav->freeLookManipulator().getZoomSpeed();
                     if (ImGui::SliderFloat("Wheel zoom exponent##nav", &fl_z, 1.01f, 1.5f, "%.3f")) {
-                        nav->freeLookBehavior().setZoomSpeed(fl_z);
+                        nav->freeLookManipulator().setZoomSpeed(fl_z);
                     }
-                    ImGui::TextDisabled("Scroll wheel zoom is handled by FreeLookBehavior (fps preset).");
+                    ImGui::TextDisabled("Scroll wheel zoom is handled by FreeLookManipulator.");
                     ImGui::TreePop();
                 }
                 // Debug overlay: live camera state so movement direction can be verified.
@@ -984,7 +984,7 @@ void InteractionSettingsLayer::renderManipulatorSettings() {
                 ImGui::TreePop();
             }
         } else if (auto* ortho = il.getOrtho2DController()) {
-            auto& opz = ortho->ortho2DBehavior();
+            auto& opz = ortho->ortho2DManipulator();
             if (ImGui::TreeNodeEx("Ortho 2D Settings", ImGuiTreeNodeFlags_DefaultOpen)) {
                 bool rot_en = ortho->isRotationEnabled();
                 if (ImGui::Checkbox("Rotation enabled##ortho", &rot_en)) {
