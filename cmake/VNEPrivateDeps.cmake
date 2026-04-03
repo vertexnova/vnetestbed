@@ -9,8 +9,10 @@
 if(VNE_WITH_VNEINTRACTION)
   set(VNEINTRACTION_DIR "${VNE_DEPS_INTERNAL_DIR}/vneinteraction")
   if(EXISTS "${VNEINTRACTION_DIR}/CMakeLists.txt")
-    # vneinteraction uses VNE_INTERACTION_TESTS (not BUILD_TESTS). Keep its gtest suite out of vnetestbed;
-    # run tests from a standalone vneinteraction build or enable explicitly via cache if needed.
+    # Seen in CI: SAVE_RESTORE of VNE_INTERACTION_* restores a stale ON from CMakeCache (ctest then builds
+    # vneinteraction_tests against an outdated API). Only restore global BUILD_* for other deps.
+    set(VNETESTBED_VNEINTERACTION_EMBEDDED ON)
+    # vneinteraction uses VNE_INTERACTION_TESTS (not BUILD_TESTS). Keep its gtest suite out of vnetestbed.
     vnetestbed_use_dep(TARGET vne::interaction SUBDIR vneinteraction DEPS_DIR INTERNAL
       CACHE_VARS
         BUILD_TESTS OFF
@@ -18,12 +20,10 @@ if(VNE_WITH_VNEINTRACTION)
         VNE_INTERACTION_TESTS OFF
         VNE_INTERACTION_DEV OFF
         VNE_INTERACTION_EXAMPLES OFF
+        VNE_INTERACTION_CI OFF
       SAVE_RESTORE
         BUILD_TESTS
-        BUILD_EXAMPLES
-        VNE_INTERACTION_TESTS
-        VNE_INTERACTION_DEV
-        VNE_INTERACTION_EXAMPLES)
+        BUILD_EXAMPLES)
     message(STATUS "vneinteraction enabled (from submodule).")
   else()
     message(FATAL_ERROR
