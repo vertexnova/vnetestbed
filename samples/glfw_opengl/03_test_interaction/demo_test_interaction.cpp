@@ -836,15 +836,6 @@ void InteractionSettingsLayer::renderManipulatorSettings() {
         if (auto* insp = il.getInspectController()) {
             auto& orb = insp->orbitalCameraManipulator();
             if (ImGui::TreeNodeEx("Inspect Settings", ImGuiTreeNodeFlags_DefaultOpen)) {
-                if (insp->getRotationMode() == vne::interaction::OrbitalRotationMode::eTrackball) {
-                    using TPM = vne::interaction::TrackballProjectionMode;
-                    int proj_idx = (orb.getTrackballProjectionMode() == TPM::eHyperbolic) ? 0 : 1;
-                    const char* proj_names[] = {"Hyperbolic", "Rim"};
-                    if (ImGui::Combo("Trackball projection##insp", &proj_idx, proj_names, 2)) {
-                        orb.setTrackballProjectionMode(proj_idx == 0 ? TPM::eHyperbolic : TPM::eRim);
-                    }
-                    ImGui::TextDisabled("Hyperbolic: cap + continuation; Rim: hemisphere + equatorial rim");
-                }
                 using OPM = vne::interaction::OrbitPivotMode;
                 int pivot_idx = static_cast<int>(orb.getPivotMode());
                 const char* pivot_names[] = {"COI (pan moves pivot)",
@@ -861,6 +852,15 @@ void InteractionSettingsLayer::renderManipulatorSettings() {
                     insp->setRotationMode(ui.rotation_mode_insp_idx == 0
                                               ? vne::interaction::OrbitalRotationMode::eOrbit
                                               : vne::interaction::OrbitalRotationMode::eTrackball);
+                }
+                if (insp->getRotationMode() == vne::interaction::OrbitalRotationMode::eTrackball) {
+                    using TPM = vne::interaction::TrackballProjectionMode;
+                    int proj_idx = (orb.getTrackballProjectionMode() == TPM::eHyperbolic) ? 0 : 1;
+                    const char* proj_names[] = {"Hyperbolic", "Rim"};
+                    if (ImGui::Combo("Trackball projection##insp", &proj_idx, proj_names, 2)) {
+                        orb.setTrackballProjectionMode(proj_idx == 0 ? TPM::eHyperbolic : TPM::eRim);
+                    }
+                    ImGui::TextDisabled("Hyperbolic: cap + continuation; Rim: hemisphere + equatorial rim");
                 }
                 if (ImGui::Checkbox("Pan enabled##insp", &ui.pan_enabled_insp)) {
                     insp->setPanEnabled(ui.pan_enabled_insp);
