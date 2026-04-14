@@ -98,8 +98,8 @@ endif()
 #==============================================================================
 # Internal Libraries (deps/internal) - use if already in build, else add
 #==============================================================================
-# vneinteraction is optional; only added when VNE_WITH_VNEINTRACTION=ON (see VNEPrivateDeps.cmake).
-option(VNE_WITH_VNEINTRACTION "Enable private dependency vneinteraction" OFF)
+# vneinteraction is expected for this repo; still overridable with -DVNE_WITH_VNEINTRACTION=OFF if needed.
+option(VNE_WITH_VNEINTRACTION "Enable private dependency vneinteraction" ON)
 option(VNE_TESTBED_IMGUI "Build ImGui layer (docking + viewports; requires OpenGL + GLFW)" ON)
 option(VNE_TESTBED_VNEIO "Enable vneio for logo (ImGui + GLFW window icon); requires nrrdio in vneio deps" ON)
 include(VneUseDep)

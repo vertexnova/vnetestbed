@@ -55,7 +55,7 @@ namespace vne::samples {
 enum class ControllerKind : int {
     eInspectOrbit = 0,
     eInspectTrackball,
-    eNavigation,  // FPS / Fly via setNavigationMode (Navigation3DController + fpsPreset)
+    eNavigation,  // FPS / Fly via setNavigationMode (FreeLookMode on Navigation3DController)
     eOrtho2D,
     eFollow,
 };
@@ -112,7 +112,7 @@ class InteractionTestLayer : public vne::testbed::ILayer {
 #ifdef VNE_TESTBED_IMGUI
     void setMeshLayer(vne::testbed::MeshLayer* layer) noexcept;
 #endif
-    void setNavigationMode(vne::interaction::NavigateMode mode);
+    void setNavigationMode(vne::interaction::FreeLookMode mode);
 
     [[nodiscard]] vne::math::Vec3f cameraPosition() const;
     [[nodiscard]] vne::math::Vec3f cameraTarget() const;
@@ -136,7 +136,7 @@ class InteractionTestLayer : public vne::testbed::ILayer {
 #ifdef VNE_TESTBED_IMGUI
     vne::testbed::MeshLayer* mesh_layer_{nullptr};
 #endif
-    vne::interaction::NavigateMode navigation_mode_{vne::interaction::NavigateMode::eFps};
+    vne::interaction::FreeLookMode navigation_mode_{vne::interaction::FreeLookMode::eFps};
     double last_x_{0.0};
     double last_y_{0.0};
 #ifdef VNE_TESTBED_IMGUI
