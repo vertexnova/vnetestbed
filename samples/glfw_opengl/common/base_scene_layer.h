@@ -110,7 +110,7 @@ class BaseSceneLayer : public vne::testbed::ILayer {
 };
 
 // ---------------------------------------------------------------------------
-// BaseInteractionLayer — orbit / trackball inspect driven by EventManager
+// BaseInteractionLayer — LMB trackball inspect (Inspect3DController) driven by EventManager
 // Pair with BaseSceneLayer: call setCamera(scene->getActiveCamera()) before attach.
 // Only compiled when VNE_TESTBED_INTERACTION is defined.
 // ---------------------------------------------------------------------------

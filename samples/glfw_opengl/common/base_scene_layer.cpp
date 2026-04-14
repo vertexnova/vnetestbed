@@ -284,9 +284,7 @@ BaseInteractionLayer::BaseInteractionLayer(const char* name)
     : vne::testbed::ILayer(name) {
     controllers_.reserve(static_cast<size_t>(kMaxViewports));
     for (int i = 0; i < kMaxViewports; ++i) {
-        vne::interaction::Inspect3DController c;
-        c.setRotationMode(vne::interaction::OrbitalRotationMode::eOrbit);
-        controllers_.push_back(std::move(c));
+        controllers_.push_back(vne::interaction::Inspect3DController{});
     }
 }
 

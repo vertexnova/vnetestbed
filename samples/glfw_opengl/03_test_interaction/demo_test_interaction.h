@@ -18,7 +18,6 @@
 #include "vertexnova/interaction/inspect_3d_controller.h"
 #include "vertexnova/interaction/navigation_3d_controller.h"
 #include "vertexnova/interaction/ortho_2d_controller.h"
-#include "vertexnova/interaction/follow_controller.h"
 #include "vertexnova/interaction/interaction_types.h"
 
 #include "vertexnova/scene/camera/camera.h"
@@ -53,17 +52,14 @@ namespace vne::samples {
 
 /** Controller type for the interaction demo; maps to one of the high-level controllers. */
 enum class ControllerKind : int {
-    eInspectOrbit = 0,
-    eInspectTrackball,
+    eInspect3D = 0,
     eNavigation,  // FPS / Fly via setNavigationMode (FreeLookMode on Navigation3DController)
     eOrtho2D,
-    eFollow,
 };
 
 using ControllerVariant = std::variant<vne::interaction::Inspect3DController,
                                        vne::interaction::Navigation3DController,
-                                       vne::interaction::Ortho2DController,
-                                       vne::interaction::FollowController>;
+                                       vne::interaction::Ortho2DController>;
 
 // ---------------------------------------------------------------------------
 // InteractionTestLayer — owns camera + per-viewport controllers, exposes control API
@@ -120,7 +116,6 @@ class InteractionTestLayer : public vne::testbed::ILayer {
     [[nodiscard]] vne::interaction::Inspect3DController* getInspectController(int index = 0) noexcept;
     [[nodiscard]] vne::interaction::Navigation3DController* getNavController(int index = 0) noexcept;
     [[nodiscard]] vne::interaction::Ortho2DController* getOrtho2DController(int index = 0) noexcept;
-    [[nodiscard]] vne::interaction::FollowController* getFollowController(int index = 0) noexcept;
 
    private:
     void dispatchViewportSize(float w, float h);
@@ -132,7 +127,7 @@ class InteractionTestLayer : public vne::testbed::ILayer {
     BaseSceneLayer* scene_layer_{nullptr};
     std::shared_ptr<vne::scene::ICamera> camera_;
     std::array<ControllerVariant, kMaxViewports> controllers_;
-    ControllerKind current_kind_{ControllerKind::eInspectTrackball};
+    ControllerKind current_kind_{ControllerKind::eInspect3D};
 #ifdef VNE_TESTBED_IMGUI
     vne::testbed::MeshLayer* mesh_layer_{nullptr};
 #endif
@@ -159,7 +154,8 @@ struct InteractionUiSettings {
     float sprint_mult{4.0f};
     float slow_mult{0.2f};
     bool rotation_enabled_insp{true};
-    int rotation_mode_insp_idx{0};  // 0=Orbit 1=Trackball (Inspect3D)
+    /** Inspect3D trackball projection: 0 = Hyperbolic, 1 = Rim. */
+    int trackball_proj_insp_idx{0};
     bool pan_enabled_insp{true};
     bool zoom_enabled_insp{true};
 };

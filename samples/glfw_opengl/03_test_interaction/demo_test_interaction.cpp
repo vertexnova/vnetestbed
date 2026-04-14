@@ -14,7 +14,6 @@
 
 #include "demo_test_interaction.h"
 
-#include "vertexnova/interaction/follow_manipulator.h"
 #include "vertexnova/interaction/free_look_manipulator.h"
 #include "vertexnova/interaction/orbital_camera_manipulator.h"
 #include "vertexnova/interaction/ortho_2d_manipulator.h"
@@ -66,27 +65,15 @@ const vne::math::Vec3f kDefaultCameraUp{0.0f, 1.0f, 0.0f};
 
 ControllerVariant makeController(ControllerKind kind, vne::interaction::FreeLookMode nav_mode) {
     switch (kind) {
-        case ControllerKind::eInspectOrbit: {
-            vne::interaction::Inspect3DController c;
-            c.setRotationMode(vne::interaction::OrbitalRotationMode::eOrbit);
-            return c;
-        }
-        case ControllerKind::eInspectTrackball: {
-            vne::interaction::Inspect3DController c;
-            c.setRotationMode(vne::interaction::OrbitalRotationMode::eTrackball);
-            return c;
-        }
+        case ControllerKind::eInspect3D:
+            return vne::interaction::Inspect3DController{};
         case ControllerKind::eNavigation: {
             vne::interaction::Navigation3DController c;
             c.setMode(nav_mode);
             return c;
         }
-        case ControllerKind::eOrtho2D: {
+        case ControllerKind::eOrtho2D:
             return vne::interaction::Ortho2DController{};
-        }
-        case ControllerKind::eFollow: {
-            return vne::interaction::FollowController{};
-        }
     }
     return vne::interaction::Inspect3DController{};
 }
@@ -100,7 +87,7 @@ ControllerVariant makeController(ControllerKind kind, vne::interaction::FreeLook
 InteractionTestLayer::InteractionTestLayer()
     : vne::testbed::ILayer("InteractionTestLayer") {
     for (size_t i = 0; i < static_cast<size_t>(kMaxViewports); ++i) {
-        controllers_[i] = makeController(ControllerKind::eInspectTrackball, navigation_mode_);
+        controllers_[i] = makeController(ControllerKind::eInspect3D, navigation_mode_);
     }
 }
 
@@ -172,15 +159,13 @@ void InteractionTestLayer::dispatchEvent(const vne::events::Event& event, int vi
             if (needs_cursor_position) {
                 const auto [mx, my] = vne::events::Input::mousePosition();
                 const vne::events::MouseMovedEvent mm(mx, my);
-                if constexpr (std::is_same_v<std::decay_t<decltype(c)>, vne::interaction::Ortho2DController>
-                              || std::is_same_v<std::decay_t<decltype(c)>, vne::interaction::FollowController>) {
+                if constexpr (std::is_same_v<std::decay_t<decltype(c)>, vne::interaction::Ortho2DController>) {
                     c.onEvent(mm);
                 } else {
                     c.onEvent(mm, 0.0);
                 }
             }
-            if constexpr (std::is_same_v<std::decay_t<decltype(c)>, vne::interaction::Ortho2DController>
-                          || std::is_same_v<std::decay_t<decltype(c)>, vne::interaction::FollowController>) {
+            if constexpr (std::is_same_v<std::decay_t<decltype(c)>, vne::interaction::Ortho2DController>) {
                 c.onEvent(event);
             } else {
                 c.onEvent(event, kFixedDt);
@@ -315,8 +300,6 @@ void InteractionTestLayer::setZoomMethod(vne::interaction::ZoomMethod method) {
                     c.freeLookManipulator().setZoomMethod(method);
                 } else if constexpr (std::is_same_v<std::decay_t<decltype(c)>, vne::interaction::Ortho2DController>) {
                     c.ortho2DManipulator().setZoomMethod(method);
-                } else if constexpr (std::is_same_v<std::decay_t<decltype(c)>, vne::interaction::FollowController>) {
-                    c.followManipulator().setZoomMethod(method);
                 }
             },
             v);
@@ -437,8 +420,7 @@ vne::math::Vec3f InteractionTestLayer::cameraTarget() const {
 }
 
 vne::interaction::Inspect3DController* InteractionTestLayer::getInspectController(int index) noexcept {
-    if (index < 0 || index >= kMaxViewports
-        || (current_kind_ != ControllerKind::eInspectOrbit && current_kind_ != ControllerKind::eInspectTrackball)) {
+    if (index < 0 || index >= kMaxViewports || current_kind_ != ControllerKind::eInspect3D) {
         return nullptr;
     }
     return std::get_if<vne::interaction::Inspect3DController>(&controllers_[static_cast<size_t>(index)]);
@@ -456,13 +438,6 @@ vne::interaction::Ortho2DController* InteractionTestLayer::getOrtho2DController(
         return nullptr;
     }
     return std::get_if<vne::interaction::Ortho2DController>(&controllers_[static_cast<size_t>(index)]);
-}
-
-vne::interaction::FollowController* InteractionTestLayer::getFollowController(int index) noexcept {
-    if (index < 0 || index >= kMaxViewports || current_kind_ != ControllerKind::eFollow) {
-        return nullptr;
-    }
-    return std::get_if<vne::interaction::FollowController>(&controllers_[static_cast<size_t>(index)]);
 }
 
 // ---------------------------------------------------------------------------
@@ -594,8 +569,7 @@ void InteractionSettingsLayer::renderPanel() {
 
     const ControllerKind cur = il.getControllerKind();
     const bool show_zoom =
-        (cur == ControllerKind::eInspectOrbit || cur == ControllerKind::eInspectTrackball
-         || cur == ControllerKind::eNavigation || cur == ControllerKind::eOrtho2D || cur == ControllerKind::eFollow);
+        (cur == ControllerKind::eInspect3D || cur == ControllerKind::eNavigation || cur == ControllerKind::eOrtho2D);
     if (show_zoom) {
         if (ImGui::CollapsingHeader("Zoom Method", ImGuiTreeNodeFlags_DefaultOpen)) {
             using ZM = vne::interaction::ZoomMethod;
@@ -611,7 +585,7 @@ void InteractionSettingsLayer::renderPanel() {
         }
     }
 
-    if (cur == ControllerKind::eInspectOrbit || cur == ControllerKind::eInspectTrackball) {
+    if (cur == ControllerKind::eInspect3D) {
         if (ImGui::CollapsingHeader("View Direction", ImGuiTreeNodeFlags_DefaultOpen)) {
             using VD = vne::interaction::ViewDirection;
             struct {
@@ -677,7 +651,7 @@ void InteractionSettingsLayer::renderCameraSettings() {
                 sl.syncCameraPositionTargetUp();
                 sl.setUsePerspective(use_persp);
                 if (!use_persp && !il.isManipulatorCompatibleWithCamera(false)) {
-                    il.setControllerKind(ControllerKind::eInspectTrackball);
+                    il.setControllerKind(ControllerKind::eInspect3D);
                 }
                 il.setCamerasFromScene();
             }
@@ -755,34 +729,33 @@ void InteractionSettingsLayer::renderManipulatorSettings() {
     if (window_appearing || controller_changed) {
         if (auto* insp = il.getInspectController()) {
             ui.rotation_enabled_insp = insp->isRotationEnabled();
-            ui.rotation_mode_insp_idx =
-                (insp->getRotationMode() == vne::interaction::OrbitalRotationMode::eOrbit) ? 0 : 1;
+            using TPM = vne::interaction::TrackballProjectionMode;
+            ui.trackball_proj_insp_idx =
+                (insp->orbitalCameraManipulator().getTrackballProjectionMode() == TPM::eHyperbolic) ? 0 : 1;
         }
         last_manip_synced_controller_kind_ = cur;
     }
 
     if (ImGui::CollapsingHeader("Controller", ImGuiTreeNodeFlags_DefaultOpen)) {
-        const char* types[] = {"Inspect 3D", "Navigation 3D", "Ortho 2D", "Follow"};
-        const ControllerKind values[] = {ControllerKind::eInspectOrbit,
-                                         ControllerKind::eNavigation,
-                                         ControllerKind::eOrtho2D,
-                                         ControllerKind::eFollow};
+        const char* types[] = {"Inspect 3D", "Navigation 3D", "Ortho 2D"};
+        const ControllerKind values[] = {
+            ControllerKind::eInspect3D,
+            ControllerKind::eNavigation,
+            ControllerKind::eOrtho2D,
+        };
         int idx = 0;
-        for (int i = 0; i < 4; ++i) {
+        for (int i = 0; i < 3; ++i) {
             if (values[i] == cur) {
                 idx = i;
                 break;
             }
-        }
-        if (cur == ControllerKind::eInspectTrackball) {
-            idx = 0;  // Legacy state maps to Inspect 3D entry.
         }
         const bool ortho_only = (cur == ControllerKind::eOrtho2D);
         const bool need_ortho = ortho_only && scene_layer_->uiSettings().use_perspective;
         if (need_ortho) {
             ImGui::TextColored(ImVec4(1.f, 0.4f, 0.4f, 1.f), "Ortho 2D requires Orthographic camera");
         }
-        if (ImGui::Combo("Type##ctrl", &idx, types, 4)) {
+        if (ImGui::Combo("Type##ctrl", &idx, types, 3)) {
             const ControllerKind new_kind = values[idx];
             if (new_kind == ControllerKind::eOrtho2D && scene_layer_->uiSettings().use_perspective) {
                 ImGui::OpenPopup("Ortho2DNeedsOrthographicCamera");
@@ -817,20 +790,14 @@ void InteractionSettingsLayer::renderManipulatorSettings() {
 
         ImGui::Spacing();
         switch (cur) {
-            case ControllerKind::eInspectOrbit:
-                ImGui::TextDisabled("LMB rotate  RMB pan  Scroll zoom");
-                break;
-            case ControllerKind::eInspectTrackball:
-                ImGui::TextDisabled("Inspect 3D: Orbit / Trackball selectable below");
+            case ControllerKind::eInspect3D:
+                ImGui::TextDisabled("LMB rotate (trackball)  RMB pan  Scroll zoom");
                 break;
             case ControllerKind::eNavigation:
                 ImGui::TextDisabled("RMB look, WASD/QE move, scroll zoom (FPS / Fly via Navigation mode)");
                 break;
             case ControllerKind::eOrtho2D:
                 ImGui::TextDisabled("LMB/RMB pan  Scroll zoom (no rotate)");
-                break;
-            case ControllerKind::eFollow:
-                ImGui::TextDisabled("Camera follows the target");
                 break;
         }
 
@@ -849,18 +816,11 @@ void InteractionSettingsLayer::renderManipulatorSettings() {
                 if (ImGui::Checkbox("Rotation enabled##insp", &ui.rotation_enabled_insp)) {
                     insp->setRotationEnabled(ui.rotation_enabled_insp);
                 }
-                const char* rm_insp[] = {"Orbit (Euler)", "Trackball (Arcball)"};
-                if (ImGui::Combo("Rotation mode##insp_rm", &ui.rotation_mode_insp_idx, rm_insp, 2)) {
-                    insp->setRotationMode(ui.rotation_mode_insp_idx == 0
-                                              ? vne::interaction::OrbitalRotationMode::eOrbit
-                                              : vne::interaction::OrbitalRotationMode::eTrackball);
-                }
-                if (insp->getRotationMode() == vne::interaction::OrbitalRotationMode::eTrackball) {
+                {
                     using TPM = vne::interaction::TrackballProjectionMode;
-                    int proj_idx = (orb.getTrackballProjectionMode() == TPM::eHyperbolic) ? 0 : 1;
                     const char* proj_names[] = {"Hyperbolic", "Rim"};
-                    if (ImGui::Combo("Trackball projection##insp", &proj_idx, proj_names, 2)) {
-                        orb.setTrackballProjectionMode(proj_idx == 0 ? TPM::eHyperbolic : TPM::eRim);
+                    if (ImGui::Combo("Trackball projection##insp", &ui.trackball_proj_insp_idx, proj_names, 2)) {
+                        orb.setTrackballProjectionMode(ui.trackball_proj_insp_idx == 0 ? TPM::eHyperbolic : TPM::eRim);
                     }
                     ImGui::TextDisabled("Hyperbolic: cap + continuation; Rim: hemisphere + equatorial rim");
                 }
@@ -999,19 +959,6 @@ void InteractionSettingsLayer::renderManipulatorSettings() {
                 float pd = opz.getPanDamping();
                 if (ImGui::SliderFloat("Pan damping##ortho", &pd, 0.f, 20.f)) {
                     opz.setPanDamping(pd);
-                }
-                ImGui::TreePop();
-            }
-        } else if (auto* follow = il.getFollowController()) {
-            if (ImGui::TreeNodeEx("Follow Settings", ImGuiTreeNodeFlags_DefaultOpen)) {
-                vne::math::Vec3f off = follow->getOffset();
-                float o[3] = {off.x(), off.y(), off.z()};
-                if (ImGui::SliderFloat3("Offset##follow", o, -20.f, 20.f)) {
-                    follow->setOffset({o[0], o[1], o[2]});
-                }
-                float lag = follow->getLag();
-                if (ImGui::SliderFloat("Lag##follow", &lag, 0.01f, 0.5f, "%.3f")) {
-                    follow->setLag(lag);
                 }
                 ImGui::TreePop();
             }

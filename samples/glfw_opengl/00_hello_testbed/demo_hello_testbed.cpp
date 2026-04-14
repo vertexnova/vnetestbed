@@ -60,7 +60,7 @@ void HelloSettingsLayer::setImGuiLayer(vne::testbed::ImGuiLayer* layer) {
 void HelloSettingsLayer::renderPanel() {
     if (ImGui::CollapsingHeader("Viewport", ImGuiTreeNodeFlags_DefaultOpen)) {
         ImGui::TextDisabled("Controls");
-        ImGui::BulletText("Orbit:  Left-mouse drag");
+        ImGui::BulletText("Rotate (trackball):  Left-mouse drag");
         ImGui::BulletText("Pan:    Right-mouse drag");
         ImGui::BulletText("Zoom:   Scroll wheel");
         ImGui::Spacing();
@@ -85,7 +85,7 @@ void registerHelloTestbedDemo(vne::testbed::Application& app) {
     app.getLayerStack().pushLayer(std::unique_ptr<BaseSceneLayer>(scene), app.getAppContext());
 
 #ifdef VNE_TESTBED_INTERACTION
-    // Layer 2: orbit/trackball interaction (per-viewport cameras when using multiple viewports)
+    // Layer 2: trackball inspect interaction (per-viewport cameras when using multiple viewports)
     auto* interaction = new BaseInteractionLayer("HelloInteractionLayer");
     interaction->setSceneLayer(scene);
     app.getLayerStack().pushLayer(std::unique_ptr<BaseInteractionLayer>(interaction), app.getAppContext());
