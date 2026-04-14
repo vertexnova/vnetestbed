@@ -62,6 +62,7 @@ constexpr float kDefaultViewportH = 720.0f;
 
 const vne::math::Vec3f kDefaultCameraPosition{4.0f, 3.0f, 6.0f};
 const vne::math::Vec3f kDefaultTargetPosition{0.0f, 0.0f, 0.0f};
+const vne::math::Vec3f kDefaultCameraUp{0.0f, 1.0f, 0.0f};
 
 ControllerVariant makeController(ControllerKind kind, vne::interaction::FreeLookMode nav_mode) {
     switch (kind) {
@@ -340,6 +341,7 @@ void InteractionTestLayer::resetCamera() {
     }
     camera_->setPosition(kDefaultCameraPosition);
     camera_->setTarget(kDefaultTargetPosition);
+    camera_->setUp(kDefaultCameraUp);
     camera_->updateMatrices();
     dispatchReset();
 }
