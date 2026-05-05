@@ -15,7 +15,7 @@
 #include "demo_test_interaction.h"
 
 #include "vertexnova/interaction/free_look_manipulator.h"
-#include "vertexnova/interaction/orbital_camera_manipulator.h"
+#include "vertexnova/interaction/trackball_manipulator.h"
 #include "vertexnova/interaction/ortho_2d_manipulator.h"
 
 #include "vertexnova/testbed/app/application.h"
@@ -302,7 +302,7 @@ void InteractionTestLayer::setControllerKind(ControllerKind kind) {
     for (size_t i = 0; i < static_cast<size_t>(kMaxViewports); ++i) {
         controllers_[i] = makeController(kind, navigation_mode_);
         std::visit(
-            [this, vpw, vph](auto& c) {
+            [vpw, vph](auto& c) {
                 c.onResize(vpw, vph);
             },
             controllers_[i]);
@@ -675,7 +675,7 @@ void InteractionSettingsLayer::renderPanel() {
     }
 
     if (ImGui::CollapsingHeader("Camera State", ImGuiTreeNodeFlags_DefaultOpen)) {
-        const auto* cam_ptr = scene_layer_ ? scene_layer_->getActiveCameraPtr(0) : nullptr;
+        auto* cam_ptr = scene_layer_ ? scene_layer_->getActiveCameraPtr(0) : nullptr;
         if (cam_ptr) {
             const auto pos = cam_ptr->getPosition();
             const auto tgt = cam_ptr->getTarget();
@@ -862,8 +862,7 @@ void InteractionSettingsLayer::renderManipulatorSettings() {
         if (auto* insp = il.getInspectController()) {
             auto& orb = insp->trackballManipulator();
             ui.rotation_enabled_insp = insp->isRotationEnabled();
-            ui.pan_enabled_insp = insp->isPanEnabled();
-            ui.zoom_enabled_insp = insp->isZoomEnabled();
+            // Pan/zoom toggles have no public getters on Inspect3DController; keep ui_ values from user edits.
             ui.rotation_inertia_enabled_insp = orb.isRotationInertiaEnabled();
             ui.pan_inertia_enabled_insp = orb.isPanInertiaEnabled();
             ui.orbit_animation_enabled_insp = orb.isOrbitAnimationEnabled();
