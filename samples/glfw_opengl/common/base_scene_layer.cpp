@@ -18,6 +18,9 @@
 #include "vertexnova/events/mouse_event.h"
 #include "vertexnova/events/window_event.h"
 
+#include <algorithm>
+#include <array>
+#include <cmath>
 #include <string>
 
 namespace {
@@ -103,18 +106,37 @@ void BaseSceneLayer::onRender(const vne::testbed::RenderContext& render_context)
             if (auto* o = dynamic_cast<vne::scene::OrthographicCamera*>(camera)) {
                 const int vp_w = render_context.frame_info.width;
                 const int vp_h = render_context.frame_info.height;
-                const bool need_ortho_proj_sync = vp_w != ortho_proj_sync_vp_w_ || vp_h != ortho_proj_sync_vp_h_
-                                                  || ui_settings_.ortho_half != ortho_proj_sync_half_
-                                                  || ui_settings_.ortho_near != ortho_proj_sync_near_
-                                                  || ui_settings_.ortho_far != ortho_proj_sync_far_;
+                float half_y = ui_settings_.ortho_half;
+                float half_x = ui_settings_.ortho_half * aspect;
+                if (ui_settings_.show_grid) {
+                    // Expand orthographic extents so the full ground grid (XZ at y=0) stays inside the
+                    // frustum for any eye orientation — avoids clipping corners when ortho_half is small.
+                    const vne::math::Mat4f vm = o->getViewMatrix();
+                    float max_abs_x = 0.f;
+                    float max_abs_y = 0.f;
+                    const float g = kGridHalf;
+                    const std::array<vne::math::Vec3f, 4> corners = {
+                        vne::math::Vec3f{-g, 0.f, -g},
+                        vne::math::Vec3f{-g, 0.f, g},
+                        vne::math::Vec3f{g, 0.f, -g},
+                        vne::math::Vec3f{g, 0.f, g},
+                    };
+                    for (const auto& c : corners) {
+                        const vne::math::Vec4f p = vm * vne::math::Vec4f(c.x(), c.y(), c.z(), 1.f);
+                        max_abs_x = std::max(max_abs_x, std::fabs(p.x()));
+                        max_abs_y = std::max(max_abs_y, std::fabs(p.y()));
+                    }
+                    half_x = std::max(half_x, max_abs_x);
+                    half_y = std::max(half_y, max_abs_y);
+                }
+                const bool need_ortho_proj_sync =
+                    ui_settings_.show_grid
+                    || (vp_w != ortho_proj_sync_vp_w_ || vp_h != ortho_proj_sync_vp_h_
+                        || ui_settings_.ortho_half != ortho_proj_sync_half_
+                        || ui_settings_.ortho_near != ortho_proj_sync_near_
+                        || ui_settings_.ortho_far != ortho_proj_sync_far_);
                 if (need_ortho_proj_sync) {
-                    const float hw = ui_settings_.ortho_half * aspect;
-                    o->setBounds(-hw,
-                                 hw,
-                                 -ui_settings_.ortho_half,
-                                 ui_settings_.ortho_half,
-                                 ui_settings_.ortho_near,
-                                 ui_settings_.ortho_far);
+                    o->setBounds(-half_x, half_x, -half_y, half_y, ui_settings_.ortho_near, ui_settings_.ortho_far);
                     o->updateProjectionMatrix();
                     ortho_proj_sync_vp_w_ = vp_w;
                     ortho_proj_sync_vp_h_ = vp_h;
@@ -220,6 +242,10 @@ void BaseSceneLayer::syncCameraPositionTargetUp() {
 }
 
 void BaseSceneLayer::syncOrthoExtentsFromCamera() {
+    if (ui_settings_.show_grid) {
+        // Grid auto-fit inflates ortho bounds beyond ui_settings_.ortho_half; do not overwrite the slider.
+        return;
+    }
     auto* o = dynamic_cast<vne::scene::OrthographicCamera*>(getActiveCameraPtr(0));
     if (!o) {
         return;
@@ -230,6 +256,10 @@ void BaseSceneLayer::syncOrthoExtentsFromCamera() {
         // Align the dirty-guard cache so the next onRender doesn't immediately re-push the old value.
         ortho_proj_sync_half_ = live_half;
     }
+}
+
+void BaseSceneLayer::invalidateOrthoProjectionSync() {
+    ortho_proj_sync_vp_w_ = -1;
 }
 
 void BaseSceneLayer::rebuildCameras(int w, int h) {

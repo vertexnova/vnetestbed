@@ -231,6 +231,14 @@ class ImGuiLayer : public ILayer {
     /// Viewport window rects in screen space (min_x, min_y, max_x, max_y); updated each frame in renderViewportWindows
     std::vector<float> viewport_rects_;
 
+    /// "Settings" window AABB in ImGui screen space; excludes it from scene viewport hit-testing so dragging sliders
+    /// does not orbit the camera. Updated in renderSettingsPanel().
+    bool settings_window_rect_valid_{false};
+    float settings_screen_min_x_{0.f};
+    float settings_screen_min_y_{0.f};
+    float settings_screen_max_x_{0.f};
+    float settings_screen_max_y_{0.f};
+
 #if defined(VNE_TESTBED_EVENTS)
     std::shared_ptr<ImGuiEventListener> event_listener_;
 #endif

@@ -715,9 +715,17 @@ void InteractionSettingsLayer::renderPanel() {
                 ImGui::InputFloat3("Target##lookat", &ui.edit_target.x());
                 ImGui::InputFloat3("Up##lookat", &ui.edit_up.x());
                 if (ImGui::Button("Apply lookAt")) {
-                    cam_ptr->lookAt(ui.edit_pos, ui.edit_target, ui.edit_up);
-                    cam_ptr->updateMatrices();
-                    il.setCamerasFromScene();
+                    if (scene_layer_) {
+                        for (const auto& cam : scene_layer_->getActiveCameras()) {
+                            if (cam) {
+                                cam->lookAt(ui.edit_pos, ui.edit_target, ui.edit_up);
+                                cam->updateMatrices();
+                            }
+                        }
+                        scene_layer_->syncCameraPositionTargetUp();
+                        scene_layer_->invalidateOrthoProjectionSync();
+                        il.setCamerasFromScene();
+                    }
                 }
                 ImGui::SameLine();
                 if (ImGui::Button("Snap from camera##lookat")) {
@@ -731,16 +739,24 @@ void InteractionSettingsLayer::renderPanel() {
                 ImGui::SliderFloat("Pitch##pose", &ui.edit_pitch_deg, -89.f, 89.f, "%.1f deg");
                 ImGui::SliderFloat("Roll##pose", &ui.edit_roll_deg, -180.f, 180.f, "%.1f deg");
                 if (ImGui::Button("Apply Pose")) {
-                    const float y = vne::math::degToRad(ui.edit_yaw_deg);
-                    const float p = vne::math::degToRad(ui.edit_pitch_deg);
-                    const float r = vne::math::degToRad(ui.edit_roll_deg);
-                    const vne::math::Quatf qy = vne::math::Quatf::fromAxisAngle(vne::math::Vec3f(0.f, 1.f, 0.f), y);
-                    const vne::math::Quatf qp = vne::math::Quatf::fromAxisAngle(vne::math::Vec3f(1.f, 0.f, 0.f), p);
-                    const vne::math::Quatf qr = vne::math::Quatf::fromAxisAngle(vne::math::Vec3f(0.f, 0.f, 1.f), r);
-                    const vne::math::Quatf final_q = (qy * qp * qr).normalized();
-                    cam_ptr->setOrientationView(ui.edit_pos, final_q);
-                    cam_ptr->updateMatrices();
-                    il.setCamerasFromScene();
+                    if (scene_layer_) {
+                        const float y = vne::math::degToRad(ui.edit_yaw_deg);
+                        const float p = vne::math::degToRad(ui.edit_pitch_deg);
+                        const float r = vne::math::degToRad(ui.edit_roll_deg);
+                        const vne::math::Quatf qy = vne::math::Quatf::fromAxisAngle(vne::math::Vec3f(0.f, 1.f, 0.f), y);
+                        const vne::math::Quatf qp = vne::math::Quatf::fromAxisAngle(vne::math::Vec3f(1.f, 0.f, 0.f), p);
+                        const vne::math::Quatf qr = vne::math::Quatf::fromAxisAngle(vne::math::Vec3f(0.f, 0.f, 1.f), r);
+                        const vne::math::Quatf final_q = (qy * qp * qr).normalized();
+                        for (const auto& cam : scene_layer_->getActiveCameras()) {
+                            if (cam) {
+                                cam->setOrientationView(ui.edit_pos, final_q);
+                                cam->updateMatrices();
+                            }
+                        }
+                        scene_layer_->syncCameraPositionTargetUp();
+                        scene_layer_->invalidateOrthoProjectionSync();
+                        il.setCamerasFromScene();
+                    }
                 }
                 ImGui::SameLine();
                 if (ImGui::Button("Snap from camera##pose")) {

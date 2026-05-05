@@ -93,6 +93,8 @@ class BaseSceneLayer : public vne::testbed::ILayer {
     /** Reads the live orthographic half-extent back into ui_settings_.ortho_half so UI sliders
      *  stay in sync after interaction-driven zoom (manipulator calls setBounds on the ortho camera). */
     void syncOrthoExtentsFromCamera();
+    /** Forces the next onRender to re-apply orthographic bounds from ui_settings_ (after manual camera pose edits). */
+    void invalidateOrthoProjectionSync();
     void rebuildCameras(int w, int h);
 
    private:
