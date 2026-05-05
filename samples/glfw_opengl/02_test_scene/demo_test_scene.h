@@ -75,8 +75,8 @@ struct SceneUiSettings {
     bool show_frustum{true};                       //!< Wireframe frustum when show_camera_visuals.
     bool show_cam_axes{true};                      //!< Forward/right/up at camera position.
     bool show_near_far_planes{true};               //!< Extra diagonals on near/far rects.
-    int last_vp_w{1280};                           //!< Last known framebuffer width (px); drives aspect.
-    int last_vp_h{720};                            //!< Last known framebuffer height (px).
+    int last_viewport_w{1280};                     //!< Last known framebuffer width (px); drives aspect. Matches BaseSceneLayer::UiSettings naming.
+    int last_viewport_h{720};                      //!< Last known framebuffer height (px).
 
     int cube_count{3};                //!< Number of cubes drawn (0–4); positions are still defined for all four.
     float cube_rotation_speed{0.5f};  //!< Radians per second; shared by all cubes.

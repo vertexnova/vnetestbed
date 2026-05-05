@@ -156,9 +156,9 @@ class InteractionTestLayer : public vne::testbed::ILayer {
 // ---------------------------------------------------------------------------
 #ifdef VNE_TESTBED_IMGUI
 // ImGui-tuned state (stable addresses for ImGui widgets).
+// Note: show_view_matrix / show_projection_matrix live in BaseSceneLayer::UiSettings so both
+// 02_test_scene and 03_test_interaction share the same field.
 struct InteractionUiSettings {
-    bool show_view_matrix{false};
-    bool show_projection_matrix{false};
     int zoom_idx{0};
     int nav_mode_idx{0};
     float move_speed{3.0f};

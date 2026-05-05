@@ -819,9 +819,10 @@ void InteractionSettingsLayer::renderCameraSettings() {
             il.setCamerasFromScene();
         }
 
-        ImGui::Checkbox("Show view matrix", &ui.show_view_matrix);
-        ImGui::Checkbox("Show projection matrix", &ui.show_projection_matrix);
-        if (ui.show_view_matrix && sl.getActiveCameraPtr(0)) {
+        auto& sl_ui = sl.uiSettings();
+        ImGui::Checkbox("Show view matrix", &sl_ui.show_view_matrix);
+        ImGui::Checkbox("Show projection matrix", &sl_ui.show_projection_matrix);
+        if (sl_ui.show_view_matrix && sl.getActiveCameraPtr(0)) {
             const vne::math::Mat4f view = sl.getActiveCameraPtr(0)->getViewMatrix();
             ImGui::Text("View matrix (column-major):");
             for (size_t row = 0; row < 4u; ++row) {
@@ -832,7 +833,7 @@ void InteractionSettingsLayer::renderCameraSettings() {
                             static_cast<double>(view[3][row]));
             }
         }
-        if (ui.show_projection_matrix && sl.getActiveCameraPtr(0)) {
+        if (sl_ui.show_projection_matrix && sl.getActiveCameraPtr(0)) {
             const vne::math::Mat4f proj = sl.getActiveCameraPtr(0)->getProjectionMatrix();
             ImGui::Text("Projection matrix (column-major):");
             for (size_t row = 0; row < 4u; ++row) {
@@ -883,7 +884,7 @@ void InteractionSettingsLayer::renderManipulatorSettings() {
             ui.slow_mult = nav->getSlowMultiplier();
         } else if (auto* ortho = il.getOrtho2DController()) {
             ui.pan_inertia_enabled_ortho = ortho->ortho2DManipulator().isPanInertiaEnabled();
-            ui.rotate_sensitivity_ortho = ortho->ortho2DManipulator().getRotateSensitivityDegreesPerPixel();
+            ui.rotate_sensitivity_ortho = ortho->ortho2DManipulator().getRotationSensitivityDegreesPerPixel();
         }
         last_manip_synced_controller_kind_ = cur;
     }
@@ -1200,7 +1201,7 @@ void InteractionSettingsLayer::renderManipulatorSettings() {
                 if (ImGui::SliderFloat("Pan damping##ortho", &pd, 0.f, 20.f)) {
                     opz.setPanDamping(pd);
                 }
-                ui.rotate_sensitivity_ortho = opz.getRotateSensitivityDegreesPerPixel();
+                ui.rotate_sensitivity_ortho = opz.getRotationSensitivityDegreesPerPixel();
                 if (ImGui::SliderFloat("Rotate sensitivity##ortho", &ui.rotate_sensitivity_ortho, 0.05f, 3.f, "%.2f deg/px")) {
                     ortho->setRotateSensitivity(ui.rotate_sensitivity_ortho);
                 }

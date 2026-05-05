@@ -62,6 +62,9 @@ class BaseSceneLayer : public vne::testbed::ILayer {
         vne::math::Vec3f cam_position{4.0f, 3.0f, 6.0f};
         vne::math::Vec3f cam_target{0.0f, 0.0f, 0.0f};
         vne::math::Vec3f cam_up{0.0f, 1.0f, 0.0f};
+        // Debug overlays — shared naming with SceneUiSettings (02_test_scene).
+        bool show_view_matrix{false};
+        bool show_projection_matrix{false};
     };
 
     explicit BaseSceneLayer(const char* name = "BaseSceneLayer");
