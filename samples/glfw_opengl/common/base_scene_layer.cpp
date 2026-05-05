@@ -75,6 +75,9 @@ void BaseSceneLayer::onUpdate(float /*dt*/) {
                 cam->updateMatrices();
             }
         }
+        // Keep ortho_half in sync with any interaction-driven bound changes so UI sliders
+        // always reflect the real zoom level and don't overwrite it on next slider touch.
+        syncOrthoExtentsFromCamera();
     }
 }
 
@@ -171,6 +174,10 @@ void BaseSceneLayer::setUsePerspective(bool use_persp) {
     if (ui_settings_.use_perspective == use_persp) {
         return;
     }
+    // Snapshot the live ortho extents before leaving ortho mode so we don't revert to stale UI values.
+    if (!ui_settings_.use_perspective) {
+        syncOrthoExtentsFromCamera();
+    }
     syncCameraPositionTargetUp();
     const vne::math::Vec3f pos = ui_settings_.cam_position;
     const vne::math::Vec3f tgt = ui_settings_.cam_target;
@@ -179,6 +186,7 @@ void BaseSceneLayer::setUsePerspective(bool use_persp) {
     if (ui_settings_.use_perspective) {
         for (auto& c : camera_persp_) {
             if (c) {
+                c->setSceneScale(1.0f);  // clear accumulated SceneScale zoom
                 c->setPosition(pos);
                 c->setTarget(tgt);
                 c->setUp(up);
@@ -188,6 +196,7 @@ void BaseSceneLayer::setUsePerspective(bool use_persp) {
     } else {
         for (auto& c : cameras_ortho_) {
             if (c) {
+                c->setSceneScale(1.0f);  // clear accumulated SceneScale zoom
                 c->setPosition(pos);
                 c->setTarget(tgt);
                 c->setUp(up);
@@ -208,6 +217,19 @@ void BaseSceneLayer::syncCameraPositionTargetUp() {
     ui_settings_.cam_position = active->getPosition();
     ui_settings_.cam_target = active->getTarget();
     ui_settings_.cam_up = active->getUp();
+}
+
+void BaseSceneLayer::syncOrthoExtentsFromCamera() {
+    auto* o = dynamic_cast<vne::scene::OrthographicCamera*>(getActiveCameraPtr(0));
+    if (!o) {
+        return;
+    }
+    const float live_half = o->getHeight() * 0.5f;
+    if (live_half > 0.0f) {
+        ui_settings_.ortho_half = live_half;
+        // Align the dirty-guard cache so the next onRender doesn't immediately re-push the old value.
+        ortho_proj_sync_half_ = live_half;
+    }
 }
 
 void BaseSceneLayer::rebuildCameras(int w, int h) {

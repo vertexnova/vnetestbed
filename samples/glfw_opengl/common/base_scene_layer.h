@@ -87,6 +87,9 @@ class BaseSceneLayer : public vne::testbed::ILayer {
 
     void setUsePerspective(bool use_persp);
     void syncCameraPositionTargetUp();
+    /** Reads the live orthographic half-extent back into ui_settings_.ortho_half so UI sliders
+     *  stay in sync after interaction-driven zoom (manipulator calls setBounds on the ortho camera). */
+    void syncOrthoExtentsFromCamera();
     void rebuildCameras(int w, int h);
 
    private:

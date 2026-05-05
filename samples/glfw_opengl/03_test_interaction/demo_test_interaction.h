@@ -57,6 +57,13 @@ enum class ControllerKind : int {
     eOrtho2D,
 };
 
+/** Governs what is reset when changing controller or projection type. */
+struct SwitchPolicy {
+    bool reset_scene_scale{true};   //!< Call setSceneScale(1.0f) before attaching new manipulators.
+    bool reset_rig_state{true};     //!< Call dispatchReset() before attaching to flush in-flight gestures.
+    bool reset_pose_to_default{false};  //!< Snap camera back to default position/target on switch.
+};
+
 using ControllerVariant = std::variant<vne::interaction::Inspect3DController,
                                        vne::interaction::Navigation3DController,
                                        vne::interaction::Ortho2DController>;
@@ -82,6 +89,9 @@ class InteractionTestLayer : public vne::testbed::ILayer {
 #ifdef VNE_TESTBED_IMGUI
     void setImGuiLayer(vne::testbed::ImGuiLayer* layer);
 #endif
+
+    void setSwitchPolicy(const SwitchPolicy& policy) noexcept { switch_policy_ = policy; }
+    [[nodiscard]] const SwitchPolicy& getSwitchPolicy() const noexcept { return switch_policy_; }
 
     void setControllerKind(ControllerKind kind);
     [[nodiscard]] ControllerKind getControllerKind() const noexcept { return current_kind_; }
@@ -124,6 +134,7 @@ class InteractionTestLayer : public vne::testbed::ILayer {
     void dispatchSetCamera(std::shared_ptr<vne::scene::ICamera> camera);
     void dispatchReset();
 
+    SwitchPolicy switch_policy_{};
     BaseSceneLayer* scene_layer_{nullptr};
     std::shared_ptr<vne::scene::ICamera> camera_;
     std::array<ControllerVariant, kMaxViewports> controllers_;
@@ -134,6 +145,7 @@ class InteractionTestLayer : public vne::testbed::ILayer {
     vne::interaction::FreeLookMode navigation_mode_{vne::interaction::FreeLookMode::eFps};
     double last_x_{0.0};
     double last_y_{0.0};
+    double last_frame_dt_{1.0 / 60.0};  //!< Real frame delta-time updated each onUpdate; used for inertia sampling.
 #ifdef VNE_TESTBED_IMGUI
     vne::testbed::ImGuiLayer* imgui_layer_{nullptr};
 #endif
@@ -153,11 +165,44 @@ struct InteractionUiSettings {
     float mouse_sensitivity{0.15f};
     float sprint_mult{4.0f};
     float slow_mult{0.2f};
+
+    // Inspect3D
     bool rotation_enabled_insp{true};
     /** Inspect3D trackball projection: 0 = Hyperbolic, 1 = Rim. */
     int trackball_proj_insp_idx{0};
     bool pan_enabled_insp{true};
     bool zoom_enabled_insp{true};
+    bool rotation_inertia_enabled_insp{true};
+    bool pan_inertia_enabled_insp{true};
+    bool orbit_animation_enabled_insp{true};
+    float fit_anim_duration_insp{0.5f};
+    float trackball_rotation_scale_insp{2.5f};
+    bool pivot_on_dbl_click_insp{true};
+
+    // Navigation3D
+    int nav_rotation_mode_idx{0};  //!< 0 = YawPitch, 1 = Trackball
+    bool look_enabled_nav{true};
+    bool move_enabled_nav{true};
+    bool zoom_enabled_nav{true};
+    int nav_world_up_idx{0};  //!< 0 = Y-up, 1 = Z-up
+
+    // Ortho2D
+    float rotate_sensitivity_ortho{0.5f};
+    bool pan_inertia_enabled_ortho{true};
+
+    // Camera state edit
+    int cam_edit_mode{0};  //!< 0 = LookAt, 1 = Pose (euler)
+    vne::math::Vec3f edit_pos{4.f, 3.f, 6.f};
+    vne::math::Vec3f edit_target{0.f, 0.f, 0.f};
+    vne::math::Vec3f edit_up{0.f, 1.f, 0.f};
+    float edit_yaw_deg{0.f};
+    float edit_pitch_deg{0.f};
+    float edit_roll_deg{0.f};
+
+    // On-switch policy
+    bool on_switch_reset_scene_scale{true};
+    bool on_switch_reset_rig_state{true};
+    bool on_switch_reset_pose{false};
 };
 
 class InteractionSettingsLayer : public vne::testbed::ILayer {

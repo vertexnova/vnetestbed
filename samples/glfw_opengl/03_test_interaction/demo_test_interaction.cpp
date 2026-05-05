@@ -147,8 +147,18 @@ void InteractionTestLayer::dispatchEvent(const vne::events::Event& event, int vi
         viewport_index = 0;
     }
     auto& v = controllers_[static_cast<size_t>(viewport_index)];
+
+    // Use the real frame dt for mouse-move/drag events so pan inertia velocity is sampled correctly.
+    // Key-repeat events still use kFixedDt (key hold timing is frame-rate independent).
+    const bool is_mouse_event = (event.type() == vne::events::EventType::eMouseMoved
+                                 || event.type() == vne::events::EventType::eMouseScrolled
+                                 || event.type() == vne::events::EventType::eMouseButtonPressed
+                                 || event.type() == vne::events::EventType::eMouseButtonReleased
+                                 || event.type() == vne::events::EventType::eMouseButtonDoubleClicked);
+    const double event_dt = is_mouse_event ? last_frame_dt_ : kFixedDt;
+
     std::visit(
-        [&event](auto& c) {
+        [&event, event_dt](auto& c) {
             const bool needs_cursor_position = (event.type() == vne::events::EventType::eMouseScrolled
                                                 || event.type() == vne::events::EventType::eMouseButtonPressed
                                                 || event.type() == vne::events::EventType::eMouseButtonReleased
@@ -168,7 +178,7 @@ void InteractionTestLayer::dispatchEvent(const vne::events::Event& event, int vi
             if constexpr (std::is_same_v<std::decay_t<decltype(c)>, vne::interaction::Ortho2DController>) {
                 c.onEvent(event);
             } else {
-                c.onEvent(event, kFixedDt);
+                c.onEvent(event, event_dt);
             }
         },
         v);
@@ -204,6 +214,7 @@ void InteractionTestLayer::onAttach(vne::testbed::AppContext& app_context) {
 void InteractionTestLayer::onDetach() {}
 
 void InteractionTestLayer::onUpdate(float dt) {
+    last_frame_dt_ = static_cast<double>(dt > 0.0f ? dt : 1.0f / 60.0f);
 #ifdef VNE_TESTBED_IMGUI
     if (imgui_layer_) {
         for (int i = 0; i < kMaxViewports; ++i) {
@@ -274,6 +285,18 @@ void InteractionTestLayer::onEvent(const vne::events::Event& event) {
 
 void InteractionTestLayer::setControllerKind(ControllerKind kind) {
     current_kind_ = kind;
+
+    // Apply pose-reset before tearing down old controllers so resetCamera still has a camera to reset.
+    if (switch_policy_.reset_pose_to_default) {
+        resetCamera();
+    }
+
+    // Step 1: clear accumulated scene scale so new manipulators syncFromCamera with scale=1.
+    if (camera_ && switch_policy_.reset_scene_scale) {
+        camera_->setSceneScale(1.0f);
+        camera_->updateMatrices();
+    }
+
     const auto vpw = kDefaultViewportW;
     const auto vph = kDefaultViewportH;
     for (size_t i = 0; i < static_cast<size_t>(kMaxViewports); ++i) {
@@ -281,12 +304,17 @@ void InteractionTestLayer::setControllerKind(ControllerKind kind) {
         std::visit(
             [this, vpw, vph](auto& c) {
                 c.onResize(vpw, vph);
-                if (camera_) {
-                    c.setCamera(camera_);
-                }
             },
             controllers_[i]);
     }
+
+    // Step 2: reset rig + mapper state on fresh controllers before attaching camera.
+    if (switch_policy_.reset_rig_state) {
+        dispatchReset();
+    }
+
+    // Step 3: attach camera — triggers syncFromCamera() in each manipulator from a clean scale baseline.
+    dispatchSetCamera(camera_);
 }
 
 void InteractionTestLayer::setZoomMethod(vne::interaction::ZoomMethod method) {
@@ -294,7 +322,7 @@ void InteractionTestLayer::setZoomMethod(vne::interaction::ZoomMethod method) {
         std::visit(
             [method](auto& c) {
                 if constexpr (std::is_same_v<std::decay_t<decltype(c)>, vne::interaction::Inspect3DController>) {
-                    c.orbitalCameraManipulator().setZoomMethod(method);
+                    c.trackballManipulator().setZoomMethod(method);
                 } else if constexpr (std::is_same_v<std::decay_t<decltype(c)>,
                                                     vne::interaction::Navigation3DController>) {
                     c.freeLookManipulator().setZoomMethod(method);
@@ -311,7 +339,7 @@ void InteractionTestLayer::setViewDirection(vne::interaction::ViewDirection dir)
         std::visit(
             [dir](auto& c) {
                 if constexpr (std::is_same_v<std::decay_t<decltype(c)>, vne::interaction::Inspect3DController>) {
-                    c.orbitalCameraManipulator().setViewDirection(dir);
+                    c.trackballManipulator().setViewDirection(dir);
                 }
             },
             v);
@@ -325,6 +353,7 @@ void InteractionTestLayer::resetCamera() {
     camera_->setPosition(kDefaultCameraPosition);
     camera_->setTarget(kDefaultTargetPosition);
     camera_->setUp(kDefaultCameraUp);
+    camera_->setSceneScale(1.0f);  // clear any accumulated SceneScale zoom
     camera_->updateMatrices();
     dispatchReset();
 }
@@ -362,7 +391,7 @@ void InteractionTestLayer::setRotationPivotMode(vne::interaction::OrbitPivotMode
         std::visit(
             [mode](auto& c) {
                 if constexpr (std::is_same_v<std::decay_t<decltype(c)>, vne::interaction::Inspect3DController>) {
-                    c.orbitalCameraManipulator().setPivotMode(mode);
+                    c.trackballManipulator().setPivotMode(mode);
                 }
             },
             v);
@@ -568,6 +597,7 @@ void InteractionSettingsLayer::renderPanel() {
     renderManipulatorSettings();
 
     const ControllerKind cur = il.getControllerKind();
+    const bool is_persp = !scene_layer_ || scene_layer_->uiSettings().use_perspective;
     const bool show_zoom =
         (cur == ControllerKind::eInspect3D || cur == ControllerKind::eNavigation || cur == ControllerKind::eOrtho2D);
     if (show_zoom) {
@@ -579,9 +609,43 @@ void InteractionSettingsLayer::renderPanel() {
                 il.setZoomMethod(zvals[ui.zoom_idx]);
             }
             ImGui::Spacing();
-            ImGui::TextDisabled("SceneScale: XY scene scale in view (virtual zoom)");
-            ImGui::TextDisabled("ChangeFov: widen/narrow FOV (perspective) or ortho extents");
-            ImGui::TextDisabled("DollyToCoi: move along view ray toward pivot");
+            if (ui.zoom_idx == 0) {
+                ImGui::TextDisabled("SceneScale: XY scale in view matrix — no clip change, works on both projections.");
+            } else if (ui.zoom_idx == 1) {
+                if (is_persp) {
+                    ImGui::TextDisabled("ChangeFov (persp): adjusts field-of-view angle.");
+                } else {
+                    ImGui::TextDisabled("ChangeFov (ortho): adjusts orthographic half-extents (same effect as dolly).");
+                }
+            } else {
+                if (is_persp) {
+                    ImGui::TextDisabled("DollyToCoi (persp): moves eye along view ray toward pivot.");
+                } else {
+                    ImGui::TextDisabled("DollyToCoi (ortho): adjusts ortho bounds anchored at cursor position.");
+                }
+            }
+        }
+    }
+
+    // On-switch policy
+    if (ImGui::CollapsingHeader("On Switch Policy")) {
+        ImGui::Checkbox("Reset scene scale on switch##policy", &ui.on_switch_reset_scene_scale);
+        ImGui::SameLine();
+        ImGui::TextDisabled("(?)");
+        if (ImGui::IsItemHovered()) {
+            ImGui::SetTooltip("Clears accumulated SceneScale zoom when changing controller or projection.\nPrevents zoom artifacts carrying over.");
+        }
+        ImGui::Checkbox("Reset rig state on switch##policy", &ui.on_switch_reset_rig_state);
+        ImGui::SameLine();
+        ImGui::TextDisabled("(?)");
+        if (ImGui::IsItemHovered()) {
+            ImGui::SetTooltip("Clears in-flight gestures (drag, inertia) when switching.\nPrevents orphaned pan/rotate velocity.");
+        }
+        ImGui::Checkbox("Reset pose to defaults on switch##policy", &ui.on_switch_reset_pose);
+        ImGui::SameLine();
+        ImGui::TextDisabled("(?)");
+        if (ImGui::IsItemHovered()) {
+            ImGui::SetTooltip("Snaps camera back to default position/target when switching.\nUseful for clean comparisons between controllers.");
         }
     }
 
@@ -611,16 +675,78 @@ void InteractionSettingsLayer::renderPanel() {
     }
 
     if (ImGui::CollapsingHeader("Camera State", ImGuiTreeNodeFlags_DefaultOpen)) {
-        const auto pos = il.cameraPosition();
-        const auto tgt = il.cameraTarget();
-        ImGui::Text("Position: %.2f  %.2f  %.2f",
-                    static_cast<double>(pos.x()),
-                    static_cast<double>(pos.y()),
-                    static_cast<double>(pos.z()));
-        ImGui::Text("Target:   %.2f  %.2f  %.2f",
-                    static_cast<double>(tgt.x()),
-                    static_cast<double>(tgt.y()),
-                    static_cast<double>(tgt.z()));
+        const auto* cam_ptr = scene_layer_ ? scene_layer_->getActiveCameraPtr(0) : nullptr;
+        if (cam_ptr) {
+            const auto pos = cam_ptr->getPosition();
+            const auto tgt = cam_ptr->getTarget();
+            const auto quat = cam_ptr->getOrientation();
+            const float scene_scale = cam_ptr->getSceneScale();
+            const float look_dist = (pos - tgt).length();
+
+            ImGui::Text("Position:   %.3f  %.3f  %.3f", static_cast<double>(pos.x()), static_cast<double>(pos.y()), static_cast<double>(pos.z()));
+            ImGui::Text("Target:     %.3f  %.3f  %.3f  [derived, read-only]", static_cast<double>(tgt.x()), static_cast<double>(tgt.y()), static_cast<double>(tgt.z()));
+            ImGui::Text("Look dist:  %.3f", static_cast<double>(look_dist));
+            ImGui::Text("Quat(xyzw): %.3f  %.3f  %.3f  %.3f", static_cast<double>(quat.x), static_cast<double>(quat.y), static_cast<double>(quat.z), static_cast<double>(quat.w));
+            if (scene_scale != 1.0f) {
+                ImGui::TextColored(ImVec4(1.f, 0.45f, 0.15f, 1.f), "Scene scale: %.4f  (non-unity)", static_cast<double>(scene_scale));
+            } else {
+                ImGui::TextDisabled("Scene scale: 1.0 (identity)");
+            }
+            ImGui::Separator();
+
+            // Edit mode
+            const char* edit_modes[] = {"Look-at (pos + target + up)", "Pose (pos + euler)"};
+            ImGui::Combo("Edit mode##camedit", &ui.cam_edit_mode, edit_modes, 2);
+            ImGui::Spacing();
+
+            if (ui.cam_edit_mode == 0) {
+                ImGui::InputFloat3("Position##lookat", &ui.edit_pos.x());
+                ImGui::InputFloat3("Target##lookat", &ui.edit_target.x());
+                ImGui::InputFloat3("Up##lookat", &ui.edit_up.x());
+                if (ImGui::Button("Apply lookAt")) {
+                    cam_ptr->lookAt(ui.edit_pos, ui.edit_target, ui.edit_up);
+                    cam_ptr->updateMatrices();
+                    il.setCamerasFromScene();
+                }
+                ImGui::SameLine();
+                if (ImGui::Button("Snap from camera##lookat")) {
+                    ui.edit_pos = pos;
+                    ui.edit_target = tgt;
+                    ui.edit_up = cam_ptr->getUp();
+                }
+            } else {
+                ImGui::InputFloat3("Position##pose", &ui.edit_pos.x());
+                ImGui::SliderFloat("Yaw##pose", &ui.edit_yaw_deg, -180.f, 180.f, "%.1f deg");
+                ImGui::SliderFloat("Pitch##pose", &ui.edit_pitch_deg, -89.f, 89.f, "%.1f deg");
+                ImGui::SliderFloat("Roll##pose", &ui.edit_roll_deg, -180.f, 180.f, "%.1f deg");
+                if (ImGui::Button("Apply Pose")) {
+                    const float y = vne::math::degToRad(ui.edit_yaw_deg);
+                    const float p = vne::math::degToRad(ui.edit_pitch_deg);
+                    const float r = vne::math::degToRad(ui.edit_roll_deg);
+                    const vne::math::Quatf qy = vne::math::Quatf::fromAxisAngle(vne::math::Vec3f(0.f, 1.f, 0.f), y);
+                    const vne::math::Quatf qp = vne::math::Quatf::fromAxisAngle(vne::math::Vec3f(1.f, 0.f, 0.f), p);
+                    const vne::math::Quatf qr = vne::math::Quatf::fromAxisAngle(vne::math::Vec3f(0.f, 0.f, 1.f), r);
+                    const vne::math::Quatf final_q = (qy * qp * qr).normalized();
+                    cam_ptr->setOrientationView(ui.edit_pos, final_q);
+                    cam_ptr->updateMatrices();
+                    il.setCamerasFromScene();
+                }
+                ImGui::SameLine();
+                if (ImGui::Button("Snap from camera##pose")) {
+                    ui.edit_pos = pos;
+                    // Decompose quaternion into yaw/pitch/roll (ZYX Euler)
+                    const float sq = quat.w * quat.w;
+                    const float sx = quat.x * quat.x;
+                    const float sy = quat.y * quat.y;
+                    const float sz = quat.z * quat.z;
+                    ui.edit_pitch_deg = vne::math::radToDeg(std::asin(vne::math::clamp(2.0f * (quat.w * quat.x - quat.z * quat.y), -1.0f, 1.0f)));
+                    ui.edit_yaw_deg = vne::math::radToDeg(std::atan2(2.0f * (quat.w * quat.y + quat.x * quat.z), sq - sx - sy + sz));
+                    ui.edit_roll_deg = vne::math::radToDeg(std::atan2(2.0f * (quat.w * quat.z + quat.x * quat.y), sq + sx - sy - sz));
+                }
+            }
+        } else {
+            ImGui::TextDisabled("No camera attached.");
+        }
         ImGui::Spacing();
         if (ImGui::Button("Reset camera")) {
             il.resetCamera();
@@ -651,6 +777,11 @@ void InteractionSettingsLayer::renderCameraSettings() {
                 sl.syncCameraPositionTargetUp();
                 sl.setUsePerspective(use_persp);
                 if (!use_persp && !il.isManipulatorCompatibleWithCamera(false)) {
+                    SwitchPolicy pol;
+                    pol.reset_scene_scale = ui.on_switch_reset_scene_scale;
+                    pol.reset_rig_state = ui.on_switch_reset_rig_state;
+                    pol.reset_pose_to_default = ui.on_switch_reset_pose;
+                    il.setSwitchPolicy(pol);
                     il.setControllerKind(ControllerKind::eInspect3D);
                 }
                 il.setCamerasFromScene();
@@ -728,10 +859,31 @@ void InteractionSettingsLayer::renderManipulatorSettings() {
         !last_manip_synced_controller_kind_.has_value() || *last_manip_synced_controller_kind_ != cur;
     if (window_appearing || controller_changed) {
         if (auto* insp = il.getInspectController()) {
+            auto& orb = insp->trackballManipulator();
             ui.rotation_enabled_insp = insp->isRotationEnabled();
+            ui.pan_enabled_insp = insp->isPanEnabled();
+            ui.zoom_enabled_insp = insp->isZoomEnabled();
+            ui.rotation_inertia_enabled_insp = orb.isRotationInertiaEnabled();
+            ui.pan_inertia_enabled_insp = orb.isPanInertiaEnabled();
+            ui.orbit_animation_enabled_insp = orb.isOrbitAnimationEnabled();
+            ui.fit_anim_duration_insp = orb.getFitAnimationDuration();
+            ui.trackball_rotation_scale_insp = orb.getTrackballRotationScale();
+            ui.pivot_on_dbl_click_insp = insp->isPivotOnDoubleClickEnabled();
             using TPM = vne::interaction::TrackballProjectionMode;
             ui.trackball_proj_insp_idx =
-                (insp->orbitalCameraManipulator().getTrackballProjectionMode() == TPM::eHyperbolic) ? 0 : 1;
+                (orb.getTrackballProjectionMode() == TPM::eHyperbolic) ? 0 : 1;
+        } else if (auto* nav = il.getNavController()) {
+            ui.nav_rotation_mode_idx = static_cast<int>(nav->getRotationMode());
+            ui.look_enabled_nav = nav->isLookEnabled();
+            ui.move_enabled_nav = nav->isMoveEnabled();
+            ui.zoom_enabled_nav = nav->isZoomEnabled();
+            ui.move_speed = nav->getMoveSpeed();
+            ui.mouse_sensitivity = nav->getMouseSensitivity();
+            ui.sprint_mult = nav->getSprintMultiplier();
+            ui.slow_mult = nav->getSlowMultiplier();
+        } else if (auto* ortho = il.getOrtho2DController()) {
+            ui.pan_inertia_enabled_ortho = ortho->ortho2DManipulator().isPanInertiaEnabled();
+            ui.rotate_sensitivity_ortho = ortho->ortho2DManipulator().getRotateSensitivityDegreesPerPixel();
         }
         last_manip_synced_controller_kind_ = cur;
     }
@@ -760,6 +912,12 @@ void InteractionSettingsLayer::renderManipulatorSettings() {
             if (new_kind == ControllerKind::eOrtho2D && scene_layer_->uiSettings().use_perspective) {
                 ImGui::OpenPopup("Ortho2DNeedsOrthographicCamera");
             } else {
+                // Push current UI policy into the layer before switching.
+                SwitchPolicy pol;
+                pol.reset_scene_scale = ui.on_switch_reset_scene_scale;
+                pol.reset_rig_state = ui.on_switch_reset_rig_state;
+                pol.reset_pose_to_default = ui.on_switch_reset_pose;
+                il.setSwitchPolicy(pol);
                 il.setControllerKind(new_kind);
                 il.setCamerasFromScene();
             }
@@ -803,7 +961,7 @@ void InteractionSettingsLayer::renderManipulatorSettings() {
 
         // Per-controller settings
         if (auto* insp = il.getInspectController()) {
-            auto& orb = insp->orbitalCameraManipulator();
+            auto& orb = insp->trackballManipulator();
             if (ImGui::TreeNodeEx("Inspect Settings", ImGuiTreeNodeFlags_DefaultOpen)) {
                 using OPM = vne::interaction::OrbitPivotMode;
                 int pivot_idx = static_cast<int>(orb.getPivotMode());
@@ -830,9 +988,37 @@ void InteractionSettingsLayer::renderManipulatorSettings() {
                 if (ImGui::Checkbox("Zoom enabled##insp", &ui.zoom_enabled_insp)) {
                     insp->setZoomEnabled(ui.zoom_enabled_insp);
                 }
+                // Inertia
+                ui.rotation_inertia_enabled_insp = orb.isRotationInertiaEnabled();
+                if (ImGui::Checkbox("Rotation inertia##insp", &ui.rotation_inertia_enabled_insp)) {
+                    orb.setRotationInertiaEnabled(ui.rotation_inertia_enabled_insp);
+                }
+                ui.pan_inertia_enabled_insp = orb.isPanInertiaEnabled();
+                if (ImGui::Checkbox("Pan inertia##insp", &ui.pan_inertia_enabled_insp)) {
+                    orb.setPanInertiaEnabled(ui.pan_inertia_enabled_insp);
+                }
+                // Animation
+                ui.orbit_animation_enabled_insp = orb.isOrbitAnimationEnabled();
+                if (ImGui::Checkbox("Fit/view animation##insp", &ui.orbit_animation_enabled_insp)) {
+                    insp->setOrbitAnimationEnabled(ui.orbit_animation_enabled_insp);
+                }
+                ui.fit_anim_duration_insp = orb.getFitAnimationDuration();
+                if (ImGui::SliderFloat("Fit anim duration##insp", &ui.fit_anim_duration_insp, 0.f, 1.5f, "%.2f s")) {
+                    orb.setFitAnimationDuration(ui.fit_anim_duration_insp);
+                }
+                // Pivot on double-click
+                ui.pivot_on_dbl_click_insp = insp->isPivotOnDoubleClickEnabled();
+                if (ImGui::Checkbox("Pivot on double-click##insp", &ui.pivot_on_dbl_click_insp)) {
+                    insp->setPivotOnDoubleClickEnabled(ui.pivot_on_dbl_click_insp);
+                }
+                // Speeds
                 float rs = orb.getRotationSpeed();
                 if (ImGui::SliderFloat("Rotation speed##insp", &rs, 0.1f, 5.f)) {
                     orb.setRotationSpeed(rs);
+                }
+                ui.trackball_rotation_scale_insp = orb.getTrackballRotationScale();
+                if (ImGui::SliderFloat("Trackball rot scale##insp", &ui.trackball_rotation_scale_insp, 0.5f, 8.f)) {
+                    orb.setTrackballRotationScale(ui.trackball_rotation_scale_insp);
                 }
                 float ps = orb.getPanSpeed();
                 if (ImGui::SliderFloat("Pan speed##insp", &ps, 0.1f, 10.f)) {
@@ -858,6 +1044,39 @@ void InteractionSettingsLayer::renderManipulatorSettings() {
             }
         } else if (auto* nav = il.getNavController()) {
             if (ImGui::TreeNodeEx("Navigation Settings", ImGuiTreeNodeFlags_DefaultOpen)) {
+                // Rotation mode
+                {
+                    using FLR = vne::interaction::FreeLookRotationMode;
+                    const char* rot_modes[] = {"YawPitch (default)", "Trackball (virtual ball)"};
+                    ui.nav_rotation_mode_idx = static_cast<int>(nav->getRotationMode());
+                    if (ImGui::Combo("Look mode##nav", &ui.nav_rotation_mode_idx, rot_modes, 2)) {
+                        nav->setRotationMode(ui.nav_rotation_mode_idx == 0 ? FLR::eYawPitch : FLR::eTrackball);
+                    }
+                }
+                // DOF enables
+                ui.look_enabled_nav = nav->isLookEnabled();
+                if (ImGui::Checkbox("Look enabled##nav", &ui.look_enabled_nav)) {
+                    nav->setLookEnabled(ui.look_enabled_nav);
+                }
+                ui.move_enabled_nav = nav->isMoveEnabled();
+                if (ImGui::Checkbox("Move enabled##nav", &ui.move_enabled_nav)) {
+                    nav->setMoveEnabled(ui.move_enabled_nav);
+                }
+                ui.zoom_enabled_nav = nav->isZoomEnabled();
+                if (ImGui::Checkbox("Zoom enabled##nav", &ui.zoom_enabled_nav)) {
+                    nav->setZoomEnabled(ui.zoom_enabled_nav);
+                }
+                // World up
+                {
+                    const char* up_names[] = {"Y-up (default)", "Z-up (CAD/scientific)"};
+                    if (ImGui::Combo("World up##nav", &ui.nav_world_up_idx, up_names, 2)) {
+                        const vne::math::Vec3f up_vec = (ui.nav_world_up_idx == 1)
+                            ? vne::math::Vec3f(0.f, 0.f, 1.f)
+                            : vne::math::Vec3f(0.f, 1.f, 0.f);
+                        nav->freeLookManipulator().setWorldUp(up_vec);
+                    }
+                }
+                // Speeds
                 ui.move_speed = nav->getMoveSpeed();
                 if (ImGui::SliderFloat("Move speed##nav", &ui.move_speed, 0.5f, 20.f)) {
                     nav->setMoveSpeed(ui.move_speed);
@@ -905,7 +1124,6 @@ void InteractionSettingsLayer::renderManipulatorSettings() {
                         ImGui::TextColored(ImVec4(1.f, 0.4f, 0.4f, 1.f), "Right:   (not computed)");
                     } else {
                         const vne::math::Vec3f fwd = fwd_vec.normalized();
-                        // Build right from world-up candidates; never normalize a near-zero cross.
                         const vne::math::Vec3f up_candidates[3] = {
                             {0.f, 1.f, 0.f},
                             {1.f, 0.f, 0.f},
@@ -948,10 +1166,32 @@ void InteractionSettingsLayer::renderManipulatorSettings() {
         } else if (auto* ortho = il.getOrtho2DController()) {
             auto& opz = ortho->ortho2DManipulator();
             if (ImGui::TreeNodeEx("Ortho 2D Settings", ImGuiTreeNodeFlags_DefaultOpen)) {
+                // View direction presets
+                ImGui::TextDisabled("View direction:");
+                using VD = vne::interaction::ViewDirection;
+                struct { const char* label; VD dir; } vd_presets[] = {
+                    {"Front", VD::eFront}, {"Back", VD::eBack},
+                    {"Left", VD::eLeft}, {"Right", VD::eRight},
+                    {"Top", VD::eTop}, {"Bottom", VD::eBottom},
+                };
+                for (auto& vdp : vd_presets) {
+                    if (ImGui::Button(vdp.label)) {
+                        ortho->setViewDirection(vdp.dir);
+                    }
+                    ImGui::SameLine();
+                }
+                ImGui::NewLine();
+                // DOF
                 bool rot_en = ortho->isRotationEnabled();
                 if (ImGui::Checkbox("Rotation enabled##ortho", &rot_en)) {
                     ortho->setRotationEnabled(rot_en);
                 }
+                // Pan inertia
+                ui.pan_inertia_enabled_ortho = opz.isPanInertiaEnabled();
+                if (ImGui::Checkbox("Pan inertia##ortho", &ui.pan_inertia_enabled_ortho)) {
+                    ortho->setPanInertiaEnabled(ui.pan_inertia_enabled_ortho);
+                }
+                // Speeds
                 float zs = opz.getZoomSpeed();
                 if (ImGui::SliderFloat("Zoom speed##ortho", &zs, 1.01f, 1.5f, "%.3f")) {
                     opz.setZoomSpeed(zs);
@@ -960,6 +1200,13 @@ void InteractionSettingsLayer::renderManipulatorSettings() {
                 if (ImGui::SliderFloat("Pan damping##ortho", &pd, 0.f, 20.f)) {
                     opz.setPanDamping(pd);
                 }
+                ui.rotate_sensitivity_ortho = opz.getRotateSensitivityDegreesPerPixel();
+                if (ImGui::SliderFloat("Rotate sensitivity##ortho", &ui.rotate_sensitivity_ortho, 0.05f, 3.f, "%.2f deg/px")) {
+                    ortho->setRotateSensitivity(ui.rotate_sensitivity_ortho);
+                }
+                // World units per pixel readout
+                ImGui::Spacing();
+                ImGui::Text("World units/pixel: %.4f", static_cast<double>(ortho->getWorldUnitsPerPixel()));
                 ImGui::TreePop();
             }
         }
