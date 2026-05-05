@@ -129,12 +129,11 @@ void BaseSceneLayer::onRender(const vne::testbed::RenderContext& render_context)
                     half_x = std::max(half_x, max_abs_x);
                     half_y = std::max(half_y, max_abs_y);
                 }
-                const bool need_ortho_proj_sync =
-                    ui_settings_.show_grid
-                    || (vp_w != ortho_proj_sync_vp_w_ || vp_h != ortho_proj_sync_vp_h_
-                        || ui_settings_.ortho_half != ortho_proj_sync_half_
-                        || ui_settings_.ortho_near != ortho_proj_sync_near_
-                        || ui_settings_.ortho_far != ortho_proj_sync_far_);
+                const bool need_ortho_proj_sync = ui_settings_.show_grid
+                                                  || (vp_w != ortho_proj_sync_vp_w_ || vp_h != ortho_proj_sync_vp_h_
+                                                      || ui_settings_.ortho_half != ortho_proj_sync_half_
+                                                      || ui_settings_.ortho_near != ortho_proj_sync_near_
+                                                      || ui_settings_.ortho_far != ortho_proj_sync_far_);
                 if (need_ortho_proj_sync) {
                     o->setBounds(-half_x, half_x, -half_y, half_y, ui_settings_.ortho_near, ui_settings_.ortho_far);
                     o->updateProjectionMatrix();
