@@ -196,7 +196,8 @@ void SceneTestLayer::onRender(const vne::testbed::RenderContext& render_context)
 
     // Aspect / resize — only update when the viewport size actually changes
     if (render_context.frame_info.width > 0 && render_context.frame_info.height > 0) {
-        if (render_context.frame_info.width != ui_.last_viewport_w || render_context.frame_info.height != ui_.last_viewport_h) {
+        if (render_context.frame_info.width != ui_.last_viewport_w
+            || render_context.frame_info.height != ui_.last_viewport_h) {
             ui_.last_viewport_w = render_context.frame_info.width;
             ui_.last_viewport_h = render_context.frame_info.height;
             updateCameraAspect(ui_.last_viewport_w, ui_.last_viewport_h);
@@ -649,8 +650,9 @@ void SceneTestLayer::drawFrustum(vne::math::Vec3f pos,
     const vne::math::Vec3f far_col{0.3f, 0.8f, 1.0f};   // cyan   — far  plane
     const vne::math::Vec3f edge_col{0.7f, 0.7f, 0.7f};  // gray   — connecting edges
 
-    const float aspect =
-        (ui_.last_viewport_h > 0) ? (static_cast<float>(ui_.last_viewport_w) / static_cast<float>(ui_.last_viewport_h)) : 1.f;
+    const float aspect = (ui_.last_viewport_h > 0)
+                             ? (static_cast<float>(ui_.last_viewport_w) / static_cast<float>(ui_.last_viewport_h))
+                             : 1.f;
 
     if (ui_.use_perspective) {
         // Tangent of half-FOV gives the slope; multiply by distance to get half-extents.

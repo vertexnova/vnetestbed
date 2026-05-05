@@ -59,8 +59,8 @@ enum class ControllerKind : int {
 
 /** Governs what is reset when changing controller or projection type. */
 struct SwitchPolicy {
-    bool reset_scene_scale{true};   //!< Call setSceneScale(1.0f) before attaching new manipulators.
-    bool reset_rig_state{true};     //!< Call dispatchReset() before attaching to flush in-flight gestures.
+    bool reset_scene_scale{true};       //!< Call setSceneScale(1.0f) before attaching new manipulators.
+    bool reset_rig_state{true};         //!< Call dispatchReset() before attaching to flush in-flight gestures.
     bool reset_pose_to_default{false};  //!< Snap camera back to default position/target on switch.
 };
 

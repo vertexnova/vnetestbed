@@ -150,11 +150,11 @@ void InteractionTestLayer::dispatchEvent(const vne::events::Event& event, int vi
 
     // Use the real frame dt for mouse-move/drag events so pan inertia velocity is sampled correctly.
     // Key-repeat events still use kFixedDt (key hold timing is frame-rate independent).
-    const bool is_mouse_event = (event.type() == vne::events::EventType::eMouseMoved
-                                 || event.type() == vne::events::EventType::eMouseScrolled
-                                 || event.type() == vne::events::EventType::eMouseButtonPressed
-                                 || event.type() == vne::events::EventType::eMouseButtonReleased
-                                 || event.type() == vne::events::EventType::eMouseButtonDoubleClicked);
+    const bool is_mouse_event =
+        (event.type() == vne::events::EventType::eMouseMoved || event.type() == vne::events::EventType::eMouseScrolled
+         || event.type() == vne::events::EventType::eMouseButtonPressed
+         || event.type() == vne::events::EventType::eMouseButtonReleased
+         || event.type() == vne::events::EventType::eMouseButtonDoubleClicked);
     const double event_dt = is_mouse_event ? last_frame_dt_ : kFixedDt;
 
     std::visit(
@@ -301,11 +301,7 @@ void InteractionTestLayer::setControllerKind(ControllerKind kind) {
     const auto vph = kDefaultViewportH;
     for (size_t i = 0; i < static_cast<size_t>(kMaxViewports); ++i) {
         controllers_[i] = makeController(kind, navigation_mode_);
-        std::visit(
-            [vpw, vph](auto& c) {
-                c.onResize(vpw, vph);
-            },
-            controllers_[i]);
+        std::visit([vpw, vph](auto& c) { c.onResize(vpw, vph); }, controllers_[i]);
     }
 
     // Step 2: reset rig + mapper state on fresh controllers before attaching camera.
@@ -633,19 +629,22 @@ void InteractionSettingsLayer::renderPanel() {
         ImGui::SameLine();
         ImGui::TextDisabled("(?)");
         if (ImGui::IsItemHovered()) {
-            ImGui::SetTooltip("Clears accumulated SceneScale zoom when changing controller or projection.\nPrevents zoom artifacts carrying over.");
+            ImGui::SetTooltip("Clears accumulated SceneScale zoom when changing controller or projection.\nPrevents "
+                              "zoom artifacts carrying over.");
         }
         ImGui::Checkbox("Reset rig state on switch##policy", &ui.on_switch_reset_rig_state);
         ImGui::SameLine();
         ImGui::TextDisabled("(?)");
         if (ImGui::IsItemHovered()) {
-            ImGui::SetTooltip("Clears in-flight gestures (drag, inertia) when switching.\nPrevents orphaned pan/rotate velocity.");
+            ImGui::SetTooltip(
+                "Clears in-flight gestures (drag, inertia) when switching.\nPrevents orphaned pan/rotate velocity.");
         }
         ImGui::Checkbox("Reset pose to defaults on switch##policy", &ui.on_switch_reset_pose);
         ImGui::SameLine();
         ImGui::TextDisabled("(?)");
         if (ImGui::IsItemHovered()) {
-            ImGui::SetTooltip("Snaps camera back to default position/target when switching.\nUseful for clean comparisons between controllers.");
+            ImGui::SetTooltip("Snaps camera back to default position/target when switching.\nUseful for clean "
+                              "comparisons between controllers.");
         }
     }
 
@@ -683,12 +682,24 @@ void InteractionSettingsLayer::renderPanel() {
             const float scene_scale = cam_ptr->getSceneScale();
             const float look_dist = (pos - tgt).length();
 
-            ImGui::Text("Position:   %.3f  %.3f  %.3f", static_cast<double>(pos.x()), static_cast<double>(pos.y()), static_cast<double>(pos.z()));
-            ImGui::Text("Target:     %.3f  %.3f  %.3f  [derived, read-only]", static_cast<double>(tgt.x()), static_cast<double>(tgt.y()), static_cast<double>(tgt.z()));
+            ImGui::Text("Position:   %.3f  %.3f  %.3f",
+                        static_cast<double>(pos.x()),
+                        static_cast<double>(pos.y()),
+                        static_cast<double>(pos.z()));
+            ImGui::Text("Target:     %.3f  %.3f  %.3f  [derived, read-only]",
+                        static_cast<double>(tgt.x()),
+                        static_cast<double>(tgt.y()),
+                        static_cast<double>(tgt.z()));
             ImGui::Text("Look dist:  %.3f", static_cast<double>(look_dist));
-            ImGui::Text("Quat(xyzw): %.3f  %.3f  %.3f  %.3f", static_cast<double>(quat.x), static_cast<double>(quat.y), static_cast<double>(quat.z), static_cast<double>(quat.w));
+            ImGui::Text("Quat(xyzw): %.3f  %.3f  %.3f  %.3f",
+                        static_cast<double>(quat.x),
+                        static_cast<double>(quat.y),
+                        static_cast<double>(quat.z),
+                        static_cast<double>(quat.w));
             if (scene_scale != 1.0f) {
-                ImGui::TextColored(ImVec4(1.f, 0.45f, 0.15f, 1.f), "Scene scale: %.4f  (non-unity)", static_cast<double>(scene_scale));
+                ImGui::TextColored(ImVec4(1.f, 0.45f, 0.15f, 1.f),
+                                   "Scene scale: %.4f  (non-unity)",
+                                   static_cast<double>(scene_scale));
             } else {
                 ImGui::TextDisabled("Scene scale: 1.0 (identity)");
             }
@@ -739,9 +750,12 @@ void InteractionSettingsLayer::renderPanel() {
                     const float sx = quat.x * quat.x;
                     const float sy = quat.y * quat.y;
                     const float sz = quat.z * quat.z;
-                    ui.edit_pitch_deg = vne::math::radToDeg(std::asin(vne::math::clamp(2.0f * (quat.w * quat.x - quat.z * quat.y), -1.0f, 1.0f)));
-                    ui.edit_yaw_deg = vne::math::radToDeg(std::atan2(2.0f * (quat.w * quat.y + quat.x * quat.z), sq - sx - sy + sz));
-                    ui.edit_roll_deg = vne::math::radToDeg(std::atan2(2.0f * (quat.w * quat.z + quat.x * quat.y), sq + sx - sy - sz));
+                    ui.edit_pitch_deg = vne::math::radToDeg(
+                        std::asin(vne::math::clamp(2.0f * (quat.w * quat.x - quat.z * quat.y), -1.0f, 1.0f)));
+                    ui.edit_yaw_deg =
+                        vne::math::radToDeg(std::atan2(2.0f * (quat.w * quat.y + quat.x * quat.z), sq - sx - sy + sz));
+                    ui.edit_roll_deg =
+                        vne::math::radToDeg(std::atan2(2.0f * (quat.w * quat.z + quat.x * quat.y), sq + sx - sy - sz));
                 }
             }
         } else {
@@ -870,8 +884,7 @@ void InteractionSettingsLayer::renderManipulatorSettings() {
             ui.trackball_rotation_scale_insp = orb.getTrackballRotationScale();
             ui.pivot_on_dbl_click_insp = insp->isPivotOnDoubleClickEnabled();
             using TPM = vne::interaction::TrackballProjectionMode;
-            ui.trackball_proj_insp_idx =
-                (orb.getTrackballProjectionMode() == TPM::eHyperbolic) ? 0 : 1;
+            ui.trackball_proj_insp_idx = (orb.getTrackballProjectionMode() == TPM::eHyperbolic) ? 0 : 1;
         } else if (auto* nav = il.getNavController()) {
             ui.nav_rotation_mode_idx = static_cast<int>(nav->getRotationMode());
             ui.look_enabled_nav = nav->isLookEnabled();
@@ -1070,9 +1083,8 @@ void InteractionSettingsLayer::renderManipulatorSettings() {
                 {
                     const char* up_names[] = {"Y-up (default)", "Z-up (CAD/scientific)"};
                     if (ImGui::Combo("World up##nav", &ui.nav_world_up_idx, up_names, 2)) {
-                        const vne::math::Vec3f up_vec = (ui.nav_world_up_idx == 1)
-                            ? vne::math::Vec3f(0.f, 0.f, 1.f)
-                            : vne::math::Vec3f(0.f, 1.f, 0.f);
+                        const vne::math::Vec3f up_vec = (ui.nav_world_up_idx == 1) ? vne::math::Vec3f(0.f, 0.f, 1.f)
+                                                                                   : vne::math::Vec3f(0.f, 1.f, 0.f);
                         nav->freeLookManipulator().setWorldUp(up_vec);
                     }
                 }
@@ -1169,10 +1181,16 @@ void InteractionSettingsLayer::renderManipulatorSettings() {
                 // View direction presets
                 ImGui::TextDisabled("View direction:");
                 using VD = vne::interaction::ViewDirection;
-                struct { const char* label; VD dir; } vd_presets[] = {
-                    {"Front", VD::eFront}, {"Back", VD::eBack},
-                    {"Left", VD::eLeft}, {"Right", VD::eRight},
-                    {"Top", VD::eTop}, {"Bottom", VD::eBottom},
+                struct {
+                    const char* label;
+                    VD dir;
+                } vd_presets[] = {
+                    {"Front", VD::eFront},
+                    {"Back", VD::eBack},
+                    {"Left", VD::eLeft},
+                    {"Right", VD::eRight},
+                    {"Top", VD::eTop},
+                    {"Bottom", VD::eBottom},
                 };
                 for (auto& vdp : vd_presets) {
                     if (ImGui::Button(vdp.label)) {
@@ -1201,7 +1219,11 @@ void InteractionSettingsLayer::renderManipulatorSettings() {
                     opz.setPanDamping(pd);
                 }
                 ui.rotate_sensitivity_ortho = opz.getRotationSensitivityDegreesPerPixel();
-                if (ImGui::SliderFloat("Rotate sensitivity##ortho", &ui.rotate_sensitivity_ortho, 0.05f, 3.f, "%.2f deg/px")) {
+                if (ImGui::SliderFloat("Rotate sensitivity##ortho",
+                                       &ui.rotate_sensitivity_ortho,
+                                       0.05f,
+                                       3.f,
+                                       "%.2f deg/px")) {
                     ortho->setRotateSensitivity(ui.rotate_sensitivity_ortho);
                 }
                 // World units per pixel readout
