@@ -333,10 +333,7 @@ void BaseSceneLayer::drawAxes() const {
 
 BaseInteractionLayer::BaseInteractionLayer(const char* name)
     : vne::testbed::ILayer(name) {
-    controllers_.reserve(static_cast<size_t>(kMaxViewports));
-    for (int i = 0; i < kMaxViewports; ++i) {
-        controllers_.push_back(vne::interaction::Inspect3DController{});
-    }
+    controllers_.resize(static_cast<size_t>(kMaxViewports));
 }
 
 void BaseInteractionLayer::setCamera(std::shared_ptr<vne::scene::ICamera> camera) {

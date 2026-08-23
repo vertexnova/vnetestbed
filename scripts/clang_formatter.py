@@ -20,6 +20,7 @@ import argparse
 import os
 import subprocess
 import sys
+from functools import lru_cache
 from pathlib import Path
 
 
@@ -35,7 +36,7 @@ def find_source_files(folder_path: Path) -> list:
         # Recurse into all subdirs except excluded
         dirs[:] = [d for d in dirs if d not in exclude_dirs]
         for f in files:
-            if f.endswith(extensions):
+            if f.lower().endswith(extensions):
                 source_files.append(str(Path(root) / f))
 
     return source_files
@@ -47,6 +48,7 @@ def is_source_file(file_path: Path) -> bool:
     return file_path.suffix.lower() in extensions
 
 
+@lru_cache(maxsize=1)
 def get_clang_format_binary() -> str:
     """Use clang-format-17 when available (matches many VNE repos); otherwise clang-format."""
     for name in ('clang-format-17', 'clang-format'):
@@ -58,9 +60,8 @@ def get_clang_format_binary() -> str:
     return 'clang-format'  # fallback for error message
 
 
-def check_clang_format() -> bool:
+def check_clang_format(binary: str) -> bool:
     """Check if clang-format is available."""
-    binary = get_clang_format_binary()
     try:
         subprocess.run([binary, '--version'], capture_output=True, check=True)
         return True
@@ -68,13 +69,12 @@ def check_clang_format() -> bool:
         return False
 
 
-def run_clang_format(files: list, style_file: Path, dry_run: bool = False) -> bool:
+def run_clang_format(files: list, style_file: Path, dry_run: bool = False, *, binary: str) -> bool:
     """Run clang-format on the specified files."""
     if not files:
         print("No source files found to format.")
         return True
 
-    binary = get_clang_format_binary()
     print(f"Found {len(files)} source files to format (using {binary}).")
 
     base_cmd = [
@@ -87,7 +87,7 @@ def run_clang_format(files: list, style_file: Path, dry_run: bool = False) -> bo
         # Same as CI: fail if any file would be reformatted (--dry-run --Werror)
         print("DRY RUN - Checking for format violations (matches CI).")
         result = subprocess.run(
-            base_cmd + ['--dry-run', '--Werror'] + files,
+            [*base_cmd, '--dry-run', '--Werror', *files],
             capture_output=True,
             text=True,
         )
@@ -104,7 +104,7 @@ def run_clang_format(files: list, style_file: Path, dry_run: bool = False) -> bo
         print(f"Formatting: {file_path}")
         try:
             subprocess.run(
-                base_cmd + ['-i', file_path],
+                [*base_cmd, '-i', file_path],
                 capture_output=True,
                 text=True,
                 check=True,
@@ -222,7 +222,7 @@ Examples:
 
     # Check clang-format availability (prefer clang-format-17 when present)
     binary = get_clang_format_binary()
-    if not check_clang_format():
+    if not check_clang_format(binary):
         print("Error: clang-format not found. Please install clang-format (install clang-format-17 for pinned behavior).")
         print("  Ubuntu/Debian: sudo apt install clang-format-17")
         print("  macOS: brew install clang-format@17  (or llvm)")
@@ -231,7 +231,7 @@ Examples:
         print(f"Note: Using '{binary}'. For CI-identical formatting when CI pins 17, install clang-format-17.")
 
     # Run clang-format
-    success = run_clang_format(source_files, style_file, args.dry_run)
+    success = run_clang_format(source_files, style_file, args.dry_run, binary=binary)
 
     if success:
         print("\n✓ Formatting completed successfully!")

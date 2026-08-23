@@ -44,6 +44,7 @@
 #include "../common/path_utils.h"
 
 #include <filesystem>
+#include <iterator>
 #include <memory>
 #include <string>
 #include <type_traits>
@@ -806,14 +807,6 @@ void InteractionSettingsLayer::renderCameraSettings() {
             } else {
                 sl.syncCameraPositionTargetUp();
                 sl.setUsePerspective(use_persp);
-                if (!use_persp && !il.isManipulatorCompatibleWithCamera(false)) {
-                    SwitchPolicy pol;
-                    pol.reset_scene_scale = ui.on_switch_reset_scene_scale;
-                    pol.reset_rig_state = ui.on_switch_reset_rig_state;
-                    pol.reset_pose_to_default = ui.on_switch_reset_pose;
-                    il.setSwitchPolicy(pol);
-                    il.setControllerKind(ControllerKind::eInspect3D);
-                }
                 il.setCamerasFromScene();
             }
         }
@@ -924,8 +917,9 @@ void InteractionSettingsLayer::renderManipulatorSettings() {
             ControllerKind::eNavigation,
             ControllerKind::eOrtho2D,
         };
+        const auto count = std::size(types);
         int idx = 0;
-        for (int i = 0; i < 3; ++i) {
+        for (int i = 0; i < static_cast<int>(count); ++i) {
             if (values[i] == cur) {
                 idx = i;
                 break;
@@ -936,7 +930,7 @@ void InteractionSettingsLayer::renderManipulatorSettings() {
         if (need_ortho) {
             ImGui::TextColored(ImVec4(1.f, 0.4f, 0.4f, 1.f), "Ortho 2D requires Orthographic camera");
         }
-        if (ImGui::Combo("Type##ctrl", &idx, types, 3)) {
+        if (ImGui::Combo("Type##ctrl", &idx, types, static_cast<int>(count))) {
             const ControllerKind new_kind = values[idx];
             if (new_kind == ControllerKind::eOrtho2D && scene_layer_->uiSettings().use_perspective) {
                 ImGui::OpenPopup("Ortho2DNeedsOrthographicCamera");
