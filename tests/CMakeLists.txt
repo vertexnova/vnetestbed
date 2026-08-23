@@ -78,6 +78,10 @@ if(VNE_TESTBED_OPENGL OR VNE_TESTBED_OPENGLES)
     list(APPEND TEST_SOURCES window_test.cpp)
 endif()
 
+if(VNE_TESTBED_IMGUI_AVAILABLE)
+    list(APPEND TEST_SOURCES imgui_settings_rect_test.cpp)
+endif()
+
 #==============================================================================
 # Build test executable
 #==============================================================================

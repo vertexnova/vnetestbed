@@ -196,10 +196,11 @@ void SceneTestLayer::onRender(const vne::testbed::RenderContext& render_context)
 
     // Aspect / resize — only update when the viewport size actually changes
     if (render_context.frame_info.width > 0 && render_context.frame_info.height > 0) {
-        if (render_context.frame_info.width != ui_.last_vp_w || render_context.frame_info.height != ui_.last_vp_h) {
-            ui_.last_vp_w = render_context.frame_info.width;
-            ui_.last_vp_h = render_context.frame_info.height;
-            updateCameraAspect(ui_.last_vp_w, ui_.last_vp_h);
+        if (render_context.frame_info.width != ui_.last_viewport_w
+            || render_context.frame_info.height != ui_.last_viewport_h) {
+            ui_.last_viewport_w = render_context.frame_info.width;
+            ui_.last_viewport_h = render_context.frame_info.height;
+            updateCameraAspect(ui_.last_viewport_w, ui_.last_viewport_h);
         }
     }
 
@@ -278,10 +279,10 @@ void SceneTestLayer::onRender(const vne::testbed::RenderContext& render_context)
 
 void SceneTestLayer::rebuildCamera(int w, int h) {
     if (w > 0 && h > 0) {
-        ui_.last_vp_w = w;
-        ui_.last_vp_h = h;
+        ui_.last_viewport_w = w;
+        ui_.last_viewport_h = h;
     }
-    buildCamera(ui_.last_vp_w, ui_.last_vp_h);
+    buildCamera(ui_.last_viewport_w, ui_.last_viewport_h);
 }
 
 void SceneTestLayer::syncCameraPositionTargetUp() {
@@ -413,19 +414,19 @@ void SceneTestLayer::removeLastPointLight() {
 }
 
 void SceneTestLayer::resetToDefault() {
-    const int save_w = ui_.last_vp_w;
-    const int save_h = ui_.last_vp_h;
+    const int save_w = ui_.last_viewport_w;
+    const int save_h = ui_.last_viewport_h;
     // Remove point lights from scene_state_ while ui_.point_lights still lists them.
     // Assigning ui_ first would clear the vector and skip this loop, leaking lights in scene_state_.
     while (!ui_.point_lights.empty()) {
         removeLastPointLight();
     }
     ui_ = SceneUiSettings{};
-    ui_.last_vp_w = save_w;
-    ui_.last_vp_h = save_h;
+    ui_.last_viewport_w = save_w;
+    ui_.last_viewport_h = save_h;
     cube_angle_ = 0.f;
 
-    rebuildCamera(ui_.last_vp_w, ui_.last_vp_h);
+    rebuildCamera(ui_.last_viewport_w, ui_.last_viewport_h);
     syncCameraPositionTargetUp();
     syncAmbientLight();
     syncDirLight();
@@ -649,8 +650,9 @@ void SceneTestLayer::drawFrustum(vne::math::Vec3f pos,
     const vne::math::Vec3f far_col{0.3f, 0.8f, 1.0f};   // cyan   — far  plane
     const vne::math::Vec3f edge_col{0.7f, 0.7f, 0.7f};  // gray   — connecting edges
 
-    const float aspect =
-        (ui_.last_vp_h > 0) ? (static_cast<float>(ui_.last_vp_w) / static_cast<float>(ui_.last_vp_h)) : 1.f;
+    const float aspect = (ui_.last_viewport_h > 0)
+                             ? (static_cast<float>(ui_.last_viewport_w) / static_cast<float>(ui_.last_viewport_h))
+                             : 1.f;
 
     if (ui_.use_perspective) {
         // Tangent of half-FOV gives the slope; multiply by distance to get half-extents.
@@ -846,7 +848,7 @@ void SceneSettingsLayer::renderPanel() {
             sl.syncCameraPositionTargetUp();
         }
         if (proj_changed) {
-            sl.rebuildCamera(ui.last_vp_w, ui.last_vp_h);
+            sl.rebuildCamera(ui.last_viewport_w, ui.last_viewport_h);
 #ifdef VNE_TESTBED_INTERACTION
             if (interaction_layer_) {
                 interaction_layer_->setCameras(sl.getActiveCameras());

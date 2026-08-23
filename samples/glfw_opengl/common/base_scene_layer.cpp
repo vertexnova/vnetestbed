@@ -18,6 +18,9 @@
 #include "vertexnova/events/mouse_event.h"
 #include "vertexnova/events/window_event.h"
 
+#include <algorithm>
+#include <array>
+#include <cmath>
 #include <string>
 
 namespace {
@@ -75,6 +78,9 @@ void BaseSceneLayer::onUpdate(float /*dt*/) {
                 cam->updateMatrices();
             }
         }
+        // Keep ortho_half in sync with any interaction-driven bound changes so UI sliders
+        // always reflect the real zoom level and don't overwrite it on next slider touch.
+        syncOrthoExtentsFromCamera();
     }
 }
 
@@ -100,18 +106,36 @@ void BaseSceneLayer::onRender(const vne::testbed::RenderContext& render_context)
             if (auto* o = dynamic_cast<vne::scene::OrthographicCamera*>(camera)) {
                 const int vp_w = render_context.frame_info.width;
                 const int vp_h = render_context.frame_info.height;
-                const bool need_ortho_proj_sync = vp_w != ortho_proj_sync_vp_w_ || vp_h != ortho_proj_sync_vp_h_
-                                                  || ui_settings_.ortho_half != ortho_proj_sync_half_
-                                                  || ui_settings_.ortho_near != ortho_proj_sync_near_
-                                                  || ui_settings_.ortho_far != ortho_proj_sync_far_;
+                float half_y = ui_settings_.ortho_half;
+                float half_x = ui_settings_.ortho_half * aspect;
+                if (ui_settings_.show_grid) {
+                    // Expand orthographic extents so the full ground grid (XZ at y=0) stays inside the
+                    // frustum for any eye orientation — avoids clipping corners when ortho_half is small.
+                    const vne::math::Mat4f vm = o->getViewMatrix();
+                    float max_abs_x = 0.f;
+                    float max_abs_y = 0.f;
+                    const float g = kGridHalf;
+                    const std::array<vne::math::Vec3f, 4> corners = {
+                        vne::math::Vec3f{-g, 0.f, -g},
+                        vne::math::Vec3f{-g, 0.f, g},
+                        vne::math::Vec3f{g, 0.f, -g},
+                        vne::math::Vec3f{g, 0.f, g},
+                    };
+                    for (const auto& c : corners) {
+                        const vne::math::Vec4f p = vm * vne::math::Vec4f(c.x(), c.y(), c.z(), 1.f);
+                        max_abs_x = std::max(max_abs_x, std::fabs(p.x()));
+                        max_abs_y = std::max(max_abs_y, std::fabs(p.y()));
+                    }
+                    half_x = std::max(half_x, max_abs_x);
+                    half_y = std::max(half_y, max_abs_y);
+                }
+                const bool need_ortho_proj_sync = ui_settings_.show_grid
+                                                  || (vp_w != ortho_proj_sync_vp_w_ || vp_h != ortho_proj_sync_vp_h_
+                                                      || ui_settings_.ortho_half != ortho_proj_sync_half_
+                                                      || ui_settings_.ortho_near != ortho_proj_sync_near_
+                                                      || ui_settings_.ortho_far != ortho_proj_sync_far_);
                 if (need_ortho_proj_sync) {
-                    const float hw = ui_settings_.ortho_half * aspect;
-                    o->setBounds(-hw,
-                                 hw,
-                                 -ui_settings_.ortho_half,
-                                 ui_settings_.ortho_half,
-                                 ui_settings_.ortho_near,
-                                 ui_settings_.ortho_far);
+                    o->setBounds(-half_x, half_x, -half_y, half_y, ui_settings_.ortho_near, ui_settings_.ortho_far);
                     o->updateProjectionMatrix();
                     ortho_proj_sync_vp_w_ = vp_w;
                     ortho_proj_sync_vp_h_ = vp_h;
@@ -171,6 +195,10 @@ void BaseSceneLayer::setUsePerspective(bool use_persp) {
     if (ui_settings_.use_perspective == use_persp) {
         return;
     }
+    // Snapshot the live ortho extents before leaving ortho mode so we don't revert to stale UI values.
+    if (!ui_settings_.use_perspective) {
+        syncOrthoExtentsFromCamera();
+    }
     syncCameraPositionTargetUp();
     const vne::math::Vec3f pos = ui_settings_.cam_position;
     const vne::math::Vec3f tgt = ui_settings_.cam_target;
@@ -179,6 +207,7 @@ void BaseSceneLayer::setUsePerspective(bool use_persp) {
     if (ui_settings_.use_perspective) {
         for (auto& c : camera_persp_) {
             if (c) {
+                c->setSceneScale(1.0f);  // clear accumulated SceneScale zoom
                 c->setPosition(pos);
                 c->setTarget(tgt);
                 c->setUp(up);
@@ -188,6 +217,7 @@ void BaseSceneLayer::setUsePerspective(bool use_persp) {
     } else {
         for (auto& c : cameras_ortho_) {
             if (c) {
+                c->setSceneScale(1.0f);  // clear accumulated SceneScale zoom
                 c->setPosition(pos);
                 c->setTarget(tgt);
                 c->setUp(up);
@@ -208,6 +238,27 @@ void BaseSceneLayer::syncCameraPositionTargetUp() {
     ui_settings_.cam_position = active->getPosition();
     ui_settings_.cam_target = active->getTarget();
     ui_settings_.cam_up = active->getUp();
+}
+
+void BaseSceneLayer::syncOrthoExtentsFromCamera() {
+    if (ui_settings_.show_grid) {
+        // Grid auto-fit inflates ortho bounds beyond ui_settings_.ortho_half; do not overwrite the slider.
+        return;
+    }
+    auto* o = dynamic_cast<vne::scene::OrthographicCamera*>(getActiveCameraPtr(0));
+    if (!o) {
+        return;
+    }
+    const float live_half = o->getHeight() * 0.5f;
+    if (live_half > 0.0f) {
+        ui_settings_.ortho_half = live_half;
+        // Align the dirty-guard cache so the next onRender doesn't immediately re-push the old value.
+        ortho_proj_sync_half_ = live_half;
+    }
+}
+
+void BaseSceneLayer::invalidateOrthoProjectionSync() {
+    ortho_proj_sync_vp_w_ = -1;
 }
 
 void BaseSceneLayer::rebuildCameras(int w, int h) {
@@ -282,12 +333,7 @@ void BaseSceneLayer::drawAxes() const {
 
 BaseInteractionLayer::BaseInteractionLayer(const char* name)
     : vne::testbed::ILayer(name) {
-    controllers_.reserve(static_cast<size_t>(kMaxViewports));
-    for (int i = 0; i < kMaxViewports; ++i) {
-        vne::interaction::Inspect3DController c;
-        c.setRotationMode(vne::interaction::OrbitalRotationMode::eOrbit);
-        controllers_.push_back(std::move(c));
-    }
+    controllers_.resize(static_cast<size_t>(kMaxViewports));
 }
 
 void BaseInteractionLayer::setCamera(std::shared_ptr<vne::scene::ICamera> camera) {

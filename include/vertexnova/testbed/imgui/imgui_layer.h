@@ -56,6 +56,28 @@ class ImGuiEventListener;
 namespace vne {
 namespace testbed {
 
+namespace detail {
+
+/** Screen-space hit rect for the Settings window when ImGui::Begin returns false. */
+struct SettingsWindowScreenRect {
+    bool valid{false};
+    float min_x{0.f};
+    float min_y{0.f};
+    float max_x{0.f};
+    float max_y{0.f};
+};
+
+/** Collapsed windows keep the title-bar rect; skipped (hidden tab) windows invalidate it. */
+[[nodiscard]] inline SettingsWindowScreenRect makeSettingsWindowScreenRectWhenBeginSkipped(
+    bool window_collapsed, float pos_x, float pos_y, float width, float height) noexcept {
+    if (!window_collapsed) {
+        return {};
+    }
+    return SettingsWindowScreenRect{true, pos_x, pos_y, pos_x + width, pos_y + height};
+}
+
+}  // namespace detail
+
 /**
  * @class ImGuiLayer
  * @brief ImGui overlay with docking, viewports, settings panel, and viewport layout.
@@ -230,6 +252,14 @@ class ImGuiLayer : public ILayer {
 
     /// Viewport window rects in screen space (min_x, min_y, max_x, max_y); updated each frame in renderViewportWindows
     std::vector<float> viewport_rects_;
+
+    /// "Settings" window AABB in ImGui screen space; excludes it from scene viewport hit-testing so dragging sliders
+    /// does not orbit the camera. Updated in renderSettingsPanel().
+    bool settings_window_rect_valid_{false};
+    float settings_screen_min_x_{0.f};
+    float settings_screen_min_y_{0.f};
+    float settings_screen_max_x_{0.f};
+    float settings_screen_max_y_{0.f};
 
 #if defined(VNE_TESTBED_EVENTS)
     std::shared_ptr<ImGuiEventListener> event_listener_;

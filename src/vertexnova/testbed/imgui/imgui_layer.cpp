@@ -487,8 +487,27 @@ void ImGuiLayer::renderSettingsPanel(const RenderContext& ctx) {
     (void)ctx;
     // NoScrollbar on the outer window — we manage scrolling ourselves below.
     if (!ImGui::Begin("Settings", nullptr, ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse)) {
+        const ImVec2 sp = ImGui::GetWindowPos();
+        const ImVec2 ss = ImGui::GetWindowSize();
+        const auto rect =
+            detail::makeSettingsWindowScreenRectWhenBeginSkipped(ImGui::IsWindowCollapsed(), sp.x, sp.y, ss.x, ss.y);
+        settings_window_rect_valid_ = rect.valid;
+        settings_screen_min_x_ = rect.min_x;
+        settings_screen_min_y_ = rect.min_y;
+        settings_screen_max_x_ = rect.max_x;
+        settings_screen_max_y_ = rect.max_y;
         ImGui::End();
         return;
+    }
+
+    {
+        const ImVec2 sp = ImGui::GetWindowPos();
+        const ImVec2 ss = ImGui::GetWindowSize();
+        settings_screen_min_x_ = sp.x;
+        settings_screen_min_y_ = sp.y;
+        settings_screen_max_x_ = sp.x + ss.x;
+        settings_screen_max_y_ = sp.y + ss.y;
+        settings_window_rect_valid_ = true;
     }
 
     // ---- Fixed header (always visible, not scrolled) -------------------------
@@ -653,6 +672,12 @@ int ImGuiLayer::getHoveredViewportIndex(float mouse_x, float mouse_y) const {
     float ix = mouse_x;
     float iy = mouse_y;
     clientMouseToImGuiScreen(ix, iy);
+    if (settings_window_rect_valid_) {
+        if (ix >= settings_screen_min_x_ && ix <= settings_screen_max_x_ && iy >= settings_screen_min_y_
+            && iy <= settings_screen_max_y_) {
+            return -1;
+        }
+    }
     const size_t n = viewport_rects_.size() / 4u;
     for (size_t i = 0; i < n; ++i) {
         const float min_x = viewport_rects_[i * 4u + 0u];

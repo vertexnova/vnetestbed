@@ -62,6 +62,9 @@ class BaseSceneLayer : public vne::testbed::ILayer {
         vne::math::Vec3f cam_position{4.0f, 3.0f, 6.0f};
         vne::math::Vec3f cam_target{0.0f, 0.0f, 0.0f};
         vne::math::Vec3f cam_up{0.0f, 1.0f, 0.0f};
+        // Debug overlays — shared naming with SceneUiSettings (02_test_scene).
+        bool show_view_matrix{false};
+        bool show_projection_matrix{false};
     };
 
     explicit BaseSceneLayer(const char* name = "BaseSceneLayer");
@@ -87,6 +90,11 @@ class BaseSceneLayer : public vne::testbed::ILayer {
 
     void setUsePerspective(bool use_persp);
     void syncCameraPositionTargetUp();
+    /** Reads the live orthographic half-extent back into ui_settings_.ortho_half so UI sliders
+     *  stay in sync after interaction-driven zoom (manipulator calls setBounds on the ortho camera). */
+    void syncOrthoExtentsFromCamera();
+    /** Forces the next onRender to re-apply orthographic bounds from ui_settings_ (after manual camera pose edits). */
+    void invalidateOrthoProjectionSync();
     void rebuildCameras(int w, int h);
 
    private:
@@ -110,7 +118,7 @@ class BaseSceneLayer : public vne::testbed::ILayer {
 };
 
 // ---------------------------------------------------------------------------
-// BaseInteractionLayer — orbit / trackball inspect driven by EventManager
+// BaseInteractionLayer — LMB trackball inspect (Inspect3DController) driven by EventManager
 // Pair with BaseSceneLayer: call setCamera(scene->getActiveCamera()) before attach.
 // Only compiled when VNE_TESTBED_INTERACTION is defined.
 // ---------------------------------------------------------------------------
