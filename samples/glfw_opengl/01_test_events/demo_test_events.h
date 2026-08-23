@@ -64,6 +64,7 @@ class EventsLayer : public vne::testbed::ILayer {
 
     [[nodiscard]] int lastKeyCode() const { return last_key_code_; }
     [[nodiscard]] LastKeyAction lastKeyAction() const { return last_key_action_; }
+    [[nodiscard]] const std::string& lastTextInput() const { return last_text_input_; }
 
     [[nodiscard]] uint32_t lastTouchId() const { return last_touch_id_; }
     [[nodiscard]] double lastTouchX() const { return last_touch_x_; }
@@ -77,6 +78,7 @@ class EventsLayer : public vne::testbed::ILayer {
     std::deque<std::string> log_;
     int last_key_code_{-1};
     LastKeyAction last_key_action_{LastKeyAction::eNone};
+    std::string last_text_input_;
     uint32_t last_touch_id_{0};
     double last_touch_x_{0.0};
     double last_touch_y_{0.0};

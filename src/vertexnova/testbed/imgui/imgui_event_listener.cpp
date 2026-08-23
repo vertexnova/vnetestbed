@@ -13,6 +13,7 @@
 
 #include "vertexnova/events/event_manager.h"
 #include "vertexnova/events/key_event.h"
+#include "vertexnova/events/text_input_event.h"
 #include "vertexnova/events/mouse_event.h"
 #include "vertexnova/events/window_event.h"
 
@@ -53,12 +54,9 @@ void ImGuiEventListener::onEvent(const vne::events::Event& event) {
             updateImGuiModifiers(e.modifiers());
             break;
         }
-        case ET::eKeyTyped: {
-            const auto& e = static_cast<const vne::events::KeyTypedEvent&>(event);
-            unsigned int c = static_cast<unsigned int>(e.keyCode());
-            if (c > 0 && c < 0x10000 && (c >= 0x0020 || c == 0x0009 || c == 0x000A || c == 0x000D)) {
-                io.AddInputCharacter(c);
-            }
+        case ET::eTextInput: {
+            const auto& e = static_cast<const vne::events::TextInputEvent&>(event);
+            io.AddInputCharactersUTF8(e.text().c_str());
             break;
         }
         case ET::eMouseButtonPressed: {
