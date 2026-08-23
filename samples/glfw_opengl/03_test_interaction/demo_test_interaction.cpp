@@ -1009,10 +1009,8 @@ void InteractionSettingsLayer::renderManipulatorSettings() {
                     using TPM = vne::interaction::TrackballProjectionMode;
                     const char* proj_names[] = {"Hyperbolic", "Rim"};
                     if (ImGui::Combo("Trackball projection##insp", &ui.trackball_proj_insp_idx, proj_names, 2)) {
-                        const auto proj =
-                            ui.trackball_proj_insp_idx == 0 ? TPM::eHyperbolic : TPM::eRim;
-                        forEachInspect(
-                            [&](auto& c) { c.trackballManipulator().setTrackballProjectionMode(proj); });
+                        const auto proj = ui.trackball_proj_insp_idx == 0 ? TPM::eHyperbolic : TPM::eRim;
+                        forEachInspect([&](auto& c) { c.trackballManipulator().setTrackballProjectionMode(proj); });
                     }
                     ImGui::TextDisabled("Hyperbolic: cap + continuation; Rim: hemisphere + equatorial rim");
                 }
