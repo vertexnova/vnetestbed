@@ -69,11 +69,7 @@ struct SettingsWindowScreenRect {
 
 /** Collapsed windows keep the title-bar rect; skipped (hidden tab) windows invalidate it. */
 [[nodiscard]] inline SettingsWindowScreenRect makeSettingsWindowScreenRectWhenBeginSkipped(
-    bool window_collapsed,
-    float pos_x,
-    float pos_y,
-    float width,
-    float height) noexcept {
+    bool window_collapsed, float pos_x, float pos_y, float width, float height) noexcept {
     if (!window_collapsed) {
         return {};
     }

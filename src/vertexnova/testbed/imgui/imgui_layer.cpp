@@ -489,8 +489,8 @@ void ImGuiLayer::renderSettingsPanel(const RenderContext& ctx) {
     if (!ImGui::Begin("Settings", nullptr, ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse)) {
         const ImVec2 sp = ImGui::GetWindowPos();
         const ImVec2 ss = ImGui::GetWindowSize();
-        const auto rect = detail::makeSettingsWindowScreenRectWhenBeginSkipped(
-            ImGui::IsWindowCollapsed(), sp.x, sp.y, ss.x, ss.y);
+        const auto rect =
+            detail::makeSettingsWindowScreenRectWhenBeginSkipped(ImGui::IsWindowCollapsed(), sp.x, sp.y, ss.x, ss.y);
         settings_window_rect_valid_ = rect.valid;
         settings_screen_min_x_ = rect.min_x;
         settings_screen_min_y_ = rect.min_y;
