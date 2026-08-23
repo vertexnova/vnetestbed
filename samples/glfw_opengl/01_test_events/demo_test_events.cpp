@@ -18,6 +18,7 @@
 
 #include "vertexnova/events/input/input_manager.h"
 #include "vertexnova/events/key_event.h"
+#include "vertexnova/events/text_input_event.h"
 #include "vertexnova/events/mouse_event.h"
 #include "vertexnova/events/touch_event.h"
 #include "vertexnova/events/types.h"
@@ -107,6 +108,12 @@ void EventsLayer::onEvent(const vne::events::Event& event) {
             setLastKey(static_cast<int>(e.keyCode()), LastKeyAction::eRepeat);
             line = "KeyRepeat     key=" + std::to_string(static_cast<int>(e.keyCode()))
                    + "  count=" + std::to_string(e.repeatCount());
+            break;
+        }
+        case vne::events::EventType::eTextInput: {
+            const auto& e = static_cast<const vne::events::TextInputEvent&>(event);
+            last_text_input_ = e.text();
+            line = "TextInput     text=\"" + last_text_input_ + "\"";
             break;
         }
         case vne::events::EventType::eKeyReleased: {
@@ -328,7 +335,15 @@ void EventsSettingsLayer::renderPanel() {
             }
         }
         ImGui::Spacing();
-        ImGui::Text("Char entry");
+        ImGui::Text("Text input (TextInputEvent)");
+        ImGui::Separator();
+        if (events_layer_ && !events_layer_->lastTextInput().empty()) {
+            ImGui::Text("Last event: \"%s\"", events_layer_->lastTextInput().c_str());
+        } else {
+            ImGui::TextDisabled("Last event: (none) — type in the field below or use IME");
+        }
+        ImGui::Spacing();
+        ImGui::Text("ImGui char field");
         ImGui::Separator();
         ImGui::InputText("Char display", char_display_buf_, sizeof(char_display_buf_));
         const size_t len = std::strlen(char_display_buf_);

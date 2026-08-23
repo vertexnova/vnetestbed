@@ -4,11 +4,11 @@ Builds on **00_hello_testbed** (grid, axes, optional orbit camera) and adds a li
 
 ## What This Sample Shows
 
-1. **Event delivery**: `onEvent()` receives keyboard (press / repeat / release), mouse buttons, move, scroll, window resize and close, and touch (press / move / release) with type-appropriate data.
+1. **Event delivery**: `onEvent()` receives keyboard (press / repeat / release), committed text (`TextInputEvent`), mouse buttons, move, scroll, window resize and close, and touch (press / move / release) with type-appropriate data.
 2. **Event log**: Last N lines (newest first), each prefixed with the frame index when the event was logged; header shows **Total** event count and **events per second** (rolling 1-second rate).
 3. **Touch emulation**: Left mouse is synthesized as touch id `0` (`TouchPress` / `TouchMove` / `TouchRelease`). Enabled only in this demo via `GlfwWindow::setTouchEmulationEnabled(true)` so other samples do not get duplicate mouse + touch.
 4. **Window & viewports**: Window size, ImGui viewport count, and which viewport is under the mouse (when ImGui viewports are available).
-5. **Input polling**: `InputManager` shows live WASD, Space, Escape, Shift held/edge state; mouse position, scroll, button up/down; char-entry buffer; last touch summary under **Touch** (LMB = touch id 0).
+5. **Input polling**: `InputManager` shows live WASD, Space, Escape, Shift held/edge state; mouse position, scroll, button up/down; last `TextInputEvent` commit; ImGui char-entry buffer; last touch summary under **Touch** (LMB = touch id 0).
 
 ## Screenshots and Demo
 
@@ -22,7 +22,7 @@ Builds on **00_hello_testbed** (grid, axes, optional orbit camera) and adds a li
 1. Run `01_test_events`.
 2. Open **Settings** and expand **Events (last …)** — press keys, move the mouse, scroll, resize the window; watch the log and **Total** / **/sec** counters.
 3. Expand **Window & viewports** — resize the window and move the mouse across viewports (if using a multi-viewport layout like in 00).
-4. Under **Input Polling**, try **Keyboard** (WASD, Space, Escape, Shift), **Char entry**, **Mouse**, and **Touch** (with touch emulation: drag with **LMB** to generate touch move/release).
+4. Under **Input Polling**, try **Keyboard** (WASD, Space, Escape, Shift), **Text input** / **ImGui char field**, **Mouse**, and **Touch** (with touch emulation: drag with **LMB** to generate touch move/release).
 5. Exit with **ESC** or by closing the window.
 
 ## Building

@@ -191,7 +191,7 @@ void Application::registerAsListener() {
     mgr.registerListener(ET::eKeyPressed, application_event_listener_);
     mgr.registerListener(ET::eKeyReleased, application_event_listener_);
     mgr.registerListener(ET::eKeyRepeat, application_event_listener_);
-    mgr.registerListener(ET::eKeyTyped, application_event_listener_);
+    mgr.registerListener(ET::eTextInput, application_event_listener_);
     mgr.registerListener(ET::eMouseButtonPressed, application_event_listener_);
     mgr.registerListener(ET::eMouseButtonReleased, application_event_listener_);
     mgr.registerListener(ET::eMouseMoved, application_event_listener_);

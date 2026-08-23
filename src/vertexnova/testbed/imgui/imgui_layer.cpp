@@ -205,7 +205,7 @@ void ImGuiLayer::tryInitFromContext() {
     using ET = vne::events::EventType;
     mgr.registerListener(ET::eKeyPressed, event_listener_);
     mgr.registerListener(ET::eKeyReleased, event_listener_);
-    mgr.registerListener(ET::eKeyTyped, event_listener_);
+    mgr.registerListener(ET::eTextInput, event_listener_);
     mgr.registerListener(ET::eMouseButtonPressed, event_listener_);
     mgr.registerListener(ET::eMouseButtonReleased, event_listener_);
     mgr.registerListener(ET::eMouseMoved, event_listener_);
@@ -221,7 +221,7 @@ void ImGuiLayer::onDetach() {
         using ET = vne::events::EventType;
         mgr.unregisterListener(ET::eKeyPressed, event_listener_.get());
         mgr.unregisterListener(ET::eKeyReleased, event_listener_.get());
-        mgr.unregisterListener(ET::eKeyTyped, event_listener_.get());
+        mgr.unregisterListener(ET::eTextInput, event_listener_.get());
         mgr.unregisterListener(ET::eMouseButtonPressed, event_listener_.get());
         mgr.unregisterListener(ET::eMouseButtonReleased, event_listener_.get());
         mgr.unregisterListener(ET::eMouseMoved, event_listener_.get());

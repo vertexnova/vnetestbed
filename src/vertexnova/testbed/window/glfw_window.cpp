@@ -23,6 +23,7 @@
 #if defined(VNE_TESTBED_OPENGL) || defined(VNE_TESTBED_OPENGLES)
 #include "vertexnova/events/event_manager.h"
 #include "vertexnova/events/key_event.h"
+#include "vertexnova/events/text_input_event.h"
 #include "vertexnova/events/mouse_event.h"
 #include "vertexnova/events/touch_event.h"
 #include "vertexnova/events/window_event.h"
@@ -160,8 +161,10 @@ void GlfwWindow::cbChar(GLFWwindow* w, unsigned int codepoint) {
     if (!self || !self->isEventForwarding()) {
         return;
     }
-    vne::events::EventManager::instance().pushEvent(
-        std::make_unique<vne::events::KeyTypedEvent>(static_cast<vne::events::KeyCode>(codepoint)));
+    const std::string utf8 = vne::events::utf8FromCodePoint(static_cast<char32_t>(codepoint));
+    if (!utf8.empty()) {
+        vne::events::EventManager::instance().pushEvent(std::make_unique<vne::events::TextInputEvent>(utf8));
+    }
 }
 
 void GlfwWindow::cbMouseButton(GLFWwindow* w, int button, int action, int mods) {
