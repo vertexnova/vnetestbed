@@ -489,11 +489,13 @@ void ImGuiLayer::renderSettingsPanel(const RenderContext& ctx) {
     if (!ImGui::Begin("Settings", nullptr, ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse)) {
         const ImVec2 sp = ImGui::GetWindowPos();
         const ImVec2 ss = ImGui::GetWindowSize();
-        settings_screen_min_x_ = sp.x;
-        settings_screen_min_y_ = sp.y;
-        settings_screen_max_x_ = sp.x + ss.x;
-        settings_screen_max_y_ = sp.y + ss.y;
-        settings_window_rect_valid_ = true;
+        const auto rect = detail::makeSettingsWindowScreenRectWhenBeginSkipped(
+            ImGui::IsWindowCollapsed(), sp.x, sp.y, ss.x, ss.y);
+        settings_window_rect_valid_ = rect.valid;
+        settings_screen_min_x_ = rect.min_x;
+        settings_screen_min_y_ = rect.min_y;
+        settings_screen_max_x_ = rect.max_x;
+        settings_screen_max_y_ = rect.max_y;
         ImGui::End();
         return;
     }

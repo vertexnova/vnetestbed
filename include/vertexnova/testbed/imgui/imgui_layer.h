@@ -56,6 +56,32 @@ class ImGuiEventListener;
 namespace vne {
 namespace testbed {
 
+namespace detail {
+
+/** Screen-space hit rect for the Settings window when ImGui::Begin returns false. */
+struct SettingsWindowScreenRect {
+    bool valid{false};
+    float min_x{0.f};
+    float min_y{0.f};
+    float max_x{0.f};
+    float max_y{0.f};
+};
+
+/** Collapsed windows keep the title-bar rect; skipped (hidden tab) windows invalidate it. */
+[[nodiscard]] inline SettingsWindowScreenRect makeSettingsWindowScreenRectWhenBeginSkipped(
+    bool window_collapsed,
+    float pos_x,
+    float pos_y,
+    float width,
+    float height) noexcept {
+    if (!window_collapsed) {
+        return {};
+    }
+    return SettingsWindowScreenRect{true, pos_x, pos_y, pos_x + width, pos_y + height};
+}
+
+}  // namespace detail
+
 /**
  * @class ImGuiLayer
  * @brief ImGui overlay with docking, viewports, settings panel, and viewport layout.
