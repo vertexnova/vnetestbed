@@ -62,6 +62,7 @@ def get_clang_format_binary() -> str:
 
 def check_clang_format(binary: str) -> bool:
     """Check if clang-format is available."""
+    binary = get_clang_format_binary()
     try:
         subprocess.run([binary, '--version'], capture_output=True, check=True)
         return True
