@@ -1211,6 +1211,13 @@ void InteractionSettingsLayer::renderManipulatorSettings() {
                 ImGui::TreePop();
             }
         } else if (auto* ortho = il.getOrtho2DController()) {
+            auto forEachOrtho = [&](auto&& fn) {
+                for (int i = 0; i < InteractionTestLayer::kMaxViewports; ++i) {
+                    if (auto* ctrl = il.getOrtho2DController(i)) {
+                        fn(*ctrl);
+                    }
+                }
+            };
             auto& opz = ortho->ortho2DManipulator();
             if (ImGui::TreeNodeEx("Ortho 2D Settings", ImGuiTreeNodeFlags_DefaultOpen)) {
                 // View direction presets
@@ -1229,7 +1236,7 @@ void InteractionSettingsLayer::renderManipulatorSettings() {
                 };
                 for (auto& vdp : vd_presets) {
                     if (ImGui::Button(vdp.label)) {
-                        ortho->setViewDirection(vdp.dir);
+                        forEachOrtho([&](auto& c) { c.setViewDirection(vdp.dir); });
                     }
                     ImGui::SameLine();
                 }
@@ -1237,21 +1244,21 @@ void InteractionSettingsLayer::renderManipulatorSettings() {
                 // DOF
                 bool rot_en = ortho->isRotationEnabled();
                 if (ImGui::Checkbox("Rotation enabled##ortho", &rot_en)) {
-                    ortho->setRotationEnabled(rot_en);
+                    forEachOrtho([&](auto& c) { c.setRotationEnabled(rot_en); });
                 }
                 // Pan inertia
                 ui.pan_inertia_enabled_ortho = opz.isPanInertiaEnabled();
                 if (ImGui::Checkbox("Pan inertia##ortho", &ui.pan_inertia_enabled_ortho)) {
-                    ortho->setPanInertiaEnabled(ui.pan_inertia_enabled_ortho);
+                    forEachOrtho([&](auto& c) { c.setPanInertiaEnabled(ui.pan_inertia_enabled_ortho); });
                 }
                 // Speeds
                 float zs = opz.getZoomSpeed();
                 if (ImGui::SliderFloat("Zoom speed##ortho", &zs, 1.01f, 1.5f, "%.3f")) {
-                    opz.setZoomSpeed(zs);
+                    forEachOrtho([&](auto& c) { c.ortho2DManipulator().setZoomSpeed(zs); });
                 }
                 float pd = opz.getPanDamping();
                 if (ImGui::SliderFloat("Pan damping##ortho", &pd, 0.f, 20.f)) {
-                    opz.setPanDamping(pd);
+                    forEachOrtho([&](auto& c) { c.ortho2DManipulator().setPanDamping(pd); });
                 }
                 ui.rotate_sensitivity_ortho = opz.getRotationSensitivityDegreesPerPixel();
                 if (ImGui::SliderFloat("Rotate sensitivity##ortho",
@@ -1259,7 +1266,7 @@ void InteractionSettingsLayer::renderManipulatorSettings() {
                                        0.05f,
                                        3.f,
                                        "%.2f deg/px")) {
-                    ortho->setRotateSensitivity(ui.rotate_sensitivity_ortho);
+                    forEachOrtho([&](auto& c) { c.setRotateSensitivity(ui.rotate_sensitivity_ortho); });
                 }
                 // World units per pixel readout
                 ImGui::Spacing();
