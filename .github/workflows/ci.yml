@@ -29,8 +29,11 @@ jobs:
         with:
           submodules: recursive
 
-      - name: Install clang-format
-        run: sudo apt-get update && sudo apt-get install -y clang-format
+      - name: Install clang-format-17
+        run: sudo apt-get update -qq && sudo apt-get install -y clang-format-17
+
+      - name: Alias clang-format
+        run: sudo ln -sf /usr/bin/clang-format-17 /usr/local/bin/clang-format
 
       - name: Check formatting
         run: |

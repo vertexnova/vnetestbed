@@ -984,6 +984,13 @@ void InteractionSettingsLayer::renderManipulatorSettings() {
 
         // Per-controller settings
         if (auto* insp = il.getInspectController()) {
+            auto forEachInspect = [&](auto&& fn) {
+                for (int i = 0; i < InteractionTestLayer::kMaxViewports; ++i) {
+                    if (auto* ctrl = il.getInspectController(i)) {
+                        fn(*ctrl);
+                    }
+                }
+            };
             auto& orb = insp->trackballManipulator();
             if (ImGui::TreeNodeEx("Inspect Settings", ImGuiTreeNodeFlags_DefaultOpen)) {
                 using OPM = vne::interaction::OrbitPivotMode;
@@ -992,80 +999,97 @@ void InteractionSettingsLayer::renderManipulatorSettings() {
                                              "View center (pan end updates COI)",
                                              "Fixed world (pan translates eye+target)"};
                 if (ImGui::Combo("Rotation pivot##insp", &pivot_idx, pivot_names, 3)) {
-                    orb.setPivotMode(static_cast<OPM>(pivot_idx));
+                    const auto mode = static_cast<OPM>(pivot_idx);
+                    forEachInspect([&](auto& c) { c.trackballManipulator().setPivotMode(mode); });
                 }
                 if (ImGui::Checkbox("Rotation enabled##insp", &ui.rotation_enabled_insp)) {
-                    insp->setRotationEnabled(ui.rotation_enabled_insp);
+                    forEachInspect([&](auto& c) { c.setRotationEnabled(ui.rotation_enabled_insp); });
                 }
                 {
                     using TPM = vne::interaction::TrackballProjectionMode;
                     const char* proj_names[] = {"Hyperbolic", "Rim"};
                     if (ImGui::Combo("Trackball projection##insp", &ui.trackball_proj_insp_idx, proj_names, 2)) {
-                        orb.setTrackballProjectionMode(ui.trackball_proj_insp_idx == 0 ? TPM::eHyperbolic : TPM::eRim);
+                        const auto proj =
+                            ui.trackball_proj_insp_idx == 0 ? TPM::eHyperbolic : TPM::eRim;
+                        forEachInspect(
+                            [&](auto& c) { c.trackballManipulator().setTrackballProjectionMode(proj); });
                     }
                     ImGui::TextDisabled("Hyperbolic: cap + continuation; Rim: hemisphere + equatorial rim");
                 }
                 if (ImGui::Checkbox("Pan enabled##insp", &ui.pan_enabled_insp)) {
-                    insp->setPanEnabled(ui.pan_enabled_insp);
+                    forEachInspect([&](auto& c) { c.setPanEnabled(ui.pan_enabled_insp); });
                 }
                 if (ImGui::Checkbox("Zoom enabled##insp", &ui.zoom_enabled_insp)) {
-                    insp->setZoomEnabled(ui.zoom_enabled_insp);
+                    forEachInspect([&](auto& c) { c.setZoomEnabled(ui.zoom_enabled_insp); });
                 }
                 // Inertia
                 ui.rotation_inertia_enabled_insp = orb.isRotationInertiaEnabled();
                 if (ImGui::Checkbox("Rotation inertia##insp", &ui.rotation_inertia_enabled_insp)) {
-                    orb.setRotationInertiaEnabled(ui.rotation_inertia_enabled_insp);
+                    forEachInspect([&](auto& c) {
+                        c.trackballManipulator().setRotationInertiaEnabled(ui.rotation_inertia_enabled_insp);
+                    });
                 }
                 ui.pan_inertia_enabled_insp = orb.isPanInertiaEnabled();
                 if (ImGui::Checkbox("Pan inertia##insp", &ui.pan_inertia_enabled_insp)) {
-                    orb.setPanInertiaEnabled(ui.pan_inertia_enabled_insp);
+                    forEachInspect(
+                        [&](auto& c) { c.trackballManipulator().setPanInertiaEnabled(ui.pan_inertia_enabled_insp); });
                 }
                 // Animation
                 ui.orbit_animation_enabled_insp = orb.isOrbitAnimationEnabled();
                 if (ImGui::Checkbox("Fit/view animation##insp", &ui.orbit_animation_enabled_insp)) {
-                    insp->setOrbitAnimationEnabled(ui.orbit_animation_enabled_insp);
+                    forEachInspect([&](auto& c) { c.setOrbitAnimationEnabled(ui.orbit_animation_enabled_insp); });
                 }
                 ui.fit_anim_duration_insp = orb.getFitAnimationDuration();
                 if (ImGui::SliderFloat("Fit anim duration##insp", &ui.fit_anim_duration_insp, 0.f, 1.5f, "%.2f s")) {
-                    orb.setFitAnimationDuration(ui.fit_anim_duration_insp);
+                    forEachInspect(
+                        [&](auto& c) { c.trackballManipulator().setFitAnimationDuration(ui.fit_anim_duration_insp); });
                 }
                 // Pivot on double-click
                 ui.pivot_on_dbl_click_insp = insp->isPivotOnDoubleClickEnabled();
                 if (ImGui::Checkbox("Pivot on double-click##insp", &ui.pivot_on_dbl_click_insp)) {
-                    insp->setPivotOnDoubleClickEnabled(ui.pivot_on_dbl_click_insp);
+                    forEachInspect([&](auto& c) { c.setPivotOnDoubleClickEnabled(ui.pivot_on_dbl_click_insp); });
                 }
                 // Speeds
                 float rs = orb.getRotationSpeed();
                 if (ImGui::SliderFloat("Rotation speed##insp", &rs, 0.1f, 5.f)) {
-                    orb.setRotationSpeed(rs);
+                    forEachInspect([&](auto& c) { c.trackballManipulator().setRotationSpeed(rs); });
                 }
                 ui.trackball_rotation_scale_insp = orb.getTrackballRotationScale();
                 if (ImGui::SliderFloat("Trackball rot scale##insp", &ui.trackball_rotation_scale_insp, 0.5f, 8.f)) {
-                    orb.setTrackballRotationScale(ui.trackball_rotation_scale_insp);
+                    forEachInspect([&](auto& c) {
+                        c.trackballManipulator().setTrackballRotationScale(ui.trackball_rotation_scale_insp);
+                    });
                 }
                 float ps = orb.getPanSpeed();
                 if (ImGui::SliderFloat("Pan speed##insp", &ps, 0.1f, 10.f)) {
-                    orb.setPanSpeed(ps);
+                    forEachInspect([&](auto& c) { c.trackballManipulator().setPanSpeed(ps); });
                 }
                 float zs = orb.getZoomSpeed();
                 if (ImGui::SliderFloat("Zoom speed##insp", &zs, 1.01f, 1.5f, "%.3f")) {
-                    orb.setZoomSpeed(zs);
+                    forEachInspect([&](auto& c) { c.trackballManipulator().setZoomSpeed(zs); });
                 }
                 float fs = orb.getFovZoomSpeed();
                 if (ImGui::SliderFloat("FOV zoom speed##insp", &fs, 1.01f, 1.2f, "%.3f")) {
-                    orb.setFovZoomSpeed(fs);
+                    forEachInspect([&](auto& c) { c.trackballManipulator().setFovZoomSpeed(fs); });
                 }
                 float rd = orb.getRotationDamping();
                 if (ImGui::SliderFloat("Rotation damping##insp", &rd, 0.f, 20.f)) {
-                    orb.setRotationDamping(rd);
+                    forEachInspect([&](auto& c) { c.trackballManipulator().setRotationDamping(rd); });
                 }
                 float pd = orb.getPanDamping();
                 if (ImGui::SliderFloat("Pan damping##insp", &pd, 0.f, 20.f)) {
-                    orb.setPanDamping(pd);
+                    forEachInspect([&](auto& c) { c.trackballManipulator().setPanDamping(pd); });
                 }
                 ImGui::TreePop();
             }
         } else if (auto* nav = il.getNavController()) {
+            auto forEachNav = [&](auto&& fn) {
+                for (int i = 0; i < InteractionTestLayer::kMaxViewports; ++i) {
+                    if (auto* ctrl = il.getNavController(i)) {
+                        fn(*ctrl);
+                    }
+                }
+            };
             if (ImGui::TreeNodeEx("Navigation Settings", ImGuiTreeNodeFlags_DefaultOpen)) {
                 // Rotation mode
                 {
@@ -1073,21 +1097,22 @@ void InteractionSettingsLayer::renderManipulatorSettings() {
                     const char* rot_modes[] = {"YawPitch (default)", "Trackball (virtual ball)"};
                     ui.nav_rotation_mode_idx = static_cast<int>(nav->getRotationMode());
                     if (ImGui::Combo("Look mode##nav", &ui.nav_rotation_mode_idx, rot_modes, 2)) {
-                        nav->setRotationMode(ui.nav_rotation_mode_idx == 0 ? FLR::eYawPitch : FLR::eTrackball);
+                        const auto mode = ui.nav_rotation_mode_idx == 0 ? FLR::eYawPitch : FLR::eTrackball;
+                        forEachNav([&](auto& c) { c.setRotationMode(mode); });
                     }
                 }
                 // DOF enables
                 ui.look_enabled_nav = nav->isLookEnabled();
                 if (ImGui::Checkbox("Look enabled##nav", &ui.look_enabled_nav)) {
-                    nav->setLookEnabled(ui.look_enabled_nav);
+                    forEachNav([&](auto& c) { c.setLookEnabled(ui.look_enabled_nav); });
                 }
                 ui.move_enabled_nav = nav->isMoveEnabled();
                 if (ImGui::Checkbox("Move enabled##nav", &ui.move_enabled_nav)) {
-                    nav->setMoveEnabled(ui.move_enabled_nav);
+                    forEachNav([&](auto& c) { c.setMoveEnabled(ui.move_enabled_nav); });
                 }
                 ui.zoom_enabled_nav = nav->isZoomEnabled();
                 if (ImGui::Checkbox("Zoom enabled##nav", &ui.zoom_enabled_nav)) {
-                    nav->setZoomEnabled(ui.zoom_enabled_nav);
+                    forEachNav([&](auto& c) { c.setZoomEnabled(ui.zoom_enabled_nav); });
                 }
                 // World up
                 {
@@ -1095,30 +1120,30 @@ void InteractionSettingsLayer::renderManipulatorSettings() {
                     if (ImGui::Combo("World up##nav", &ui.nav_world_up_idx, up_names, 2)) {
                         const vne::math::Vec3f up_vec = (ui.nav_world_up_idx == 1) ? vne::math::Vec3f(0.f, 0.f, 1.f)
                                                                                    : vne::math::Vec3f(0.f, 1.f, 0.f);
-                        nav->freeLookManipulator().setWorldUp(up_vec);
+                        forEachNav([&](auto& c) { c.freeLookManipulator().setWorldUp(up_vec); });
                     }
                 }
                 // Speeds
                 ui.move_speed = nav->getMoveSpeed();
                 if (ImGui::SliderFloat("Move speed##nav", &ui.move_speed, 0.5f, 20.f)) {
-                    nav->setMoveSpeed(ui.move_speed);
+                    forEachNav([&](auto& c) { c.setMoveSpeed(ui.move_speed); });
                 }
                 ui.mouse_sensitivity = nav->getMouseSensitivity();
                 if (ImGui::SliderFloat("Mouse sensitivity##nav", &ui.mouse_sensitivity, 0.05f, 0.5f)) {
-                    nav->setMouseSensitivity(ui.mouse_sensitivity);
+                    forEachNav([&](auto& c) { c.setMouseSensitivity(ui.mouse_sensitivity); });
                 }
                 ui.sprint_mult = nav->getSprintMultiplier();
                 if (ImGui::SliderFloat("Sprint multiplier##nav", &ui.sprint_mult, 1.f, 5.f)) {
-                    nav->setSprintMultiplier(ui.sprint_mult);
+                    forEachNav([&](auto& c) { c.setSprintMultiplier(ui.sprint_mult); });
                 }
                 ui.slow_mult = nav->getSlowMultiplier();
                 if (ImGui::SliderFloat("Slow multiplier##nav", &ui.slow_mult, 0.1f, 1.f)) {
-                    nav->setSlowMultiplier(ui.slow_mult);
+                    forEachNav([&](auto& c) { c.setSlowMultiplier(ui.slow_mult); });
                 }
                 if (ImGui::TreeNodeEx("Scroll zoom", ImGuiTreeNodeFlags_DefaultOpen)) {
                     float fl_z = nav->freeLookManipulator().getZoomSpeed();
                     if (ImGui::SliderFloat("Wheel zoom exponent##nav", &fl_z, 1.01f, 1.5f, "%.3f")) {
-                        nav->freeLookManipulator().setZoomSpeed(fl_z);
+                        forEachNav([&](auto& c) { c.freeLookManipulator().setZoomSpeed(fl_z); });
                     }
                     ImGui::TextDisabled("Scroll wheel zoom is handled by FreeLookManipulator.");
                     ImGui::TreePop();

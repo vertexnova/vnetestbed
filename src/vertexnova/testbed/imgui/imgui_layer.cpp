@@ -487,7 +487,13 @@ void ImGuiLayer::renderSettingsPanel(const RenderContext& ctx) {
     (void)ctx;
     // NoScrollbar on the outer window — we manage scrolling ourselves below.
     if (!ImGui::Begin("Settings", nullptr, ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse)) {
-        settings_window_rect_valid_ = false;
+        const ImVec2 sp = ImGui::GetWindowPos();
+        const ImVec2 ss = ImGui::GetWindowSize();
+        settings_screen_min_x_ = sp.x;
+        settings_screen_min_y_ = sp.y;
+        settings_screen_max_x_ = sp.x + ss.x;
+        settings_screen_max_y_ = sp.y + ss.y;
+        settings_window_rect_valid_ = true;
         ImGui::End();
         return;
     }
